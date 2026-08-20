@@ -1,0 +1,138 @@
+.ruler {
+  display: block;
+}
+
+/* Equal-width bands: the rule scale is categorical, not linear. */
+.track {
+  display: flex;
+  gap: 2px;
+  height: 22px;
+}
+
+.band {
+  position: relative;
+  flex: 1;
+  border-radius: 1px;
+  background: var(--band-bg, var(--rule));
+  transform-origin: left center;
+  animation: openUp 380ms cubic-bezier(0.22, 0.9, 0.24, 1) backwards;
+  animation-delay: calc(var(--order) * 45ms);
+}
+
+.bandActive {
+  background: var(--band-color);
+}
+
+.bandNames,
+.bounds {
+  display: flex;
+  gap: 2px;
+}
+
+.bandNames {
+  margin-top: 5px;
+}
+
+.bounds {
+  margin-top: 2px;
+}
+
+.label,
+.bound {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+
+.label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  text-align: center;
+}
+
+.labelActive {
+  color: var(--band-color);
+  font-weight: 600;
+}
+
+.bound {
+  position: relative;
+  font-size: 9px;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+  height: 11px;
+}
+
+/* Centres the number over the boundary between bands, not on the cell edge. */
+.bound > span {
+  position: absolute;
+  right: 0;
+  transform: translateX(50%);
+  white-space: nowrap;
+}
+
+/* Needle: drops in and settles, one gesture, after the bands have opened. */
+.needle {
+  position: absolute;
+  top: -5px;
+  bottom: -5px;
+  left: var(--position);
+  width: 2px;
+  margin-left: -1px;
+  background: var(--ink);
+  border-radius: 1px;
+  animation: settle 480ms cubic-bezier(0.16, 1.05, 0.3, 1) backwards;
+  animation-delay: calc(var(--count) * 45ms + 80ms);
+}
+
+.needle::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -3px;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid var(--ink);
+}
+
+/* Missing data is a first-class state: the empty ruler stays visually loud. */
+.empty {
+  height: 22px;
+  border: 1px dashed var(--rule-strong);
+  border-radius: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+@keyframes openUp {
+  from {
+    transform: scaleX(0);
+    opacity: 0;
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+
+@keyframes settle {
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}

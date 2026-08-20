@@ -1,0 +1,133 @@
+/*
+ * "Instrument paper" base: cool blue-grey ground, blue-cast ink, and chroma reserved for
+ * the band rulers — that is where the information lives.
+ */
+
+:root {
+  --paper: #eceef1;
+  --paper-high: #f7f8f9;
+  --paper-back: #e2e6ea;
+  --ink: #10161c;
+  --ink-mid: #47535f;
+  --ink-faint: #7d8894;
+  --rule: #d3d8de;
+  --rule-strong: #b9c1ca;
+  --indigo: #1f3a5f;
+
+  --ok: #0f7b5a;
+  --ok-soft: #cfe6dc;
+  --ok-wash: #dfe8e5;
+  --warn: #a9701a;
+  --warn-soft: #f0e2c6;
+  --warn-wash: #e9e6dc;
+  --bad: #a93429;
+  --bad-soft: #f0d5d1;
+  --bad-wash: #e9e0de;
+
+  --measure: 68rem;
+  --radius: 3px;
+
+  --shadow: 0 1px 0 rgba(16, 22, 28, 0.04), 0 1px 2px rgba(16, 22, 28, 0.06);
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #14181d;
+    --paper-high: #1b2027;
+    --paper-back: #151a20;
+    --ink: #e8ecf0;
+    --ink-mid: #a3aeba;
+    --ink-faint: #6f7b88;
+    --rule: #2a313a;
+    --rule-strong: #3a434e;
+    --indigo: #90b4e0;
+
+    --ok: #4cc79b;
+    --ok-soft: #17342b;
+    --ok-wash: #1d2724;
+    --warn: #e0a944;
+    --warn-soft: #382c14;
+    --warn-wash: #26241d;
+    --bad: #ef7a6d;
+    --bad-soft: #3a1f1c;
+    --bad-wash: #27211f;
+
+    --shadow: 0 1px 0 rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.4);
+
+    color-scheme: dark;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper-back);
+  color: var(--ink);
+  font-family: var(--font-text);
+  font-size: 15px;
+  line-height: 1.55;
+  font-feature-settings: 'ss01';
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+p,
+figure {
+  margin: 0;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+/* Visible, consistent focus: this tool is driven from the keyboard, coming from the CLI. */
+:focus-visible {
+  outline: 2px solid var(--indigo);
+  outline-offset: 2px;
+  border-radius: 1px;
+}
+
+::selection {
+  background: var(--indigo);
+  color: var(--paper-high);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Structural label: spaced small caps, the register of an instrument legend. */
+.tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

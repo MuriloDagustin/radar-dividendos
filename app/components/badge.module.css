@@ -1,0 +1,42 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.28rem 0.6rem 0.28rem 0.5rem;
+  border-radius: 2px;
+  border: 1px solid currentColor;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.solid {
+  color: var(--ok);
+  background: var(--ok-soft);
+}
+
+.attention {
+  color: var(--warn);
+  background: var(--warn-soft);
+}
+
+.fragile {
+  color: var(--bad);
+  background: var(--bad-soft);
+}
+
+/* Signal counts: shows where the verdict came from, not just its label. */
+.counts {
+  font-weight: 400;
+  opacity: 0.75;
+  letter-spacing: 0.04em;
+}
+
+/* No verdict is a state of its own: neutral, never mistakable for approval. */
+.indeterminate {
+  color: var(--ink-faint);
+  background: var(--paper);
+}

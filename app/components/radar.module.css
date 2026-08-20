@@ -1,0 +1,248 @@
+.page {
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: 2.5rem 1.25rem 4rem;
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--rule-strong);
+}
+
+.brand {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.engine {
+  margin-left: auto;
+}
+
+/* The thesis in one line: why this number can be trusted. */
+.thesis {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 4.6vw, 2.6rem);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  margin: 2rem 0 0;
+  max-width: 30ch;
+  text-wrap: balance;
+}
+
+.thesis em {
+  font-style: normal;
+  color: var(--indigo);
+}
+
+.sub {
+  margin: 0.8rem 0 0;
+  max-width: 54ch;
+  color: var(--ink-mid);
+  font-size: 0.95rem;
+}
+
+/* Command field: the tool was born in a terminal, and the input honours that. */
+.command {
+  margin-top: 1.9rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.fieldWrap {
+  flex: 1 1 20rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.75rem;
+  background: var(--paper-high);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  transition: border-color 140ms ease;
+}
+
+.fieldWrap:focus-within {
+  border-color: var(--indigo);
+}
+
+.caret {
+  font-family: var(--font-mono);
+  color: var(--indigo);
+  font-weight: 600;
+  user-select: none;
+}
+
+.field {
+  flex: 1;
+  min-width: 6rem;
+  padding: 0.7rem 0;
+  border: 0;
+  background: none;
+  outline: none;
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.field::placeholder {
+  color: var(--ink-faint);
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+.submit {
+  padding: 0.7rem 1.3rem;
+  border: 1px solid var(--indigo);
+  border-radius: var(--radius);
+  background: var(--indigo);
+  color: var(--paper-high);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    filter 140ms ease,
+    transform 140ms ease;
+}
+
+.submit:hover:not(:disabled) {
+  filter: brightness(1.15);
+}
+
+.submit:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.submit:disabled {
+  cursor: progress;
+  opacity: 0.55;
+}
+
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.2rem;
+  margin-top: 0.8rem;
+}
+
+.option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.option input {
+  accent-color: var(--indigo);
+  margin: 0;
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.optionOff {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 1rem;
+}
+
+.shortcut {
+  padding: 0.24rem 0.55rem;
+  border: 1px solid var(--rule-strong);
+  border-radius: 2px;
+  background: transparent;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: var(--ink-mid);
+  cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    color 140ms ease;
+}
+
+.shortcut:hover {
+  border-color: var(--indigo);
+  color: var(--indigo);
+}
+
+.results {
+  margin-top: 2.25rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.results > * {
+  animation-delay: calc(var(--card-order, 0) * 70ms);
+}
+
+.error {
+  padding: 0.85rem 1rem;
+  background: var(--bad-soft);
+  border: 1px solid var(--bad);
+  border-radius: var(--radius);
+  color: var(--bad);
+  font-size: 0.88rem;
+}
+
+.errorTicker {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  margin-right: 0.5rem;
+}
+
+.loading {
+  padding: 1rem;
+  border: 1px dashed var(--rule-strong);
+  border-radius: var(--radius);
+  text-align: center;
+}
+
+.footer {
+  margin-top: 3rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--rule);
+  display: grid;
+  gap: 0.45rem;
+}
+
+.footer a {
+  color: var(--indigo);
+}
+
+@media (max-width: 34rem) {
+  .header {
+    flex-wrap: wrap;
+    gap: 0.35rem 0.75rem;
+  }
+
+  .engine {
+    margin-left: 0;
+    flex-basis: 100%;
+  }
+
+  .submit {
+    flex: 1;
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "name": "radar-dividendos",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Análise de fundamentos de ações da B3 com diagnóstico determinístico",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "radar": "tsx src/cli.ts",
+    "serve": "tsx src/cli.ts --serve",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.120.0",
+    "@hono/node-server": "^1.13.7",
+    "better-sqlite3": "^11.7.0",
+    "cheerio": "^1.0.0",
+    "hono": "^4.6.14",
+    "next": "^16.3.1",
+    "picocolors": "^1.1.1",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^4.1.11"
+  }
+}
