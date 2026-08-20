@@ -33,6 +33,8 @@ function fakeAnalysis(ticker: string): Analysis {
   return {
     ticker,
     kind: 'stock',
+    classification: { category: 'evergreen', rawSector: 'Energia Elétrica', uncertain: false },
+    notes: [],
     generatedAt: '2026-08-20T14:00:00.000Z',
     fundamentals,
     provenance: { ...emptyProvenance(), price: { source: 'brapi' } },

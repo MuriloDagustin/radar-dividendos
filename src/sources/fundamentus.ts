@@ -5,6 +5,7 @@ import {
   emptyFundamentals,
   type AssetKind,
   type FundamentalField,
+  type SectorInfo,
   type SourceReading,
 } from '../types';
 
@@ -44,6 +45,17 @@ const REQUIRED_LABELS: Record<AssetKind, readonly string[]> = {
 /** The fund sheet swaps the identity label from "Papel" to "FII". */
 function kindOfPage(cells: Map<string, string>): AssetKind {
   return cells.has('FII') ? 'fii' : 'stock';
+}
+
+/** The sheet labels the broad sector and the narrower subsector separately. */
+export function sectorFromCells(cells: Map<string, string>): SectorInfo | null {
+  const sector = cells.get('Setor')?.trim();
+  const subsector = cells.get('Subsetor')?.trim();
+  if (!sector && !subsector) return null;
+  return {
+    ...(sector ? { sector } : {}),
+    ...(subsector ? { subsector } : {}),
+  };
 }
 
 export function parseFundamentus(html: string, ticker: string): SourceReading {
@@ -107,7 +119,9 @@ export function parseFundamentus(html: string, ticker: string): SourceReading {
     }
   }
 
-  return { source: 'fundamentus', kind, fundamentals, derived };
+  const sector = sectorFromCells(cells);
+
+  return { source: 'fundamentus', kind, fundamentals, derived, ...(sector ? { sector } : {}) };
 }
 
 export async function fetchFundamentus(ticker: string): Promise<SourceReading> {

@@ -204,3 +204,27 @@
 .noticeFailure {
   color: var(--bad);
 }
+
+.numberUnrel {
+  color: var(--unrel);
+}
+
+.noticeUnrel {
+  color: var(--unrel);
+}
+
+/* Structural remarks about the company, above the indicators they colour. */
+.notes {
+  margin: 0.75rem 1.1rem 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.note {
+  padding: 0.45rem 0.7rem;
+  background: var(--paper);
+  border-left: 2px solid var(--ink-faint);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: 0.8rem;
+  color: var(--ink-mid);
+}

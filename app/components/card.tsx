@@ -1,16 +1,31 @@
 import type { CSSProperties } from 'react';
 import { provenanceLabel } from '@/src/provenance';
-import { ASSET_KIND_NAME, SOURCE_NAME, type Analysis, type Indicator } from '@/src/types';
+import {
+  ASSET_KIND_NAME,
+  CATEGORY_NAME,
+  SOURCE_NAME,
+  type Analysis,
+  type Indicator,
+  type Signal,
+} from '@/src/types';
 import { formatTimestamp, formatValue } from '@/app/format';
 import { Ruler } from './ruler';
 import { Badge } from './badge';
 import styles from './card.module.css';
 
-const NUMBER_CLASS = {
+const NUMBER_CLASS: Record<Signal, string | undefined> = {
   ok: styles.numberOk,
   warn: styles.numberWarn,
   bad: styles.numberBad,
-} as const;
+  unrel: styles.numberUnrel,
+  na: styles.numberNone,
+};
+
+/** The empty ruler explains why there is nothing to place on it. */
+const EMPTY_RULER_LABEL: Partial<Record<Signal, string>> = {
+  na: 'não se aplica',
+  unrel: 'número distorcido — sem leitura',
+};
 
 function IndicatorRow({
   indicator,
@@ -48,7 +63,9 @@ function IndicatorRow({
         value={indicator.value}
         format={indicator.format}
         signal={indicator.signal}
-        {...(indicator.applicable ? {} : { emptyLabel: 'não se aplica a FII' })}
+        {...(indicator.signal && EMPTY_RULER_LABEL[indicator.signal]
+          ? { emptyLabel: EMPTY_RULER_LABEL[indicator.signal] as string }
+          : {})}
       />
 
       <div className={styles.indicatorFoot}>
@@ -73,7 +90,11 @@ export function Card({ analysis }: { analysis: Analysis }) {
           <span className={styles.price}>{formatValue(price.value, price.format)}</span>
         ) : null}
         <Badge diagnosis={analysis.diagnosis} />
-        <span className="tag">{ASSET_KIND_NAME[analysis.kind]}</span>
+        <span className="tag" title={analysis.classification.rawSector ?? undefined}>
+          {analysis.kind === 'fii'
+            ? ASSET_KIND_NAME.fii
+            : `${ASSET_KIND_NAME.stock} · ${CATEGORY_NAME[analysis.classification.category]}`}
+        </span>
         <span className={styles.spacer} />
         <span className={`tag ${styles.origin}`}>
           {analysis.fromCache ? 'do cache' : 'consulta ao vivo'}
@@ -81,6 +102,16 @@ export function Card({ analysis }: { analysis: Analysis }) {
           {formatTimestamp(analysis.generatedAt)}
         </span>
       </header>
+
+      {analysis.notes.length > 0 ? (
+        <div className={styles.notes}>
+          {analysis.notes.map((note) => (
+            <p key={note} className={styles.note}>
+              {note}
+            </p>
+          ))}
+        </div>
+      ) : null}
 
       <div className={styles.body}>
         {rest.map((indicator, i) => (
@@ -93,6 +124,15 @@ export function Card({ analysis }: { analysis: Analysis }) {
           <p className={`${styles.notice} ${styles.noticeFailure}`}>
             Sem veredito — {coverage.present} de {coverage.applicable} indicadores preenchidos, e o
             mínimo é {coverage.minimumForVerdict}.
+          </p>
+        </div>
+      ) : null}
+
+      {verdict === 'inconclusive' ? (
+        <div className={styles.notices}>
+          <p className={`${styles.notice} ${styles.noticeUnrel}`}>
+            {coverage.unreliable} indicadores sem leitura — dados insuficientes ou distorcidos para
+            diagnóstico automático. Análise manual necessária.
           </p>
         </div>
       ) : null}

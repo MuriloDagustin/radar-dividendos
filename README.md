@@ -101,14 +101,29 @@ existe em nenhuma fonte volta `null`** — nada é estimado.
 | 3 | **StatusInvest** (scraping) | DY, P/L, P/VP, ROE, Dív.Líq/EBITDA. Sem payout — o do site está marcado como BETA. |
 | 4 | **Fundamentus** (scraping) | DY, P/L, P/VP, ROE, Dív. Líquida, EBITDA. Último recurso. |
 
-### O plano Gratuito da brapi não tem fundamentos
+### O plano Gratuito da brapi: o que dá e o que não dá
 
-`modules=defaultKeyStatistics,financialData` exige o **plano Pro (R$ 139,99/mês)**. Com token
-do plano Gratuito a API responde `403 MODULES_NOT_AVAILABLE`, e o que sobra é preço.
+| Recurso | Plano Gratuito |
+|---|---|
+| Preço, volume | ✅ |
+| `summaryProfile` (setor/indústria) | ✅ — é o que alimenta a classificação |
+| `defaultKeyStatistics`, `financialData` | ❌ plano Pro (R$ 139,99/mês) |
+| `balanceSheetHistory`, `incomeStatementHistory` | ❌ plano Startup (R$ 119,99/mês) |
+| Mais de 1 ativo por requisição | ❌ plano Startup |
 
-O radar trata isso sem perder a fonte: ao ver esse 403 ele **repete a chamada sem os
-módulos** e usa o preço, registrando a ressalva em `fontesConsultadas` — visível no
-relatório, no JSON e nos cartões. Os fundamentos vêm dos três scrapings.
+**Consequência prática:** a trajetória de alavancagem (que abranda `bad` para `warn` numa
+cíclica) precisa dos módulos de histórico. A lógica está implementada e testada, e a busca
+segue a spec — mas **no plano Gratuito não há de onde tirar a série**, então a trajetória fica
+`unknown` e a alavancagem alta permanece `bad`. Avaliei raspar o endpoint interno de gráficos
+do Investidor10 e descartei: API não documentada é exatamente a fonte frágil que produziria
+número errado em silêncio.
+
+### Os módulos de fundamentos
+
+Com token do plano Gratuito a API responde `403 MODULES_NOT_AVAILABLE` e informa quais
+módulos negou. O radar lê essa lista e **repete a chamada só com os permitidos** — largar
+todos perderia também o setor, de que a classificação depende. A ressalva fica registrada em
+`sources`, visível no relatório, no JSON e nos cartões. Os fundamentos vêm dos scrapings.
 
 Erros de token são distinguidos: `MISSING_TOKEN` diz para definir a env, `INVALID_TOKEN` diz
 que a chave é inválida — não manda definir o que já está definido.
@@ -164,16 +179,77 @@ payout `1.0` é "Saudável", dívida/EBITDA `3.5` é "Atenção", P/VP `2.5` é 
 | **ROE** | `≥ 0.15` Rentabilidade forte (ok) · `0.08–0.15` Rentabilidade ok (ok) · `< 0.08` Rentabilidade fraca (warn) |
 | **Preço, P/L** | exibidos como informativos, sem faixa e sem peso no veredito |
 
-**Veredito**: qualquer `bad` → `fragile`; 2 ou mais `warn` → `attention`; senão, **se houver
-cobertura**, `solid`; sem cobertura, `indeterminate`.
+**Veredito**: ver a seção de análise por categoria acima. `solid` exige cobertura de pelo
+menos `max(2, metade dos aplicáveis)` — 3 de 5 numa ação, 2 de 2 num FII. Sem isso sai **"Sem
+dados"**, nunca "Sólida": chamar de sólido um papel sobre o qual não se sabe nada é o pior
+erro que essa ferramenta pode cometer.
 
-`bad` e `warn` são achados afirmativos e valem sozinhos. `solid` é afirmação positiva e exige
-cobertura: pelo menos `max(2, metade dos indicadores aplicáveis)` preenchidos — 3 de 5 numa
-ação, 2 de 2 num FII. Sem isso o veredito é **"Sem dados"**, nunca "Sólida". Chamar de sólido
-um papel sobre o qual não se sabe nada é o pior erro que essa ferramenta pode cometer.
+As faixas por categoria vivem na mesma tabela declarativa, então o ROE de banco é desenhado
+na régua com os limites dele (12% e 18%), não com os gerais.
 
 A razão dívida/EBITDA só é calculada com os dois valores presentes **e EBITDA positivo** —
 com EBITDA zero ou negativo a razão não tem leitura, então volta `null`.
+
+## Análise sensível ao tipo de empresa
+
+A mesma régua aplicada a tudo produz diagnóstico errado. O caso que motivou isso: a Klabin
+aparecia como **"payout 233% — insustentável"** e veredito frágil, quando o lucro contábil
+dela está distorcido por variação cambial e ativo biológico. Não é empresa distribuindo mais
+do que ganha; é denominador quebrado.
+
+Cada empresa é classificada em uma de quatro categorias (`src/classification.ts`, tabela de
+lookup explícita e testável), a partir de setor/indústria da brapi (`summaryProfile`) com
+fallback pro Setor/Subsetor do Fundamentus:
+
+| Categoria | O que muda |
+|---|---|
+| **financeiro** | Dívida líq./EBITDA vira `na` (alavancagem é a natureza do negócio, regulada por Basileia). ROE passa a ser o indicador central, com régua mais exigente: ≥ 18% forte, 12–18% ok, < 12% fraca. |
+| **cíclica** | Payout e ROE viram `unrel` quando o lucro está distorcido. DY em faixa boa é rebaixado a alerta ("dividendo cíclico"). Dívida alta em desalavancagem por 2+ períodos vira `warn` em vez de `bad`. |
+| **holding** | P/VP < 0,8 é `ok` ("desconto de holding, estrutural") em vez de alerta, com nota fixa explicando por quê. |
+| **perene** | Regras gerais, sem mudança. |
+
+Holdings são checadas primeiro: o setor da Itaúsa diz "Financeiro", e julgá-la como banco
+aplicaria a régua de ROE errada. Além do subsetor, há uma lista manual de tickers.
+
+Classificação que falha cai em `perene` e é sinalizada (`uncertain: true`), com nota no
+resultado. Ela não é o único guarda-corpo — veja o detector abaixo.
+
+### Dois status novos
+
+- **`na`** (não aplicável): o indicador não tem sentido para a categoria. Exibido esmaecido,
+  com o motivo, e a régua não é desenhada.
+- **`unrel`** (não confiável): o número existe mas está distorcido. Exibido em roxo, com o
+  valor à vista e a régua vazia — dá para ver o 233,9% e ao mesmo tempo saber que ele não
+  sustenta leitura.
+
+Nenhum dos dois conta no veredito.
+
+### Detector de lucro distorcido
+
+`distortedProfit` roda **independente da categoria**, então protege mesmo quando a
+classificação setorial falha. Dispara com P/L > 40, ou dividendo pago sem lucro positivo, ou
+ROE < 3% junto com DY > 5%. Quando dispara, payout e ROE viram `unrel`.
+
+### Veredito
+
+`fragile` (1+ `bad`) · `attention` (2+ `warn`) · `inconclusive` · `solid` · `indeterminate`.
+
+`bad` e `warn` são achados afirmativos e valem sozinhos. Depois deles vem a usabilidade do
+painel: `inconclusive` quando há distorção e o resto não dá cobertura, ou quando o indicador
+crítico da categoria (o ROE de um banco) é ilegível. `solid` continua exigindo cobertura.
+
+**Desvio da spec, deliberado:** contar `na` na conta de "3+ inconclusivo" tornaria **todo
+FII inconclusivo**, porque um FII tem sempre 3 indicadores estruturalmente inaplicáveis. Por
+isso `na` (estrutural, esperado) e `unrel` (deveria ser legível e não é) são contados
+separados, e só o segundo pesa. Em troca, um banco com ROE ilegível vira `inconclusive` pela
+regra do indicador crítico — que a própria spec justifica ao chamar o ROE de central.
+
+### Aviso de classe mais líquida
+
+Ticker terminado em 3 ou 4 tem as classes irmãs consultadas na brapi; se outra tiver volume
+5x maior, entra a nota (`KLBN11 é a classe mais líquida deste emissor`). A spec pedia uma
+única chamada `/quote/T1,T2,T3`, mas o plano Gratuito aceita **1 ativo por requisição** —
+então tenta a combinada e cai para uma chamada por classe. Falha aí nunca quebra a análise.
 
 ## Ações e FIIs
 
@@ -226,7 +302,7 @@ Uma fonte falhar não aborta a análise: a outra é usada e a falha fica registr
 npm test
 ```
 
-300 testes. Cobrem todas as faixas do motor de diagnóstico **e cada limite exato**
+426 testes. Cobrem todas as faixas do motor de diagnóstico **e cada limite exato**
 (`0.13`, `0.06`, `0.03`, `1.0`, `0.40`, `0.25`, `0`, `1.5`, `2.5`, `3.5`, `0.8`, `0.15`,
 `0.08`), os campos `null`, as invariantes da tabela de faixas (contígua, sem lacuna, cada
 limite numa faixa só), a matemática da agulha da régua, o parser do Fundamentus contra HTML
@@ -234,3 +310,13 @@ real capturado em `test/fixtures/` (as fixtures grandes vão gzipadas), os parse
 Investidor10 e do StatusInvest, a degradação da brapi para o plano Gratuito, as guardas de
 unidade, a mescla com procedência, as etiquetas de procedência, o TTL do cache, o `render` da
 página Hono, e — o mais importante — que **análise sem dado nunca vira "Sólida"**.
+
+Regressões travadas por teste, com os números reais de 20/08/2026:
+
+- **KLBN11** (cíclica, P/L 45,45): payout de 233,9% sai `unrel` e nunca `bad`; o veredito não
+  é frágil por causa do payout; 4,52x em desalavancagem sai `warn`, e **subindo continua
+  `bad`** — o abrandamento é conquistado, não automático.
+- **ITUB4** (banco): dívida/EBITDA `na`, veredito calculado sobre os 4 restantes, e o teste
+  prova que a regra antiga o chamava de frágil.
+- **ITSA4** (holding): P/VP de 0,68 não penaliza.
+- **Perene com lucro distorcido**: o detector dispara mesmo sem a categoria ajudar.

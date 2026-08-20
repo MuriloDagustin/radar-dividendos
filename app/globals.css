@@ -23,6 +23,10 @@
   --bad: #a93429;
   --bad-soft: #f0d5d1;
   --bad-wash: #e9e0de;
+  /* A distorted reading gets its own hue: not a grade, a warning about the number. */
+  --unrel: #6b4b9a;
+  --unrel-soft: #e2dcee;
+  --unrel-wash: #e6e3ec;
 
   --measure: 68rem;
   --radius: 3px;
@@ -53,6 +57,9 @@
     --bad: #ef7a6d;
     --bad-soft: #3a1f1c;
     --bad-wash: #27211f;
+    --unrel: #b49ae0;
+    --unrel-soft: #2a2338;
+    --unrel-wash: #232130;
 
     --shadow: 0 1px 0 rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.4);
 

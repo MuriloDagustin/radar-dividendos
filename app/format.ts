@@ -35,6 +35,7 @@ export const VERDICT_LABEL: Record<Verdict, string> = {
   attention: 'Atenção',
   fragile: 'Frágil',
   indeterminate: 'Sem dados',
+  inconclusive: 'Inconclusivo',
 };
 
 export const VERDICT_EXPLANATION: Record<Verdict, string> = {
@@ -42,6 +43,7 @@ export const VERDICT_EXPLANATION: Record<Verdict, string> = {
   attention: 'Dois ou mais alertas, nenhum indicador crítico.',
   fragile: 'Pelo menos um indicador em faixa crítica.',
   indeterminate: 'Indicadores insuficientes para afirmar qualquer coisa.',
+  inconclusive: 'Indicadores demais não aplicáveis ou distorcidos para diagnóstico automático.',
 };
 
 export function formatTimestamp(iso: string): string {

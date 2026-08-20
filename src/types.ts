@@ -38,6 +38,8 @@ export const ASSET_KIND_NAME: Record<AssetKind, string> = {
 
 export interface SourceReading {
   source: Source;
+  /** Sector text this source published, for the classification lookup. */
+  sector?: SectorInfo;
   /** What the source recognized the paper to be. Absent when it cannot tell. */
   kind?: AssetKind;
   fundamentals: Fundamentals;
@@ -47,10 +49,46 @@ export interface SourceReading {
   note?: string;
 }
 
-export type Signal = 'ok' | 'warn' | 'bad';
+/**
+ * `na`: the indicator has no meaning for this kind of company (a bank's net debt/EBITDA).
+ * `unrel`: the number exists but is distorted, so reading it would mislead.
+ * Neither ever counts toward the verdict.
+ */
+export type Signal = 'ok' | 'warn' | 'bad' | 'na' | 'unrel';
 
-/** `indeterminate`: too few indicators to claim anything — not the same as "fine". */
-export type Verdict = 'solid' | 'attention' | 'fragile' | 'indeterminate';
+/** Signals that carry a usable reading; the others are excluded from every count. */
+export const CONCLUSIVE_SIGNALS = ['ok', 'warn', 'bad'] as const;
+
+/**
+ * `indeterminate`: the sources did not have the numbers.
+ * `inconclusive`: the numbers are there but too many are inapplicable or distorted.
+ */
+export type Verdict = 'solid' | 'attention' | 'fragile' | 'indeterminate' | 'inconclusive';
+
+export type Category = 'financial' | 'cyclical' | 'holding' | 'evergreen';
+
+export const CATEGORY_NAME: Record<Category, string> = {
+  financial: 'financeiro',
+  cyclical: 'cíclica',
+  holding: 'holding',
+  evergreen: 'perene',
+};
+
+export interface SectorInfo {
+  sector?: string;
+  industry?: string;
+  subsector?: string;
+}
+
+export interface Classification {
+  category: Category;
+  /** The sector text as the source worded it, kept for auditing the classification. */
+  rawSector: string | null;
+  uncertain: boolean;
+}
+
+/** Where leverage is heading over the last periods, when a history could be read. */
+export type LeverageTrend = 'falling' | 'rising' | 'flat' | 'unknown';
 
 export interface Assessment {
   signal: Signal;
@@ -78,8 +116,6 @@ export interface Indicator {
   format: ValueFormat;
   /** `null` on an informational indicator: no bands, no weight on the verdict. */
   bands: readonly Band[] | null;
-  /** `false` when the indicator is meaningless for the asset kind (a FII's ROE). */
-  applicable: boolean;
   signal: Signal | null;
   message: string;
 }
@@ -88,8 +124,19 @@ export interface Diagnosis {
   indicators: Indicator[];
   counts: Record<Signal, number>;
   verdict: Verdict;
-  /** How many banded indicators apply to this kind, and how many came filled in. */
-  coverage: { applicable: number; present: number; minimumForVerdict: number };
+  /**
+   * `applicable` excludes `na`; `present` counts only conclusive readings, so a distorted
+   * number raises neither. The two tallies are kept apart on purpose: `notApplicable` is
+   * structural and expected (a FII has no ROE), while `unreliable` means a number that
+   * should have been readable was not — only the latter can make a verdict inconclusive.
+   */
+  coverage: {
+    applicable: number;
+    present: number;
+    notApplicable: number;
+    unreliable: number;
+    minimumForVerdict: number;
+  };
 }
 
 export interface Interpretation {
@@ -107,6 +154,9 @@ export interface SourceStatus {
 export interface Analysis {
   ticker: string;
   kind: AssetKind;
+  classification: Classification;
+  /** Structural remarks about the company that are not tied to one indicator. */
+  notes: string[];
   generatedAt: string;
   fundamentals: Fundamentals;
   provenance: ProvenanceMap;

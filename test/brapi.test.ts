@@ -52,18 +52,18 @@ describe('fetchBrapi', () => {
 
   it('derives net debt from totalDebt - totalCash and marks it', async () => {
     respondWith(FULL_RESULT);
-    const leitura = await fetchBrapi('TAEE11', 'tok');
-    expect(leitura.fundamentals.netDebt).toBe(10_957_900_000 - 544_160_000);
-    expect(leitura.derived).toEqual(['netDebt']);
+    const reading = await fetchBrapi('TAEE11', 'tok');
+    expect(reading.fundamentals.netDebt).toBe(10_957_900_000 - 544_160_000);
+    expect(reading.derived).toEqual(['netDebt']);
   });
 
   it('does not derive net debt without both inputs', async () => {
     respondWith({
       results: [{ symbol: 'X', financialData: { totalDebt: 100 } }],
     });
-    const leitura = await fetchBrapi('TAEE11', 'tok');
-    expect(leitura.fundamentals.netDebt).toBeNull();
-    expect(leitura.derived).toEqual([]);
+    const reading = await fetchBrapi('TAEE11', 'tok');
+    expect(reading.fundamentals.netDebt).toBeNull();
+    expect(reading.derived).toEqual([]);
   });
 
   it('accepts a multiple arriving as a string', async () => {
@@ -85,7 +85,9 @@ describe('fetchBrapi', () => {
     const call = vi.mocked(fetch).mock.calls[0]?.[0] as URL;
     expect(call.searchParams.get('token')).toBe('segredo');
     expect(call.searchParams.get('fundamental')).toBe('true');
-    expect(call.searchParams.get('modules')).toBe('defaultKeyStatistics,financialData');
+    expect(call.searchParams.get('modules')).toBe(
+      'summaryProfile,defaultKeyStatistics,financialData',
+    );
   });
 
   it('omits the token when no env var is set', async () => {
@@ -165,18 +167,20 @@ describe('the Free plan', () => {
     error: true,
     code: 'MODULES_NOT_AVAILABLE',
     message: 'Os módulos defaultKeyStatistics, financialData não estão no plano Gratuito.',
+    details: { deniedModules: ['defaultKeyStatistics', 'financialData'] },
   };
 
   /** First call (with modules) refused; second (without modules) accepted. */
-  function respondByModules(withoutModules: unknown): void {
+  /** The Free plan refuses the two paid modules and serves summaryProfile alone. */
+  function respondByModules(allowedOnly: unknown): void {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async (entrada: URL | string) => {
-        const url = new URL(String(entrada));
-        if (url.searchParams.has('modules')) {
+      vi.fn(async (input: URL | string) => {
+        const modules = new URL(String(input)).searchParams.get('modules') ?? '';
+        if (modules.includes('financialData')) {
           return new Response(JSON.stringify(PLAN_ERROR), { status: 403 });
         }
-        return new Response(JSON.stringify(withoutModules), { status: 200 });
+        return new Response(JSON.stringify(allowedOnly), { status: 200 });
       }),
     );
   }
@@ -187,16 +191,16 @@ describe('the Free plan', () => {
 
   it('retries without the paid modules instead of losing the source', async () => {
     respondByModules(PRICE_ONLY);
-    const leitura = await fetchBrapi('TAEE11', 'tok');
+    const reading = await fetchBrapi('TAEE11', 'tok');
 
-    expect(leitura.fundamentals.price).toBe(37.31);
+    expect(reading.fundamentals.price).toBe(37.31);
     expect(vi.mocked(fetch)).toHaveBeenCalledTimes(2);
   });
 
   it('records the plan caveat on the reading', async () => {
     respondByModules(PRICE_ONLY);
-    const leitura = await fetchBrapi('TAEE11', 'tok');
-    expect(leitura.note).toMatch(/plano Gratuito/);
+    const reading = await fetchBrapi('TAEE11', 'tok');
+    expect(reading.note).toMatch(/plano Gratuito/);
   });
 
   it('invents no fundamental the plan does not deliver', async () => {

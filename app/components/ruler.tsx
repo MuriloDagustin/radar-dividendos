@@ -11,7 +11,12 @@ const COLOR: Record<Signal, { strong: string; wash: string }> = {
   ok: { strong: 'var(--ok)', wash: 'var(--ok-wash)' },
   warn: { strong: 'var(--warn)', wash: 'var(--warn-wash)' },
   bad: { strong: 'var(--bad)', wash: 'var(--bad-wash)' },
+  unrel: { strong: 'var(--unrel)', wash: 'var(--unrel-wash)' },
+  na: { strong: 'var(--ink-faint)', wash: 'var(--rule)' },
 };
+
+/** Signals with a band position on the ruler; the rest render the empty state. */
+const PLACEABLE: ReadonlySet<Signal> = new Set<Signal>(['ok', 'warn', 'bad']);
 
 /**
  * How much scale to give the open band at each end, per indicator. Without this a 14% and a
@@ -60,7 +65,7 @@ interface Props {
  * Decorative for screen readers: the card already announces value, band and message as text.
  */
 export function Ruler({ indicatorKey, bands, value, format, signal, emptyLabel }: Props) {
-  if (value === null || signal === null) {
+  if (value === null || signal === null || !PLACEABLE.has(signal)) {
     return (
       <div className={styles.empty} aria-hidden="true">
         {emptyLabel ?? 'sem régua — dado ausente'}

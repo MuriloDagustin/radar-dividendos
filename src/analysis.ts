@@ -1,10 +1,22 @@
 import { openCache, type Cache } from './cache';
-import { diagnose } from './diagnosis';
-import { NoDataError, InvalidTickerError, RadarError, TickerNotFoundError, errorMessage } from './errors';
+import { classify } from './classification';
+import { categoryNotes, diagnose } from './diagnosis';
+import {
+  InvalidTickerError,
+  NoDataError,
+  RadarError,
+  TickerNotFoundError,
+  errorMessage,
+} from './errors';
 import { interpret } from './ai';
 import { mergeReadings } from './merge';
 import { looksLikeTicker, normalizeTicker } from './numbers';
-import { fetchBrapi } from './sources/brapi';
+import {
+  fetchBrapi,
+  fetchLeverageHistory,
+  fetchSiblingLiquidity,
+  type ClassLiquidity,
+} from './sources/brapi';
 import { fetchFundamentus } from './sources/fundamentus';
 import { fetchInvestidor10 } from './sources/investidor10';
 import { fetchStatusInvest } from './sources/statusinvest';
@@ -13,6 +25,7 @@ import {
   SOURCE_NAME,
   type Analysis,
   type AssetKind,
+  type SectorInfo,
   type Source,
   type SourceReading,
   type SourceStatus,
@@ -49,6 +62,42 @@ function resolveKind(readings: SourceReading[]): AssetKind {
   return readings.find((r) => r.kind !== undefined)?.kind ?? 'stock';
 }
 
+/**
+ * Sector text from every source that published one, merged field by field: brapi gives
+ * sector and industry, Fundamentus gives sector and subsector, and the lookup wants the
+ * most specific of the three.
+ */
+function resolveSector(readings: SourceReading[]): SectorInfo | null {
+  const merged: SectorInfo = {};
+  for (const reading of readings) {
+    if (!reading.sector) continue;
+    if (!merged.subsector && reading.sector.subsector) merged.subsector = reading.sector.subsector;
+    if (!merged.industry && reading.sector.industry) merged.industry = reading.sector.industry;
+    if (!merged.sector && reading.sector.sector) merged.sector = reading.sector.sector;
+  }
+  return Object.keys(merged).length > 0 ? merged : null;
+}
+
+/** Below this ratio the difference in liquidity is not worth mentioning. */
+const LIQUIDITY_FACTOR = 5;
+
+export function liquidityNote(ticker: string, classes: ClassLiquidity[]): string | null {
+  const own = classes.find((c) => c.ticker.toUpperCase() === ticker.toUpperCase());
+  if (!own || own.volume <= 0) return null;
+
+  const best = classes
+    .filter((c) => c.ticker.toUpperCase() !== ticker.toUpperCase())
+    .sort((a, b) => b.volume - a.volume)[0];
+  if (!best || best.volume < own.volume * LIQUIDITY_FACTOR) return null;
+
+  return `${best.ticker} é a classe mais líquida deste emissor`;
+}
+
+/** Only ordinary and preferred classes have a unit sibling worth comparing. */
+function hasSiblingClasses(ticker: string): boolean {
+  return /^[A-Z]{4}[34]$/.test(ticker);
+}
+
 export async function analyze(rawTicker: string, options: AnalyzeOptions = {}): Promise<Analysis> {
   const ticker = normalizeTicker(rawTicker);
   if (!looksLikeTicker(ticker)) throw new InvalidTickerError(ticker);
@@ -56,6 +105,7 @@ export async function analyze(rawTicker: string, options: AnalyzeOptions = {}): 
   const useCache = options.cache ?? true;
   const cache = options.sharedCache ?? openCache({ enabled: useCache });
   const ownsCache = !options.sharedCache;
+  const token = process.env.BRAPI_TOKEN;
 
   try {
     if (useCache) {
@@ -65,8 +115,14 @@ export async function analyze(rawTicker: string, options: AnalyzeOptions = {}): 
 
     const planned = attempts(ticker);
 
-    // Independent sources: one that is slow or down must not hold up the others.
-    const settled = await Promise.allSettled(planned.map((a) => a.run()));
+    // Independent sources: one that is slow or down must not hold up the others. The
+    // liquidity lookup rides along because it is optional and never gates the result.
+    const [settled, liquidity] = await Promise.all([
+      Promise.allSettled(planned.map((a) => a.run())),
+      hasSiblingClasses(ticker)
+        ? fetchSiblingLiquidity(ticker, token).catch((): ClassLiquidity[] => [])
+        : Promise.resolve<ClassLiquidity[]>([]),
+    ]);
 
     const readings: SourceReading[] = [];
     const sources: SourceStatus[] = [];
@@ -103,13 +159,36 @@ export async function analyze(rawTicker: string, options: AnalyzeOptions = {}): 
     }
 
     const kind = resolveKind(readings);
+    const classification = classify(ticker, resolveSector(readings));
     const { fundamentals, provenance } = mergeReadings(readings);
-    const diagnosis = diagnose(fundamentals, kind);
+
+    // Only a cyclical's verdict turns on the leverage trend, so only it pays for the call.
+    const leverageHistory =
+      classification.category === 'cyclical'
+        ? await fetchLeverageHistory(ticker, token).catch(() => null)
+        : null;
+
+    const diagnosis = diagnose(fundamentals, {
+      kind,
+      category: classification.category,
+      ...(leverageHistory ? { leverageHistory } : {}),
+    });
+
+    const notes = [
+      ...categoryNotes(classification.category),
+      ...(classification.uncertain
+        ? ['Setor não reconhecido — avaliado com as faixas gerais; confira a classificação']
+        : []),
+      ...(liquidityNote(ticker, liquidity) ? [liquidityNote(ticker, liquidity) as string] : []),
+    ];
+
     const interpretation = await interpret(ticker, diagnosis, { enabled: options.ai ?? false });
 
     const analysis: Analysis = {
       ticker,
       kind,
+      classification,
+      notes,
       generatedAt: new Date().toISOString(),
       fundamentals,
       provenance,

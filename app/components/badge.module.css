@@ -40,3 +40,9 @@
   color: var(--ink-faint);
   background: var(--paper);
 }
+
+/* Inconclusive is not a grade: the numbers arrived but could not be read. */
+.inconclusive {
+  color: var(--unrel);
+  background: var(--unrel-soft);
+}

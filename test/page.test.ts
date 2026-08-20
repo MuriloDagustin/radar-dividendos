@@ -82,6 +82,8 @@ function fakeAnalysis(): Analysis {
   return {
     ticker: 'TAEE11',
     kind: 'stock',
+    classification: { category: 'evergreen', rawSector: 'Energia Elétrica', uncertain: false },
+    notes: [],
     generatedAt: '2026-08-20T14:00:00.000Z',
     fundamentals,
     provenance: {

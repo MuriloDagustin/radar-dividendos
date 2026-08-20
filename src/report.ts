@@ -1,8 +1,10 @@
 import pc from 'picocolors';
 import { formatCurrency, formatMultiple, formatPercent } from './numbers';
+import { MESSAGES } from './diagnosis';
 import { provenanceLabel } from './provenance';
 import {
   ASSET_KIND_NAME,
+  CATEGORY_NAME,
   SOURCE_NAME,
   type Analysis,
   type Indicator,
@@ -10,7 +12,13 @@ import {
   type Verdict,
 } from './types';
 
-const MARK: Record<Signal, string> = { ok: '●', warn: '▲', bad: '✖' };
+const MARK: Record<Signal, string> = {
+  ok: '●',
+  warn: '▲',
+  bad: '✖',
+  na: '·',
+  unrel: '⚠',
+};
 
 function paint(signal: Signal | null, text: string): string {
   switch (signal) {
@@ -20,6 +28,10 @@ function paint(signal: Signal | null, text: string): string {
       return pc.yellow(text);
     case 'bad':
       return pc.red(text);
+    // A distorted reading needs to catch the eye without claiming a verdict.
+    case 'unrel':
+      return pc.magenta(text);
+    case 'na':
     case null:
       return pc.dim(text);
   }
@@ -30,6 +42,7 @@ const VERDICTS: Record<Verdict, { label: string; paint: (t: string) => string }>
   attention: { label: 'ATENÇÃO', paint: pc.yellow },
   fragile: { label: 'FRÁGIL', paint: pc.red },
   indeterminate: { label: 'SEM DADOS', paint: pc.dim },
+  inconclusive: { label: 'INCONCLUSIVO', paint: pc.magenta },
 };
 
 export function formatIndicatorValue(indicator: Indicator): string {
@@ -66,11 +79,20 @@ export function renderAnalysis(analysis: Analysis): string {
   const verdict = VERDICTS[analysis.diagnosis.verdict];
 
   lines.push('');
+  const kindLabel =
+    analysis.kind === 'fii'
+      ? ASSET_KIND_NAME.fii
+      : `${ASSET_KIND_NAME.stock} · ${CATEGORY_NAME[analysis.classification.category]}`;
+
   lines.push(
     `${pc.bold(pc.cyan(analysis.ticker))}  ${verdict.paint(pc.bold(verdict.label))}  ${pc.dim(
-      ASSET_KIND_NAME[analysis.kind],
+      kindLabel,
     )}`,
   );
+
+  for (const note of analysis.notes) {
+    lines.push(pc.dim(`  ${note}`));
+  }
 
   const labelWidth = Math.max(...analysis.diagnosis.indicators.map((i) => i.label.length));
   const values = analysis.diagnosis.indicators.map(formatIndicatorValue);
@@ -94,11 +116,18 @@ export function renderAnalysis(analysis: Analysis): string {
     );
   });
 
-  const { coverage } = analysis.diagnosis;
-  if (analysis.diagnosis.verdict === 'indeterminate') {
+  const { coverage, verdict: outcome } = analysis.diagnosis;
+  if (outcome === 'indeterminate') {
     lines.push(
       pc.yellow(
         `    Sem veredito: ${coverage.present} de ${coverage.applicable} indicadores preenchidos, mínimo ${coverage.minimumForVerdict}.`,
+      ),
+    );
+  }
+  if (outcome === 'inconclusive') {
+    lines.push(
+      pc.magenta(
+        `    ${coverage.unreliable} indicadores sem leitura confiável — ${MESSAGES.inconclusive}`,
       ),
     );
   }

@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  INFORMATIONAL,
-  NOT_APPLICABLE,
-  NO_DATA,
+  MESSAGES,
   assessDividendYield,
   assessNetDebtToEbitda,
   assessPayout,
@@ -178,51 +176,58 @@ describe('minimumForVerdict', () => {
   });
 });
 
+/** Derives the coverage the engine would compute from a signal list. */
+function cov(applicable: number, signals: (import('../src/types').Signal | null)[]) {
+  const present = signals.filter((s) => s === 'ok' || s === 'warn' || s === 'bad').length;
+  const unreliable = signals.filter((s) => s === 'unrel').length;
+  return { applicable, present, unreliable };
+}
+
 describe('decideVerdict', () => {
   const FIVE = 5;
 
   it('a single bad already drops it to fragile', () => {
-    expect(decideVerdict(['ok', 'ok', 'ok', 'bad'], FIVE)).toBe('fragile');
+    expect(decideVerdict(['ok', 'ok', 'ok', 'bad'], cov(FIVE, ['ok', 'ok', 'ok', 'bad']))).toBe('fragile');
   });
 
   it('bad outranks the warn count', () => {
-    expect(decideVerdict(['warn', 'warn', 'warn', 'bad'], FIVE)).toBe('fragile');
+    expect(decideVerdict(['warn', 'warn', 'warn', 'bad'], cov(FIVE, ['warn', 'warn', 'warn', 'bad']))).toBe('fragile');
   });
 
   it('two warns become attention', () => {
-    expect(decideVerdict(['ok', 'warn', 'warn'], FIVE)).toBe('attention');
+    expect(decideVerdict(['ok', 'warn', 'warn'], cov(FIVE, ['ok', 'warn', 'warn']))).toBe('attention');
   });
 
   it('an affirmative finding stands even without coverage', () => {
-    expect(decideVerdict(['bad', null, null, null, null], FIVE)).toBe('fragile');
-    expect(decideVerdict(['warn', 'warn', null, null, null], FIVE)).toBe('attention');
+    expect(decideVerdict(['bad', null, null, null, null], cov(FIVE, ['bad', null, null, null, null]))).toBe('fragile');
+    expect(decideVerdict(['warn', 'warn', null, null, null], cov(FIVE, ['warn', 'warn', null, null, null]))).toBe('attention');
   });
 
   it('a lone warn with enough coverage is still solid', () => {
-    expect(decideVerdict(['ok', 'ok', 'warn'], FIVE)).toBe('solid');
+    expect(decideVerdict(['ok', 'ok', 'warn'], cov(FIVE, ['ok', 'ok', 'warn']))).toBe('solid');
   });
 
   it('only ok, with coverage, is solid', () => {
-    expect(decideVerdict(['ok', 'ok', 'ok'], FIVE)).toBe('solid');
+    expect(decideVerdict(['ok', 'ok', 'ok'], cov(FIVE, ['ok', 'ok', 'ok']))).toBe('solid');
   });
 
   it('null never counts as a warn', () => {
-    expect(decideVerdict(['ok', 'ok', 'ok', null, null], FIVE)).toBe('solid');
+    expect(decideVerdict(['ok', 'ok', 'ok', null, null], cov(FIVE, ['ok', 'ok', 'ok', null, null]))).toBe('solid');
   });
 
   /** The bug this guards: an analysis with no data must never read as approval. */
   it('no indicator at all is indeterminate, never solid', () => {
-    expect(decideVerdict([null, null, null, null, null], FIVE)).toBe('indeterminate');
+    expect(decideVerdict([null, null, null, null, null], cov(FIVE, [null, null, null, null, null]))).toBe('indeterminate');
   });
 
   it('below the minimum is indeterminate even with every present signal ok', () => {
-    expect(decideVerdict(['ok', 'ok', null, null, null], FIVE)).toBe('indeterminate');
-    expect(decideVerdict(['ok', null, null, null, null], FIVE)).toBe('indeterminate');
+    expect(decideVerdict(['ok', 'ok', null, null, null], cov(FIVE, ['ok', 'ok', null, null, null]))).toBe('indeterminate');
+    expect(decideVerdict(['ok', null, null, null, null], cov(FIVE, ['ok', null, null, null, null]))).toBe('indeterminate');
   });
 
   it('a FII needs both of its two applicable indicators', () => {
-    expect(decideVerdict(['ok', 'ok'], 2)).toBe('solid');
-    expect(decideVerdict(['ok', null], 2)).toBe('indeterminate');
+    expect(decideVerdict(['ok', 'ok'], cov(2, ['ok', 'ok']))).toBe('solid');
+    expect(decideVerdict(['ok', null], cov(2, ['ok', null]))).toBe('indeterminate');
   });
 });
 
@@ -259,12 +264,12 @@ describe('diagnose', () => {
     expect(d.indicators.find((i) => i.key === 'price')).toMatchObject({
       value: 37.17,
       signal: null,
-      message: INFORMATIONAL,
+      message: MESSAGES.informational,
     });
     expect(d.indicators.find((i) => i.key === 'priceEarnings')).toMatchObject({
       value: 7.88,
       signal: null,
-      message: INFORMATIONAL,
+      message: MESSAGES.informational,
     });
   });
 
@@ -273,14 +278,20 @@ describe('diagnose', () => {
     for (const indicator of d.indicators) {
       expect(indicator.value).toBeNull();
       expect(indicator.signal).toBeNull();
-      expect(indicator.message).toBe(NO_DATA);
+      expect(indicator.message).toBe(MESSAGES.noData);
     }
   });
 
   it('an empty analysis is indeterminate, not solid', () => {
     const d = diagnose(emptyFundamentals());
     expect(d.verdict).toBe('indeterminate');
-    expect(d.coverage).toEqual({ applicable: 5, present: 0, minimumForVerdict: 3 });
+    expect(d.coverage).toEqual({
+      applicable: 5,
+      present: 0,
+      notApplicable: 0,
+      unreliable: 0,
+      minimumForVerdict: 3,
+    });
   });
 
   it('uses the published ratio when there is one', () => {
@@ -300,7 +311,7 @@ describe('diagnose', () => {
 
   it('a healthy company closes as solid', () => {
     const d = diagnose(withFundamentals(HEALTHY_STOCK));
-    expect(d.counts).toEqual({ ok: 5, warn: 0, bad: 0 });
+    expect(d.counts).toEqual({ ok: 5, warn: 0, bad: 0, na: 0, unrel: 0 });
     expect(d.coverage).toMatchObject({ applicable: 5, present: 5 });
     expect(d.verdict).toBe('solid');
   });
@@ -309,7 +320,7 @@ describe('diagnose', () => {
     const d = diagnose(
       withFundamentals({ ...HEALTHY_STOCK, dividendYield12m: 0.04, priceToBook: 0.5 }),
     );
-    expect(d.counts).toEqual({ ok: 3, warn: 2, bad: 0 });
+    expect(d.counts).toEqual({ ok: 3, warn: 2, bad: 0, na: 0, unrel: 0 });
     expect(d.verdict).toBe('attention');
   });
 
@@ -329,46 +340,49 @@ describe('diagnose for a FII', () => {
   };
 
   it('marks payout, leverage and ROE as not applicable', () => {
-    const d = diagnose(withFundamentals(FUND), 'fii');
+    const d = diagnose(withFundamentals(FUND), { kind: 'fii' });
     for (const key of ['payout', 'netDebtToEbitda', 'roe']) {
       const indicator = d.indicators.find((i) => i.key === key);
-      expect(indicator?.applicable, key).toBe(false);
-      expect(indicator?.message, key).toBe(NOT_APPLICABLE);
-      expect(indicator?.signal, key).toBeNull();
+      expect(indicator?.signal, key).toBe('na');
+      expect(indicator?.message, key).toBe(MESSAGES.notApplicableFii);
     }
   });
 
   it('keeps dividend yield and P/B applicable', () => {
-    const d = diagnose(withFundamentals(FUND), 'fii');
+    const d = diagnose(withFundamentals(FUND), { kind: 'fii' });
     expect(d.indicators.find((i) => i.key === 'dividendYield12m')).toMatchObject({
-      applicable: true,
       signal: 'ok',
     });
     expect(d.indicators.find((i) => i.key === 'priceToBook')).toMatchObject({
-      applicable: true,
       signal: 'ok',
     });
   });
 
   it('counts coverage over the two indicators that apply', () => {
-    const d = diagnose(withFundamentals(FUND), 'fii');
-    expect(d.coverage).toEqual({ applicable: 2, present: 2, minimumForVerdict: 2 });
+    const d = diagnose(withFundamentals(FUND), { kind: 'fii' });
+    expect(d.coverage).toEqual({
+      applicable: 2,
+      present: 2,
+      notApplicable: 3,
+      unreliable: 0,
+      minimumForVerdict: 2,
+    });
     expect(d.verdict).toBe('solid');
   });
 
   it('drops the value of an inapplicable indicator even if a source supplied it', () => {
-    const d = diagnose(withFundamentals({ ...FUND, roe: 0.2, payout: 0.9 }), 'fii');
+    const d = diagnose(withFundamentals({ ...FUND, roe: 0.2, payout: 0.9 }), { kind: 'fii' });
     expect(d.indicators.find((i) => i.key === 'roe')?.value).toBeNull();
     expect(d.indicators.find((i) => i.key === 'payout')?.value).toBeNull();
   });
 
   it('a fund with only one of the two is indeterminate', () => {
-    const d = diagnose(withFundamentals({ dividendYield12m: 0.1292 }), 'fii');
+    const d = diagnose(withFundamentals({ dividendYield12m: 0.1292 }), { kind: 'fii' });
     expect(d.coverage).toMatchObject({ applicable: 2, present: 1 });
     expect(d.verdict).toBe('indeterminate');
   });
 
   it('a fund with no data at all is indeterminate', () => {
-    expect(diagnose(emptyFundamentals(), 'fii').verdict).toBe('indeterminate');
+    expect(diagnose(emptyFundamentals(), { kind: 'fii' }).verdict).toBe('indeterminate');
   });
 });

@@ -1,4 +1,4 @@
-import { DISCLAIMER, SOURCE_NAME } from './types';
+import { CATEGORY_NAME, DISCLAIMER, SOURCE_NAME } from './types';
 
 export const PAGE_HTML = `<!doctype html>
 <html lang="pt-BR">
@@ -44,6 +44,10 @@ export const PAGE_HTML = `<!doctype html>
   .badge.solid { background: rgba(78,201,139,.15); color: var(--ok); }
   .badge.attention { background: rgba(232,177,58,.15); color: var(--warn); }
   .badge.fragile  { background: rgba(239,106,106,.15); color: var(--bad); }
+  .badge.indeterminate { background: rgba(147,156,171,.15); color: var(--muted); }
+  .badge.inconclusive  { background: rgba(180,154,224,.15); color: #b49ae0; }
+  .notes { margin: .5rem 0 .75rem; display: grid; gap: .3rem; }
+  .notes div { font-size: .8rem; color: var(--muted); border-left: 2px solid var(--border); padding-left: .5rem; }
   table { width: 100%; border-collapse: collapse; }
   td { padding: .35rem 0; border-bottom: 1px solid var(--border); vertical-align: top; }
   tr:last-child td { border-bottom: 0; }
@@ -51,7 +55,8 @@ export const PAGE_HTML = `<!doctype html>
   td.value { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; padding-left: .75rem; }
   td.msg { padding-left: .75rem; }
   .ok { color: var(--ok); } .warn { color: var(--warn); } .bad { color: var(--bad); }
-  .none { color: var(--muted); }
+  .unrel { color: #b49ae0; }
+  .na, .none { color: var(--muted); }
   .meta { color: var(--muted); font-size: .78rem; }
   .ai { margin-top: .9rem; padding-top: .9rem; border-top: 1px solid var(--border); }
   .ai ul { margin: .5rem 0 0; padding-left: 1.1rem; color: var(--warn); }
@@ -81,8 +86,9 @@ const field = document.getElementById('ticker');
 const output = document.getElementById('saida');
 const button = form.querySelector('button');
 
-const VERDICT_LABEL = { solid: 'Sólida', attention: 'Atenção', fragile: 'Frágil', indeterminate: 'Sem dados' };
+const VERDICT_LABEL = { solid: 'Sólida', attention: 'Atenção', fragile: 'Frágil', indeterminate: 'Sem dados', inconclusive: 'Inconclusivo' };
 const SOURCE_NAME = ${JSON.stringify(SOURCE_NAME)};
+const CATEGORY_NAME = ${JSON.stringify(CATEGORY_NAME)};
 const sourceName = (s) => SOURCE_NAME[s] ?? s;
 
 const esc = (v) => String(v).replace(/[&<>"']/g, (c) =>
@@ -119,7 +125,7 @@ function provenanceOf(analysis, key) {
 }
 
 function render(analysis) {
-  const linhas = analysis.diagnosis.indicators.map((i) => {
+  const rows = analysis.diagnosis.indicators.map((i) => {
     const cls = i.signal ?? 'none';
     const prov = provenanceOf(analysis, i.key);
     return \`<tr>
@@ -129,7 +135,7 @@ function render(analysis) {
     </tr>\`;
   }).join('');
 
-  const notes = analysis.sources.filter((f) => f.detail)
+  const sourceNotes = analysis.sources.filter((f) => f.detail)
     .map((f) => \`<div class="meta">\${esc(sourceName(f.source))} \${f.status === 'failed' ? 'fora' : 'ressalva'} — \${esc(f.detail ?? '')}</div>\`)
     .join('');
 
@@ -139,16 +145,25 @@ function render(analysis) {
       <ul>\${analysis.interpretation.watchPoints.map((p) => \`<li>\${esc(p)}</li>\`).join('')}</ul>
     </div>\` : '';
 
+  const companyNotes = (analysis.notes ?? [])
+    .map((n) => \`<div>\${esc(n)}</div>\`).join('');
+
+  const kindLabel = analysis.kind === 'fii'
+    ? 'FII'
+    : 'ação · ' + (CATEGORY_NAME[analysis.classification?.category] ?? '');
+
   const v = analysis.diagnosis.verdict;
   output.innerHTML = \`<div class="card">
-    <div class="cabecalho">
+    <div class="header">
       <strong>\${esc(analysis.ticker)}</strong>
       <span class="badge \${esc(v)}">\${esc(VERDICT_LABEL[v] ?? v)}</span>
+      <span class="meta">\${esc(kindLabel)}</span>
       <span class="meta">\${analysis.fromCache ? 'do cache' : 'consulta ao vivo'} ·
         \${esc(new Date(analysis.generatedAt).toLocaleString('pt-BR'))}</span>
     </div>
-    <table>\${linhas}</table>
-    \${notes}
+    \${companyNotes ? \`<div class="notes">\${companyNotes}</div>\` : ''}
+    <table>\${rows}</table>
+    \${sourceNotes}
     \${ia}
   </div>\`;
 }
