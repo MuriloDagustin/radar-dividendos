@@ -79,10 +79,11 @@ export function renderAnalysis(analysis: Analysis): string {
   const verdict = VERDICTS[analysis.diagnosis.verdict];
 
   lines.push('');
+  const category = analysis.classification.category;
   const kindLabel =
-    analysis.kind === 'fii'
+    analysis.kind === 'fii' || category === 'fii'
       ? ASSET_KIND_NAME.fii
-      : `${ASSET_KIND_NAME.stock} · ${CATEGORY_NAME[analysis.classification.category]}`;
+      : `${ASSET_KIND_NAME.stock} · ${CATEGORY_NAME[category]}`;
 
   lines.push(
     `${pc.bold(pc.cyan(analysis.ticker))}  ${verdict.paint(pc.bold(verdict.label))}  ${pc.dim(

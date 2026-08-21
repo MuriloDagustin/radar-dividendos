@@ -54,6 +54,39 @@ export const BANDS_ROE: readonly Band[] = [
   { from: 0.15, to: null, signal: 'ok', label: 'forte', message: 'Rentabilidade forte' },
 ];
 
+/**
+ * A fund's yield sits on a different scale from a company's: 6% is thin for a FII and 15%
+ * is ordinary, where the same numbers would read as good and suspicious on a stock.
+ */
+export const BANDS_DIVIDEND_YIELD_FII: readonly Band[] = [
+  { from: null, to: 0.06, signal: 'warn', label: 'baixo', message: 'Baixo p/ FII' },
+  { from: 0.06, to: 0.16, toInclusive: true, signal: 'ok', label: 'faixa normal', message: 'Faixa normal p/ FII' },
+  {
+    from: 0.16,
+    to: null,
+    signal: 'warn',
+    label: 'acima do mercado',
+    message: 'Muito acima do mercado — risco de crédito ou distribuição não recorrente',
+  },
+];
+
+/**
+ * A fund is a portfolio marked to its own book value, so it trades near 1.00 by nature. The
+ * 1.05–1.10 band closes a gap the spec left open, taking the more favourable reading.
+ */
+export const BANDS_PRICE_TO_BOOK_FII: readonly Band[] = [
+  {
+    from: null,
+    to: 0.85,
+    signal: 'warn',
+    label: 'descontada',
+    message: 'Descontada — mercado precificando risco, investigar relatório gerencial',
+  },
+  { from: 0.85, to: 1.05, toInclusive: true, signal: 'ok', label: 'em linha', message: 'Em linha com patrimônio' },
+  { from: 1.05, to: 1.1, toInclusive: true, signal: 'ok', label: 'leve ágio', message: 'Leve ágio sobre patrimônio' },
+  { from: 1.1, to: null, signal: 'warn', label: 'ágio', message: 'Ágio sobre patrimônio' },
+];
+
 /** A bank's return on equity is the core reading, so the ruler is stricter than the general one. */
 export const BANDS_ROE_FINANCIAL: readonly Band[] = [
   { from: null, to: 0.12, signal: 'warn', label: 'fraca', message: 'Rentabilidade fraca' },
@@ -97,6 +130,20 @@ export function assessRoe(roe: number | null, category: Category = 'evergreen'):
   return assessWith(category === 'financial' ? BANDS_ROE_FINANCIAL : BANDS_ROE, roe);
 }
 
+export function dividendYieldBands(isFund: boolean): readonly Band[] {
+  return isFund ? BANDS_DIVIDEND_YIELD_FII : BANDS_DIVIDEND_YIELD;
+}
+
+export function priceToBookBands(isFund: boolean): readonly Band[] {
+  return isFund ? BANDS_PRICE_TO_BOOK_FII : BANDS_PRICE_TO_BOOK;
+}
+
+/** Positive means the fund pays more than the risk-free rate; negative means it pays less. */
+export function cdiSpread(dividendYield: number | null, cdiAnnual: number | null): number | null {
+  if (dividendYield === null || cdiAnnual === null) return null;
+  return dividendYield - cdiAnnual;
+}
+
 /**
  * With EBITDA at zero or below the ratio has no reading — returns null instead of a
  * multiple with an inverted sign.
@@ -137,6 +184,10 @@ export const MESSAGES = {
   holdingDiscount: 'Desconto de holding (estrutural)',
   holdingNote:
     'Holding — cotação costuma embutir desconto sobre o valor das participações; P/VP baixo aqui é estrutural, não necessariamente barganha',
+  fiiNote:
+    'FII distribui ≥95% do resultado por obrigação legal — conferir no relatório gerencial a composição da distribuição (juros vs ganho de capital) e inadimplência da carteira',
+  cdiSpread: 'Compare o prêmio sobre o CDI, não o yield absoluto',
+  cdiMissing: 'Sem taxa CDI para comparar',
   inconclusive:
     'dados insuficientes ou distorcidos para diagnóstico automático — análise manual necessária',
 } as const;
@@ -279,6 +330,8 @@ export interface DiagnoseOptions {
   category?: Category;
   /** Leverage series, oldest to newest, when a history could be read. */
   leverageHistory?: readonly number[];
+  /** Annualized CDI as a fraction, for the fund's premium over the risk-free rate. */
+  cdiAnnual?: number;
 }
 
 /** Indicators that carry no meaning inside a real estate fund. */
@@ -287,6 +340,8 @@ const NOT_APPLICABLE_TO_FII = new Set(['payout', 'netDebtToEbitda', 'roe']);
 export function diagnose(f: Fundamentals, options: DiagnoseOptions = {}): Diagnosis {
   const kind = options.kind ?? 'stock';
   const category = options.category ?? 'evergreen';
+  // Either signal is enough: the sources may confirm the kind, or the sector may say fund.
+  const isFund = kind === 'fii' || category === 'fii';
   const ratio = resolveNetDebtToEbitda(f);
 
   const trend = options.leverageHistory
@@ -312,7 +367,7 @@ export function diagnose(f: Fundamentals, options: DiagnoseOptions = {}): Diagno
   const naFinancial: Assessment = { signal: 'na', message: MESSAGES.notApplicableFinancial };
 
   function overrideFor(key: string): Assessment | undefined {
-    if (kind === 'fii' && NOT_APPLICABLE_TO_FII.has(key)) return naFii;
+    if (isFund && NOT_APPLICABLE_TO_FII.has(key)) return naFii;
     if (category === 'financial' && key === 'netDebtToEbitda') return naFinancial;
     // A distorted bottom line poisons anything divided by profit, whatever the sector.
     if (distorted && (key === 'payout' || key === 'roe')) {
@@ -334,7 +389,7 @@ export function diagnose(f: Fundamentals, options: DiagnoseOptions = {}): Diagno
       label: 'Dividend Yield 12m',
       value: f.dividendYield12m,
       format: 'percent',
-      bands: BANDS_DIVIDEND_YIELD,
+      bands: dividendYieldBands(isFund),
       // A commodity-driven payout is not the stable income the band implies.
       ...(category === 'cyclical'
         ? {
@@ -368,7 +423,7 @@ export function diagnose(f: Fundamentals, options: DiagnoseOptions = {}): Diagno
       label: 'P/VP',
       value: f.priceToBook,
       format: 'multiple',
-      bands: BANDS_PRICE_TO_BOOK,
+      bands: priceToBookBands(isFund),
       // A holding trades below book by construction, so the discount is not a red flag.
       ...(category === 'holding'
         ? {
@@ -396,6 +451,20 @@ export function diagnose(f: Fundamentals, options: DiagnoseOptions = {}): Diagno
       bands: null,
     }),
   ];
+
+  // The premium over the risk-free rate is what makes a fund's yield comparable at all.
+  if (isFund) {
+    const spread = cdiSpread(f.dividendYield12m, options.cdiAnnual ?? null);
+    indicators.push({
+      key: 'dyVsCdi',
+      label: 'DY − CDI',
+      value: spread,
+      format: 'percent',
+      bands: null,
+      signal: null,
+      message: spread === null ? MESSAGES.cdiMissing : MESSAGES.cdiSpread,
+    });
+  }
 
   const counts: Record<Signal, number> = { ok: 0, warn: 0, bad: 0, na: 0, unrel: 0 };
   for (const i of indicators) {
@@ -437,5 +506,7 @@ export function diagnose(f: Fundamentals, options: DiagnoseOptions = {}): Diagno
 
 /** Remarks about the company itself, shown above the indicators. */
 export function categoryNotes(category: Category): string[] {
-  return category === 'holding' ? [MESSAGES.holdingNote] : [];
+  if (category === 'holding') return [MESSAGES.holdingNote];
+  if (category === 'fii') return [MESSAGES.fiiNote];
+  return [];
 }

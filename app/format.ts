@@ -23,11 +23,15 @@ export function formatValue(value: number | null, format: ValueFormat): string {
   }
 }
 
-/** Band bound: lean, no decimals that add nothing, empty when the band is unbounded. */
+/**
+ * Band bound: lean, no decimals that add nothing, empty when the band is unbounded. Two
+ * decimals are the floor, not a nicety — the fund P/B bounds are 0.85, 1.05 and 1.10, and
+ * rounding to one decimal printed two different bounds as the same "1,1".
+ */
 export function formatBound(bound: number | null, format: ValueFormat): string {
   if (bound === null) return '';
-  if (format === 'percent') return `${nf(0, 1).format(bound * 100)}%`;
-  return nf(0, 1).format(bound);
+  if (format === 'percent') return `${nf(0, 2).format(bound * 100)}%`;
+  return nf(0, 2).format(bound);
 }
 
 export const VERDICT_LABEL: Record<Verdict, string> = {

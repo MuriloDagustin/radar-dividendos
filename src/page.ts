@@ -148,9 +148,10 @@ function render(analysis) {
   const companyNotes = (analysis.notes ?? [])
     .map((n) => \`<div>\${esc(n)}</div>\`).join('');
 
-  const kindLabel = analysis.kind === 'fii'
+  const category = analysis.classification?.category;
+  const kindLabel = analysis.kind === 'fii' || category === 'fii'
     ? 'FII'
-    : 'ação · ' + (CATEGORY_NAME[analysis.classification?.category] ?? '');
+    : 'ação · ' + (CATEGORY_NAME[category] ?? '');
 
   const v = analysis.diagnosis.verdict;
   output.innerHTML = \`<div class="card">

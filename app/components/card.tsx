@@ -91,7 +91,7 @@ export function Card({ analysis }: { analysis: Analysis }) {
         ) : null}
         <Badge diagnosis={analysis.diagnosis} />
         <span className="tag" title={analysis.classification.rawSector ?? undefined}>
-          {analysis.kind === 'fii'
+          {analysis.kind === 'fii' || analysis.classification.category === 'fii'
             ? ASSET_KIND_NAME.fii
             : `${ASSET_KIND_NAME.stock} · ${CATEGORY_NAME[analysis.classification.category]}`}
         </span>

@@ -74,6 +74,7 @@ O rótulo entre colchetes é a procedência do número: qual fonte o entregou, e
 |---|---|---|
 | `BRAPI_TOKEN` | opcional | Token da brapi.dev, usado só para o preço intradiário. Sem ele o radar segue com as outras três fontes. Crie em <https://brapi.dev/dashboard>. |
 | `ANTHROPIC_API_KEY` | só com `--ai` | Sem ela a etapa de interpretação é ignorada em silêncio. |
+| `RADAR_CDI_ANUAL` | não | CDI anualizado em pontos percentuais (ex.: `13.9`). Só fallback: a série do Banco Central é a fonte primária e não pede token. |
 | `RADAR_CACHE_PATH` | não | Arquivo SQLite do cache. Padrão: `./radar-dividendos.sqlite`. |
 
 ## Rotas HTTP
@@ -110,6 +111,7 @@ existe em nenhuma fonte volta `null`** — nada é estimado.
 | `defaultKeyStatistics`, `financialData` | ❌ plano Pro (R$ 139,99/mês) |
 | `balanceSheetHistory`, `incomeStatementHistory` | ❌ plano Startup (R$ 119,99/mês) |
 | Mais de 1 ativo por requisição | ❌ plano Startup |
+| Taxa SELIC / inflação | ❌ plano Startup — o CDI vem do Banco Central |
 
 **Consequência prática:** a trajetória de alavancagem (que abranda `bad` para `warn` numa
 cíclica) precisa dos módulos de histórico. A lógica está implementada e testada, e a busca
@@ -204,12 +206,21 @@ fallback pro Setor/Subsetor do Fundamentus:
 | Categoria | O que muda |
 |---|---|
 | **financeiro** | Dívida líq./EBITDA vira `na` (alavancagem é a natureza do negócio, regulada por Basileia). ROE passa a ser o indicador central, com régua mais exigente: ≥ 18% forte, 12–18% ok, < 12% fraca. |
+| **FII** | Réguas próprias de DY e P/VP, indicador de prêmio sobre o CDI, e payout/dívida-EBITDA/ROE como `na`. Detalhes abaixo. |
 | **cíclica** | Payout e ROE viram `unrel` quando o lucro está distorcido. DY em faixa boa é rebaixado a alerta ("dividendo cíclico"). Dívida alta em desalavancagem por 2+ períodos vira `warn` em vez de `bad`. |
 | **holding** | P/VP < 0,8 é `ok` ("desconto de holding, estrutural") em vez de alerta, com nota fixa explicando por quê. |
 | **perene** | Regras gerais, sem mudança. |
 
 Holdings são checadas primeiro: o setor da Itaúsa diz "Financeiro", e julgá-la como banco
 aplicaria a régua de ROE errada. Além do subsetor, há uma lista manual de tickers.
+
+**Especificidade vence amplitude.** O subsetor decide antes da indústria, que decide antes do
+setor. Isso não é detalhe: a B3 arquiva shopping como *"Financeiro e Outros / Exploração de
+Imóveis"*, e casar o setor amplo primeiro entregaria a Iguatemi e a Multiplan à régua de ROE
+de banco. O texto mais estreito que casar com alguma regra é o que vale.
+
+Os setores perenes estão **nomeados na tabela**, não só no default. Sem isso toda elétrica,
+telecom e saneamento sairia marcada como "setor não reconhecido", e o aviso perderia sentido.
 
 Classificação que falha cai em `perene` e é sinalizada (`uncertain: true`), com nota no
 resultado. Ela não é o único guarda-corpo — veja o detector abaixo.
@@ -250,6 +261,46 @@ Ticker terminado em 3 ou 4 tem as classes irmãs consultadas na brapi; se outra 
 5x maior, entra a nota (`KLBN11 é a classe mais líquida deste emissor`). A spec pedia uma
 única chamada `/quote/T1,T2,T3`, mas o plano Gratuito aceita **1 ativo por requisição** —
 então tenta a combinada e cai para uma chamada por classe. Falha aí nunca quebra a análise.
+
+## FIIs: régua própria
+
+Um FII não é uma empresa com poucos indicadores — é outra classe de ativo, em outra escala.
+Um DY de 15% é ordinário num fundo e suspeito numa ação; um P/VP de 0,90 é desconto numa ação
+e está em linha num fundo.
+
+| Indicador | Faixas de FII |
+|---|---|
+| **DY 12m** | `< 6%` baixo p/ FII (warn) · `6–16%` faixa normal (ok) · `> 16%` muito acima do mercado — risco de crédito ou distribuição não recorrente (warn) |
+| **P/VP** | `< 0,85` descontada, investigar relatório gerencial (warn) · `0,85–1,05` em linha com patrimônio (ok) · `1,05–1,10` leve ágio (ok) · `> 1,10` ágio (warn) |
+| **DY − CDI** | informativo, sem faixa: o prêmio sobre a taxa livre de risco |
+| Payout, Dívida líq./EBITDA, ROE | `na` — não se aplicam |
+
+**Faixa 1,05–1,10 é minha, não sua.** A spec deu `0,85–1,05` para "em linha" e `> 1,1` para
+ágio, deixando 1,05–1,10 sem regra. Fechei o buraco com uma faixa própria de leve ágio, `ok`,
+que respeita os dois números que você escreveu. As invariantes de contiguidade da tabela
+travam isso por teste.
+
+### Prêmio sobre o CDI
+
+Yield absoluto de FII engana. MXRF11 rende 13,0% ao ano, o que soa ótimo — e o CDI está em
+13,90%, então o **prêmio é negativo**. É esse número que o indicador mostra.
+
+O CDI vem da **série 4389 do Banco Central** (API SGS, pública, sem token), com fallback para
+`RADAR_CDI_ANUAL`. A brapi também tem taxa SELIC, mas é plano Startup. A série 4389 é o CDI
+**anualizado**, não o acumulado dos últimos 12 meses — a interface rotula assim de propósito,
+porque comparar um DY trailing com uma taxa forward é uma aproximação, e ela fica à vista com
+data e fonte na nota do cartão.
+
+### Unit não é FII
+
+Todo FII termina em 11, mas nem todo 11 é FII: TAEE11, KLBN11, SAPR11, SANB11, BPAC11 e
+outros são *units* de empresa operacional. A detecção exige as três coisas juntas — ticker
+terminado em 11, setor imobiliário, e ausência da lista de exceções — e é precedida por um
+sinal mais forte: se algum scraper teve de usar a rota de fundo (`/fiis/`,
+`/fundos-imobiliarios/`), o próprio site já disse que é FII, e a heurística nem roda.
+
+SAPR11 é o caso que mostra por que a lista importa: a brapi não devolve setor para ele, então
+"termina em 11" sozinho seria um chute.
 
 ## Ações e FIIs
 
@@ -302,7 +353,7 @@ Uma fonte falhar não aborta a análise: a outra é usada e a falha fica registr
 npm test
 ```
 
-426 testes. Cobrem todas as faixas do motor de diagnóstico **e cada limite exato**
+530 testes. Cobrem todas as faixas do motor de diagnóstico **e cada limite exato**
 (`0.13`, `0.06`, `0.03`, `1.0`, `0.40`, `0.25`, `0`, `1.5`, `2.5`, `3.5`, `0.8`, `0.15`,
 `0.08`), os campos `null`, as invariantes da tabela de faixas (contígua, sem lacuna, cada
 limite numa faixa só), a matemática da agulha da régua, o parser do Fundamentus contra HTML
@@ -320,3 +371,7 @@ Regressões travadas por teste, com os números reais de 20/08/2026:
   prova que a regra antiga o chamava de frágil.
 - **ITSA4** (holding): P/VP de 0,68 não penaliza.
 - **Perene com lucro distorcido**: o detector dispara mesmo sem a categoria ajudar.
+- **CPTS11** (FII, DY 14,8%, P/VP 0,84): DY sai "faixa normal p/ FII" — a régua de ação o
+  chamaria de "alto demais"; P/VP sai warn de desconto — a régua de ação o chamaria de
+  razoável. Os dois contrastes estão travados por teste.
+- **TAEE11**: não cai em `fii` nem quando uma fonte rotula o setor dele como fundo.

@@ -1,4 +1,4 @@
-import type { Category, Classification, SectorInfo } from './types';
+import type { AssetKind, Category, Classification, SectorInfo } from './types';
 
 /**
  * Explicit lookup table, ordered by precedence. A company is matched by comparing its
@@ -16,6 +16,15 @@ export interface CategoryRule {
  * judging it as a bank would apply the wrong ROE ruler to what is really a portfolio.
  */
 export const CLASSIFICATION_TABLE: readonly CategoryRule[] = [
+  {
+    category: 'fii',
+    fragments: [
+      'fundosimobiliarios',
+      'fundoimobiliario',
+      'fundodeinvestimentoimobiliario',
+      'fiis',
+    ],
+  },
   {
     category: 'holding',
     fragments: [
@@ -39,8 +48,8 @@ export const CLASSIFICATION_TABLE: readonly CategoryRule[] = [
       'previdencia',
       'financeiroseoutros',
       'financeiro',
-      'exploracaodeimoveis',
       'gestaoderecursos',
+      'bolsadevalores',
     ],
   },
   {
@@ -71,6 +80,38 @@ export const CLASSIFICATION_TABLE: readonly CategoryRule[] = [
       'acoeoutrosmetais',
     ],
   },
+  /**
+   * Listed last and matched only after the others miss. Naming these explicitly is what
+   * keeps the "sector not recognized" warning meaningful: without them every utility and
+   * telecom would be flagged uncertain, and the flag would stop meaning anything.
+   */
+  {
+    category: 'evergreen',
+    fragments: [
+      'energiaeletrica',
+      'energia',
+      'utilidadepublica',
+      'aguaesaneamento',
+      'saneamento',
+      'agua',
+      'telecomunicacoes',
+      'telefonia',
+      'exploracaodeimoveis',
+      'shoppingcenters',
+      'shoppings',
+      'saude',
+      'medicamentos',
+      'comercio',
+      'consumociclico',
+      'consumonaociclico',
+      'alimentos',
+      'bebidas',
+      'transporte',
+      'educacao',
+      'seguridade',
+      'tecnologiadainformacao',
+    ],
+  },
 ];
 
 /** Tickers whose holding nature the sector text does not reveal. */
@@ -89,7 +130,36 @@ export const KNOWN_HOLDINGS: ReadonlySet<string> = new Set([
   'PSSA3',
 ]);
 
+/**
+ * Company units also end in 11, so the suffix alone cannot mean "fund". These are the ones
+ * that would otherwise be misread — a unit is a bundle of ordinary and preferred shares of
+ * an operating company, never a real estate fund.
+ */
+export const COMPANY_UNITS: ReadonlySet<string> = new Set([
+  'TAEE11',
+  'KLBN11',
+  'SAPR11',
+  'SANB11',
+  'BPAC11',
+  'ALUP11',
+  'ENGI11',
+  'IGTI11',
+  'SULA11',
+  'RNEW11',
+  'TIET11',
+  'PPLA11',
+  'MODL11',
+  'BIDI11',
+  'AZUL11',
+  'ENGI11',
+]);
+
 export const DEFAULT_CATEGORY: Category = 'evergreen';
+
+/** Only a paper ending in 11 can be a fund; every FII on the B3 is quoted that way. */
+export function looksLikeFundTicker(ticker: string): boolean {
+  return /^[A-Z]{4}11$/.test(ticker.toUpperCase());
+}
 
 function normalize(text: string): string {
   return text
@@ -107,14 +177,33 @@ function candidateTexts(sector: SectorInfo | null): string[] {
   );
 }
 
-export function categoryFor(ticker: string, sector: SectorInfo | null): Category | null {
-  if (KNOWN_HOLDINGS.has(ticker.toUpperCase())) return 'holding';
+/**
+ * `kind` is the strongest signal available: it comes from which route the scrapers had to
+ * use, so the site itself said whether the paper is a fund. The ticker-plus-sector heuristic
+ * below only runs when no source could tell.
+ */
+export function categoryFor(
+  ticker: string,
+  sector: SectorInfo | null,
+  kind?: AssetKind,
+): Category | null {
+  const upper = ticker.toUpperCase();
+
+  if (KNOWN_HOLDINGS.has(upper)) return 'holding';
+  if (kind === 'fii') return 'fii';
 
   const texts = candidateTexts(sector).map(normalize);
   if (texts.length === 0) return null;
 
-  for (const rule of CLASSIFICATION_TABLE) {
-    for (const text of texts) {
+  // Specificity outranks the rule order: a shopping operator files under "Financeiro e
+  // Outros / Exploração de Imóveis", and matching the broad sector first would hand it the
+  // bank ROE ruler. So the narrowest text that matches anything decides.
+  for (const text of texts) {
+    for (const rule of CLASSIFICATION_TABLE) {
+      // A fund needs the ticker shape too, and a company unit is never one.
+      if (rule.category === 'fii' && (!looksLikeFundTicker(upper) || COMPANY_UNITS.has(upper))) {
+        continue;
+      }
       if (rule.fragments.some((fragment) => text.includes(fragment))) return rule.category;
     }
   }
@@ -127,8 +216,12 @@ export function categoryFor(ticker: string, sector: SectorInfo | null): Category
  * distortion detector still runs, so a misclassification does not produce a false diagnosis
  * on its own.
  */
-export function classify(ticker: string, sector: SectorInfo | null): Classification {
-  const matched = categoryFor(ticker, sector);
+export function classify(
+  ticker: string,
+  sector: SectorInfo | null,
+  kind?: AssetKind,
+): Classification {
+  const matched = categoryFor(ticker, sector, kind);
   const raw = candidateTexts(sector);
 
   // Two sources often word the same thing identically; showing it twice reads like noise.

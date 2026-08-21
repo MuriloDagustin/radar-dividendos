@@ -11,6 +11,7 @@ import {
 import { interpret } from './ai';
 import { mergeReadings } from './merge';
 import { looksLikeTicker, normalizeTicker } from './numbers';
+import { fetchCdi } from './sources/bcb';
 import {
   fetchBrapi,
   fetchLeverageHistory,
@@ -159,23 +160,35 @@ export async function analyze(rawTicker: string, options: AnalyzeOptions = {}): 
     }
 
     const kind = resolveKind(readings);
-    const classification = classify(ticker, resolveSector(readings));
+    const classification = classify(ticker, resolveSector(readings), kind);
     const { fundamentals, provenance } = mergeReadings(readings);
+    const isFund = kind === 'fii' || classification.category === 'fii';
 
-    // Only a cyclical's verdict turns on the leverage trend, so only it pays for the call.
-    const leverageHistory =
+    // Each extra lookup only serves one category, so only that category pays for it.
+    const [leverageHistory, cdi] = await Promise.all([
       classification.category === 'cyclical'
-        ? await fetchLeverageHistory(ticker, token).catch(() => null)
-        : null;
+        ? fetchLeverageHistory(ticker, token).catch(() => null)
+        : Promise.resolve(null),
+      isFund ? fetchCdi().catch(() => null) : Promise.resolve(null),
+    ]);
 
     const diagnosis = diagnose(fundamentals, {
       kind,
       category: classification.category,
       ...(leverageHistory ? { leverageHistory } : {}),
+      ...(cdi ? { cdiAnnual: cdi.annual } : {}),
     });
 
     const notes = [
       ...categoryNotes(classification.category),
+      ...(cdi
+        ? [
+            `CDI anualizado ${(cdi.annual * 100).toLocaleString('pt-BR', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}% — ${cdi.source === 'bcb' ? `Banco Central${cdi.date ? `, ${cdi.date}` : ''}` : 'RADAR_CDI_ANUAL'}`,
+          ]
+        : []),
       ...(classification.uncertain
         ? ['Setor não reconhecido — avaliado com as faixas gerais; confira a classificação']
         : []),

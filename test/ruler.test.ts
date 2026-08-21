@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
-  BANDS_NET_DEBT_TO_EBITDA,
   BANDS_DIVIDEND_YIELD,
+  BANDS_DIVIDEND_YIELD_FII,
+  BANDS_NET_DEBT_TO_EBITDA,
+  BANDS_PRICE_TO_BOOK_FII,
   BANDS_ROE,
 } from '../src/diagnosis';
 import { bandIndex, positionInBand } from '../app/components/ruler';
@@ -99,5 +101,35 @@ describe('formatBound', () => {
 
   it('an open band prints no bound', () => {
     expect(formatBound(null, 'multiple')).toBe('');
+  });
+});
+
+describe('formatBound precision', () => {
+  it('keeps the fund P/B bounds distinguishable', () => {
+    // One decimal printed 1.05 and 1.10 as the same "1,1".
+    const bounds = [0.85, 1.05, 1.1].map((b) => formatBound(b, 'multiple'));
+    expect(bounds).toEqual(['0,85', '1,05', '1,1']);
+    expect(new Set(bounds).size).toBe(3);
+  });
+
+  it('still prints the stock bounds without noise', () => {
+    expect([0, 1.5, 2.5, 3.5].map((b) => formatBound(b, 'multiple'))).toEqual([
+      '0',
+      '1,5',
+      '2,5',
+      '3,5',
+    ]);
+  });
+
+  it('every bound of every table renders as its own text', () => {
+    for (const [name, bands] of [
+      ['DY fii', BANDS_DIVIDEND_YIELD_FII],
+      ['P/B fii', BANDS_PRICE_TO_BOOK_FII],
+    ] as const) {
+      const printed = bands
+        .slice(0, -1)
+        .map((b) => formatBound(b.to, b === bands[0] && name.startsWith('DY') ? 'percent' : 'multiple'));
+      expect(new Set(printed).size, name).toBe(printed.length);
+    }
   });
 });

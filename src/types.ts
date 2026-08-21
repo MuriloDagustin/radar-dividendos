@@ -65,12 +65,13 @@ export const CONCLUSIVE_SIGNALS = ['ok', 'warn', 'bad'] as const;
  */
 export type Verdict = 'solid' | 'attention' | 'fragile' | 'indeterminate' | 'inconclusive';
 
-export type Category = 'financial' | 'cyclical' | 'holding' | 'evergreen';
+export type Category = 'financial' | 'cyclical' | 'holding' | 'fii' | 'evergreen';
 
 export const CATEGORY_NAME: Record<Category, string> = {
   financial: 'financeiro',
   cyclical: 'cíclica',
   holding: 'holding',
+  fii: 'FII',
   evergreen: 'perene',
 };
 
