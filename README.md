@@ -297,6 +297,13 @@ entra na régua como um **tique vazado**, deliberadamente mais discreto que a ag
 "o papel é bom ou o setor todo é assim?". O DY da TAEE11 é 8,0% contra 3,0% do setor; o ROE é
 20,1% contra 11,9%.
 
+### A mediana é a do setor amplo, de propósito
+
+O Investidor10 publica três escopos: setor, subsetor e segmento. O radar mostra o **setor**,
+mesmo tendo os mais específicos. Motivo concreto: para a Klabin o site publica DY "mediano"
+de **23,06% no subsetor e 34,25% no segmento** — agregados de duas ou três empresas viram
+ruído, não contexto. O setor diz 2,66%, que é crível. O rótulo sempre nomeia o escopo usado.
+
 ### Painel de contexto
 
 ROIC, margens, liquidez corrente, dívida/patrimônio, CAGR de receita e posição na faixa de 52
@@ -394,6 +401,26 @@ Falha explícita em vez de dado errado. Códigos no JSON e nas mensagens:
 
 Uma fonte falhar não aborta a análise: a outra é usada e a falha fica registrada em
 `fontesConsultadas`, visível no relatório, no JSON e na página.
+
+## Linguagem das mensagens
+
+As mensagens dizem **o que o número significa e o que ele implica**, não o nome contábil do
+conceito. O rótulo curto da banda carrega o atalho (fica na régua, tem pouco espaço); a linha
+completa explica.
+
+Antes e depois:
+
+| Antes | Depois |
+|---|---|
+| `Distribuição muito acima do FFO — não sustentada pelo resultado recorrente` | `Paga muito mais do que arrecada de aluguel e juros — a diferença vem de venda de imóvel ou do caixa, e esse nível de pagamento não se mantém` |
+| `alavancagem é a natureza do negócio, regulada por Basileia` | `Banco e seguradora vivem de captar e emprestar dinheiro, então dívida grande é o normal do negócio — quem controla esse limite é o Banco Central` |
+| `Atenção (covenants)` | `Dívida alta — nesse nível os contratos de empréstimo começam a apertar` |
+| `Caixa líquido` | `Tem mais dinheiro em caixa do que dívida` |
+| `payout sobre lucro não é confiável; verificar política de dividendos, geralmente baseada em EBITDA ou FCL` | `dividir o dividendo por ele não diz nada. Veja no relatório da empresa qual base ela usa para pagar — normalmente a geração de caixa` |
+
+Termos que ficaram: os **nomes dos indicadores** (P/VP, DY, ROE, payout) são como o mercado
+brasileiro os chama e trocá-los atrapalharia mais que ajudaria. JCP aparece, mas com a
+consequência dita na mesma linha: *"já sai com 15% de imposto retido"*.
 
 ## Testes
 

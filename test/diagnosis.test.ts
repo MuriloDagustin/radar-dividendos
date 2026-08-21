@@ -16,16 +16,16 @@ import { emptyFundamentals, type Fundamentals } from '../src/types';
 
 describe('assessDividendYield', () => {
   it.each([
-    [0.5, 'warn', 'Alto demais — investigar'],
-    [0.1301, 'warn', 'Alto demais — investigar'],
+    [0.5, 'warn', 'Rende alto demais para ser normal — entenda por quê antes de comprar'],
+    [0.1301, 'warn', 'Rende alto demais para ser normal — entenda por quê antes de comprar'],
     [0.13, 'ok', 'Faixa boa'],
     [0.1, 'ok', 'Faixa boa'],
     [0.06, 'ok', 'Faixa boa'],
     [0.0599, 'warn', 'Moderado'],
     [0.045, 'warn', 'Moderado'],
     [0.03, 'warn', 'Moderado'],
-    [0.0299, 'bad', 'Baixo p/ carteira de renda'],
-    [0, 'bad', 'Baixo p/ carteira de renda'],
+    [0.0299, 'bad', 'Rende pouco para quem busca renda'],
+    [0, 'bad', 'Rende pouco para quem busca renda'],
   ])('dy %s -> %s', (dy, signal, message) => {
     expect(assessDividendYield(dy)).toEqual({ signal, message });
   });
@@ -37,16 +37,16 @@ describe('assessDividendYield', () => {
 
 describe('assessPayout', () => {
   it.each([
-    [1.5, 'bad', 'Acima de 100% — insustentável'],
-    [1.0001, 'bad', 'Acima de 100% — insustentável'],
+    [1.5, 'bad', 'Paga mais do que lucra — não dá para manter assim'],
+    [1.0001, 'bad', 'Paga mais do que lucra — não dá para manter assim'],
     [1.0, 'ok', 'Saudável'],
     [0.7, 'ok', 'Saudável'],
     [0.4, 'ok', 'Saudável'],
-    [0.3999, 'warn', 'Baixo — reinvestindo'],
-    [0.3, 'warn', 'Baixo — reinvestindo'],
-    [0.25, 'warn', 'Baixo — reinvestindo'],
-    [0.2499, 'warn', 'Abaixo do mínimo usual'],
-    [0, 'warn', 'Abaixo do mínimo usual'],
+    [0.3999, 'warn', 'Paga pouco e guarda o resto para reinvestir'],
+    [0.3, 'warn', 'Paga pouco e guarda o resto para reinvestir'],
+    [0.25, 'warn', 'Paga pouco e guarda o resto para reinvestir'],
+    [0.2499, 'warn', 'Paga menos que o usual para uma empresa de dividendos'],
+    [0, 'warn', 'Paga menos que o usual para uma empresa de dividendos'],
   ])('payout %s -> %s', (payout, signal, message) => {
     expect(assessPayout(payout)).toEqual({ signal, message });
   });
@@ -104,19 +104,19 @@ describe('resolveNetDebtToEbitda', () => {
 
 describe('assessNetDebtToEbitda', () => {
   it.each([
-    [-3, 'ok', 'Caixa líquido'],
-    [-0.0001, 'ok', 'Caixa líquido'],
-    [0, 'ok', 'Confortável'],
-    [1, 'ok', 'Confortável'],
-    [1.5, 'ok', 'Confortável'],
-    [1.5001, 'ok', 'Normal'],
-    [2, 'ok', 'Normal'],
-    [2.5, 'ok', 'Normal'],
-    [2.5001, 'warn', 'Atenção (covenants)'],
-    [3, 'warn', 'Atenção (covenants)'],
-    [3.5, 'warn', 'Atenção (covenants)'],
-    [3.5001, 'bad', 'Alavancagem alta'],
-    [8, 'bad', 'Alavancagem alta'],
+    [-3, 'ok', 'Tem mais dinheiro em caixa do que dívida'],
+    [-0.0001, 'ok', 'Tem mais dinheiro em caixa do que dívida'],
+    [0, 'ok', 'Dívida pequena para o tamanho do lucro operacional'],
+    [1, 'ok', 'Dívida pequena para o tamanho do lucro operacional'],
+    [1.5, 'ok', 'Dívida pequena para o tamanho do lucro operacional'],
+    [1.5001, 'ok', 'Dívida dentro do usual para o tamanho do lucro operacional'],
+    [2, 'ok', 'Dívida dentro do usual para o tamanho do lucro operacional'],
+    [2.5, 'ok', 'Dívida dentro do usual para o tamanho do lucro operacional'],
+    [2.5001, 'warn', 'Dívida alta — nesse nível os contratos de empréstimo começam a apertar'],
+    [3, 'warn', 'Dívida alta — nesse nível os contratos de empréstimo começam a apertar'],
+    [3.5, 'warn', 'Dívida alta — nesse nível os contratos de empréstimo começam a apertar'],
+    [3.5001, 'bad', 'Dívida alta demais para o lucro que a empresa gera'],
+    [8, 'bad', 'Dívida alta demais para o lucro que a empresa gera'],
   ])('ratio %s -> %s', (ratio, signal, message) => {
     expect(assessNetDebtToEbitda(ratio)).toEqual({ signal, message });
   });
@@ -128,13 +128,13 @@ describe('assessNetDebtToEbitda', () => {
 
 describe('assessPriceToBook', () => {
   it.each([
-    [0.3, 'warn', 'Descontada — entender por quê'],
-    [0.7999, 'warn', 'Descontada — entender por quê'],
-    [0.8, 'ok', 'Faixa razoável'],
-    [1.6, 'ok', 'Faixa razoável'],
-    [2.5, 'ok', 'Faixa razoável'],
-    [2.5001, 'warn', 'Preço esticado'],
-    [10, 'warn', 'Preço esticado'],
+    [0.3, 'warn', 'Custa menos que o patrimônio — vale entender por quê'],
+    [0.7999, 'warn', 'Custa menos que o patrimônio — vale entender por quê'],
+    [0.8, 'ok', 'Preço razoável em relação ao patrimônio'],
+    [1.6, 'ok', 'Preço razoável em relação ao patrimônio'],
+    [2.5, 'ok', 'Preço razoável em relação ao patrimônio'],
+    [2.5001, 'warn', 'Custa bem mais que o patrimônio'],
+    [10, 'warn', 'Custa bem mais que o patrimônio'],
   ])('P/B %s -> %s', (pb, signal, message) => {
     expect(assessPriceToBook(pb)).toEqual({ signal, message });
   });
@@ -312,14 +312,14 @@ describe('diagnose', () => {
     const d = diagnose(withFundamentals({ netDebt: 10_413_700_000, netDebtToEbitda: 3.48 }));
     const ratio = d.indicators.find((i) => i.key === 'netDebtToEbitda');
     expect(ratio?.value).toBe(3.48);
-    expect(ratio).toMatchObject({ signal: 'warn', message: 'Atenção (covenants)' });
+    expect(ratio).toMatchObject({ signal: 'warn', message: 'Dívida alta — nesse nível os contratos de empréstimo começam a apertar' });
   });
 
   it('derives the ratio only in the absence of a published one', () => {
     const d = diagnose(withFundamentals({ netDebt: 10_413_700_000, ebitda: 2_523_782_608 }));
     const ratio = d.indicators.find((i) => i.key === 'netDebtToEbitda');
     expect(ratio?.value).toBeCloseTo(4.126, 3);
-    expect(ratio).toMatchObject({ signal: 'bad', message: 'Alavancagem alta' });
+    expect(ratio).toMatchObject({ signal: 'bad', message: 'Dívida alta demais para o lucro que a empresa gera' });
     expect(d.verdict).toBe('fragile');
   });
 

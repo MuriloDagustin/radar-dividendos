@@ -167,7 +167,7 @@ describe('analyze', () => {
 
     const ratio = analysis.diagnosis.indicators.find((i) => i.key === 'netDebtToEbitda');
     expect(ratio?.value).toBe(3.48);
-    expect(ratio).toMatchObject({ signal: 'warn', message: 'Atenção (covenants)' });
+    expect(ratio).toMatchObject({ signal: 'warn', message: 'Dívida alta — nesse nível os contratos de empréstimo começam a apertar' });
   });
 
   it('a source that is down does not take the others with it', async () => {

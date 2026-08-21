@@ -115,7 +115,7 @@ describe('page render', () => {
     expect(output.innerHTML).toContain('Dividend Yield 12m');
     expect(output.innerHTML).toContain('8,1%');
     expect(output.innerHTML).toContain('R$ 37,17');
-    expect(output.innerHTML).toContain('Alavancagem alta');
+    expect(output.innerHTML).toContain('Dívida alta demais para o lucro que a empresa gera');
   });
 
   it('shows every field provenance, derived and computed included', () => {

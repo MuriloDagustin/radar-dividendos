@@ -74,7 +74,7 @@ describe('leverageTrend', () => {
 });
 
 describe('applyLeverageTrend', () => {
-  const highLeverage = { signal: 'bad' as const, message: 'Alavancagem alta' };
+  const highLeverage = { signal: 'bad' as const, message: 'Dívida alta demais para o lucro que a empresa gera' };
 
   it('softens a bad reading when the debt is coming down', () => {
     expect(applyLeverageTrend(highLeverage, 'falling')).toEqual({
@@ -96,7 +96,7 @@ describe('applyLeverageTrend', () => {
   });
 
   it('never touches a reading that was not bad', () => {
-    const comfortable = { signal: 'ok' as const, message: 'Confortável' };
+    const comfortable = { signal: 'ok' as const, message: 'Dívida pequena para o tamanho do lucro operacional' };
     expect(applyLeverageTrend(comfortable, 'rising')).toEqual(comfortable);
     expect(applyLeverageTrend(null, 'falling')).toBeNull();
   });
@@ -186,7 +186,7 @@ describe('cyclical category', () => {
     });
     expect(pick(low.indicators, 'dividendYield12m')).toMatchObject({
       signal: 'bad',
-      message: 'Baixo p/ carteira de renda',
+      message: 'Rende pouco para quem busca renda',
     });
 
     const moderate = diagnose(withFundamentals({ ...SOUND_CYCLICAL, dividendYield12m: 0.04 }), {
@@ -230,7 +230,7 @@ describe('cyclical category', () => {
     });
     expect(pick(d.indicators, 'netDebtToEbitda')).toMatchObject({
       signal: 'bad',
-      message: 'Alavancagem alta',
+      message: 'Dívida alta demais para o lucro que a empresa gera',
     });
   });
 
@@ -241,7 +241,7 @@ describe('cyclical category', () => {
     });
     expect(pick(d.indicators, 'netDebtToEbitda')).toMatchObject({
       signal: 'warn',
-      message: 'Atenção (covenants)',
+      message: 'Dívida alta — nesse nível os contratos de empréstimo começam a apertar',
     });
   });
 
@@ -283,7 +283,7 @@ describe('holding category', () => {
     const d = diagnose(withFundamentals(HOLDING), { category: 'evergreen' });
     expect(pick(d.indicators, 'priceToBook')).toMatchObject({
       signal: 'warn',
-      message: 'Descontada — entender por quê',
+      message: 'Custa menos que o patrimônio — vale entender por quê',
     });
   });
 
@@ -293,7 +293,7 @@ describe('holding category', () => {
     });
     expect(pick(d.indicators, 'priceToBook')).toMatchObject({
       signal: 'ok',
-      message: 'Faixa razoável',
+      message: 'Preço razoável em relação ao patrimônio',
     });
   });
 
@@ -303,7 +303,7 @@ describe('holding category', () => {
     });
     expect(pick(d.indicators, 'priceToBook')).toMatchObject({
       signal: 'warn',
-      message: 'Preço esticado',
+      message: 'Custa bem mais que o patrimônio',
     });
   });
 

@@ -31,8 +31,8 @@ describe('buildPrompt', () => {
 
   it('hands over value and diagnosis for every indicator', () => {
     expect(prompt).toContain('Dividend Yield 12m: 8,1% — Faixa boa (ok)');
-    expect(prompt).toContain('Dívida líq./EBITDA: 4,13 — Alavancagem alta (bad)');
-    expect(prompt).toContain('P/VP: 1,59 — Faixa razoável (ok)');
+    expect(prompt).toContain('Dívida líq./EBITDA: 4,13 — Dívida alta demais');
+    expect(prompt).toContain('P/VP: 1,59 — Preço razoável em relação ao patrimônio (ok)');
   });
 
   it('marks an absent field as no-data instead of dropping the line', () => {

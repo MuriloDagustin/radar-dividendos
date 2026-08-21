@@ -6,7 +6,7 @@ import {
   BANDS_PRICE_TO_BOOK_FII,
   BANDS_ROE,
 } from '../src/diagnosis';
-import { bandIndex, positionInBand } from '../app/components/ruler';
+import { bandIndex, peerValueFor, positionInBand } from '../app/components/ruler';
 import { formatBound, formatValue } from '../app/format';
 
 const DY_EXTENT = { below: 0, above: 0.25 };
@@ -131,5 +131,23 @@ describe('formatBound precision', () => {
         .map((b) => formatBound(b.to, b === bands[0] && name.startsWith('DY') ? 'percent' : 'multiple'));
       expect(new Set(printed).size, name).toBe(printed.length);
     }
+  });
+});
+
+describe('peer scope preference', () => {
+  it('the broad sector is preferred over the narrower aggregates', () => {
+    // Investidor10 publishes a 23% dividend-yield "median" for Klabin's subsector, over a
+    // handful of companies. Showing the narrower number would ship noise as context.
+    const peers = { sector: 0.0266, subsector: 0.2306, segment: 0.3425 };
+    expect(peerValueFor(peers)).toBeCloseTo(0.0266, 6);
+  });
+
+  it('falls back to the subsector only when no sector median came', () => {
+    expect(peerValueFor({ subsector: 0.03 })).toBeCloseTo(0.03, 6);
+  });
+
+  it('is null with nothing published', () => {
+    expect(peerValueFor({})).toBeNull();
+    expect(peerValueFor(undefined)).toBeNull();
   });
 });

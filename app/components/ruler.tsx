@@ -44,6 +44,15 @@ export function positionInBand(
   return Math.min(0.92, Math.max(0.08, raw));
 }
 
+/**
+ * Which peer median to show. Broad sector first on purpose: a subsector can hold two or
+ * three companies, and Investidor10 publishes a 23% dividend-yield "median" for Klabin's —
+ * that is noise, not context.
+ */
+export function peerValueFor(peers: PeerContext | undefined): number | null {
+  return peers?.sector ?? peers?.subsector ?? null;
+}
+
 export function bandIndex(bands: readonly Band[], value: number): number {
   return bands.findIndex(
     (b) =>
@@ -95,8 +104,7 @@ export function Ruler({ indicatorKey, bands, value, format, signal, emptyLabel, 
     '--count': bands.length,
   } as CSSProperties;
 
-  // The sector median, so the reader can tell a good paper from a good sector.
-  const peerValue = peers?.subsector ?? peers?.sector ?? null;
+  const peerValue = peerValueFor(peers);
   const peerPosition = peerValue === null ? null : positionOnRuler(bands, peerValue, extent);
 
   return (

@@ -31,14 +31,14 @@ function pick(indicators: Indicator[], key: string): Indicator {
 
 describe('BANDS_DIVIDEND_YIELD_FII', () => {
   it.each([
-    [0.02, 'warn', 'Baixo p/ FII'],
-    [0.0599, 'warn', 'Baixo p/ FII'],
-    [0.06, 'ok', 'Faixa normal p/ FII'],
-    [0.1, 'ok', 'Faixa normal p/ FII'],
-    [0.148, 'ok', 'Faixa normal p/ FII'],
-    [0.16, 'ok', 'Faixa normal p/ FII'],
-    [0.1601, 'warn', 'Muito acima do mercado — risco de crédito ou distribuição não recorrente'],
-    [0.3, 'warn', 'Muito acima do mercado — risco de crédito ou distribuição não recorrente'],
+    [0.02, 'warn', 'Rende pouco para um fundo imobiliário'],
+    [0.0599, 'warn', 'Rende pouco para um fundo imobiliário'],
+    [0.06, 'ok', 'Rende dentro do normal para fundo imobiliário'],
+    [0.1, 'ok', 'Rende dentro do normal para fundo imobiliário'],
+    [0.148, 'ok', 'Rende dentro do normal para fundo imobiliário'],
+    [0.16, 'ok', 'Rende dentro do normal para fundo imobiliário'],
+    [0.1601, 'warn', 'Rende bem acima dos outros fundos — costuma indicar risco de não receber, ou um pagamento que não se repete'],
+    [0.3, 'warn', 'Rende bem acima dos outros fundos — costuma indicar risco de não receber, ou um pagamento que não se repete'],
   ])('dy %s -> %s', (dy, signal, message) => {
     expect(bandFor(BANDS_DIVIDEND_YIELD_FII, dy)).toMatchObject({ signal, message });
   });
@@ -49,7 +49,7 @@ describe('BANDS_DIVIDEND_YIELD_FII', () => {
     expect(bandFor(BANDS_DIVIDEND_YIELD, 0.148)?.signal).toBe('warn');
     // And 7% is good on a stock but merely normal on a fund.
     expect(bandFor(BANDS_DIVIDEND_YIELD, 0.07)?.message).toBe('Faixa boa');
-    expect(bandFor(BANDS_DIVIDEND_YIELD_FII, 0.07)?.message).toBe('Faixa normal p/ FII');
+    expect(bandFor(BANDS_DIVIDEND_YIELD_FII, 0.07)?.message).toBe('Rende dentro do normal para fundo imobiliário');
   });
 
   it('a thin fund yield warns instead of being called critical', () => {
@@ -168,9 +168,9 @@ describe('the fixed fund note', () => {
   it('explains the legal distribution floor and what to check', () => {
     const notes = categoryNotes('fii');
     expect(notes).toHaveLength(1);
-    expect(notes[0]).toContain('≥95%');
+    expect(notes[0]).toContain('95%');
     expect(notes[0]).toContain('relatório gerencial');
-    expect(notes[0]).toContain('inadimplência');
+    expect(notes[0]).toContain('atrasando');
   });
 
   it('is not attached to any other category', () => {
@@ -285,21 +285,21 @@ describe('CPTS11 regression', () => {
   it('a 14.8% yield is normal for a fund, not "too high"', () => {
     const dy = pick(diagnosis.indicators, 'dividendYield12m');
     expect(dy.signal).toBe('ok');
-    expect(dy.message).toBe('Faixa normal p/ FII');
+    expect(dy.message).toBe('Rende dentro do normal para fundo imobiliário');
   });
 
   it('the stock ruler would have called the same yield too high', () => {
     const asStock = diagnose(CPTS, { category: 'evergreen' });
     expect(pick(asStock.indicators, 'dividendYield12m')).toMatchObject({
       signal: 'warn',
-      message: 'Alto demais — investigar',
+      message: 'Rende alto demais para ser normal — entenda por quê antes de comprar',
     });
   });
 
   it('a 0.84 price to book is the fund discount warning', () => {
     const pb = pick(diagnosis.indicators, 'priceToBook');
     expect(pb.signal).toBe('warn');
-    expect(pb.message).toContain('Descontada');
+    expect(pb.message).toContain('Vale menos que o patrimônio');
     expect(pb.message).toContain('relatório gerencial');
   });
 
@@ -307,7 +307,7 @@ describe('CPTS11 regression', () => {
     const asStock = diagnose(CPTS, { category: 'evergreen' });
     expect(pick(asStock.indicators, 'priceToBook')).toMatchObject({
       signal: 'ok',
-      message: 'Faixa razoável',
+      message: 'Preço razoável em relação ao patrimônio',
     });
   });
 

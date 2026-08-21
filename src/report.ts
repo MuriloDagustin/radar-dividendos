@@ -71,9 +71,13 @@ function pad(text: string, target: number, side: 'left' | 'right' = 'left'): str
   return side === 'left' ? text + ' '.repeat(missing) : ' '.repeat(missing) + text;
 }
 
-/** The sector median, so a good number can be told apart from a good sector. */
+/**
+ * The sector median, so a good number can be told apart from a good sector. Broad sector
+ * first: a subsector median over two or three companies is noise, and the label has to name
+ * the scope it actually used.
+ */
 function peerMark(indicator: Indicator): string {
-  const peer = indicator.peers?.subsector ?? indicator.peers?.sector;
+  const peer = indicator.peers?.sector ?? indicator.peers?.subsector;
   if (peer === undefined) return '';
   return pc.dim(` (setor ${formatIndicatorValue({ ...indicator, value: peer })})`);
 }

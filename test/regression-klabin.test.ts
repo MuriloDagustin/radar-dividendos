@@ -76,7 +76,7 @@ describe('KLBN11 regression: a 234% payout must not read as insustentável', () 
     const blind = diagnose({ ...KLABIN, priceEarnings: 8 }, { category: 'evergreen' });
     expect(pick(blind.indicators, 'payout')).toMatchObject({
       signal: 'bad',
-      message: 'Acima de 100% — insustentável',
+      message: 'Paga mais do que lucra — não dá para manter assim',
     });
   });
 });
@@ -164,7 +164,7 @@ describe('ITUB4 regression: a bank is judged without leverage', () => {
   it('net debt/EBITDA is not applicable and carries the reason', () => {
     const leverage = pick(diagnosis.indicators, 'netDebtToEbitda');
     expect(leverage.signal).toBe('na');
-    expect(leverage.message).toContain('Basileia');
+    expect(leverage.message).toContain('Banco Central');
     expect(leverage.value).toBeNull();
   });
 
@@ -242,6 +242,6 @@ describe('KLBN11 wording', () => {
   });
 
   it('the payout row names the alternative basis to check', () => {
-    expect(pick(diagnosis.indicators, 'payout').message).toContain('EBITDA ou FCL');
+    expect(pick(diagnosis.indicators, 'payout').message).toContain('geração de caixa');
   });
 });

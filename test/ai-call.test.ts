@@ -77,7 +77,7 @@ describe('interpret against a mocked API', () => {
     const body = JSON.parse(String(spy.mock.calls[0]?.[1]?.body));
     expect(body.model).toBe('claude-sonnet-4-6');
     expect(body.system).toMatch(/NUNCA fornece, corrige, completa ou estima números/);
-    expect(body.messages[0].content).toContain('Dívida líq./EBITDA: 4,13 — Alavancagem alta');
+    expect(body.messages[0].content).toContain('Dívida líq./EBITDA: 4,13 — Dívida alta demais');
     expect(body.output_config.format).toBeDefined();
   });
 

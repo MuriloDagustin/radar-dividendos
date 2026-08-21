@@ -25,31 +25,31 @@ import type {
  */
 
 export const BANDS_DIVIDEND_YIELD: readonly Band[] = [
-  { from: null, to: 0.03, signal: 'bad', label: 'baixo', message: 'Baixo p/ carteira de renda' },
+  { from: null, to: 0.03, signal: 'bad', label: 'baixo', message: 'Rende pouco para quem busca renda' },
   { from: 0.03, to: 0.06, signal: 'warn', label: 'moderado', message: 'Moderado' },
   { from: 0.06, to: 0.13, toInclusive: true, signal: 'ok', label: 'faixa boa', message: 'Faixa boa' },
-  { from: 0.13, to: null, signal: 'warn', label: 'alto demais', message: 'Alto demais — investigar' },
+  { from: 0.13, to: null, signal: 'warn', label: 'alto demais', message: 'Rende alto demais para ser normal — entenda por quê antes de comprar' },
 ];
 
 export const BANDS_PAYOUT: readonly Band[] = [
-  { from: null, to: 0.25, signal: 'warn', label: 'abaixo do usual', message: 'Abaixo do mínimo usual' },
-  { from: 0.25, to: 0.4, signal: 'warn', label: 'reinvestindo', message: 'Baixo — reinvestindo' },
+  { from: null, to: 0.25, signal: 'warn', label: 'abaixo do usual', message: 'Paga menos que o usual para uma empresa de dividendos' },
+  { from: 0.25, to: 0.4, signal: 'warn', label: 'reinvestindo', message: 'Paga pouco e guarda o resto para reinvestir' },
   { from: 0.4, to: 1, toInclusive: true, signal: 'ok', label: 'saudável', message: 'Saudável' },
-  { from: 1, to: null, signal: 'bad', label: 'insustentável', message: 'Acima de 100% — insustentável' },
+  { from: 1, to: null, signal: 'bad', label: 'insustentável', message: 'Paga mais do que lucra — não dá para manter assim' },
 ];
 
 export const BANDS_NET_DEBT_TO_EBITDA: readonly Band[] = [
-  { from: null, to: 0, signal: 'ok', label: 'caixa líquido', message: 'Caixa líquido' },
-  { from: 0, to: 1.5, toInclusive: true, signal: 'ok', label: 'confortável', message: 'Confortável' },
-  { from: 1.5, to: 2.5, toInclusive: true, signal: 'ok', label: 'normal', message: 'Normal' },
-  { from: 2.5, to: 3.5, toInclusive: true, signal: 'warn', label: 'atenção', message: 'Atenção (covenants)' },
-  { from: 3.5, to: null, signal: 'bad', label: 'alavancada', message: 'Alavancagem alta' },
+  { from: null, to: 0, signal: 'ok', label: 'caixa líquido', message: 'Tem mais dinheiro em caixa do que dívida' },
+  { from: 0, to: 1.5, toInclusive: true, signal: 'ok', label: 'confortável', message: 'Dívida pequena para o tamanho do lucro operacional' },
+  { from: 1.5, to: 2.5, toInclusive: true, signal: 'ok', label: 'normal', message: 'Dívida dentro do usual para o tamanho do lucro operacional' },
+  { from: 2.5, to: 3.5, toInclusive: true, signal: 'warn', label: 'atenção', message: 'Dívida alta — nesse nível os contratos de empréstimo começam a apertar' },
+  { from: 3.5, to: null, signal: 'bad', label: 'alavancada', message: 'Dívida alta demais para o lucro que a empresa gera' },
 ];
 
 export const BANDS_PRICE_TO_BOOK: readonly Band[] = [
-  { from: null, to: 0.8, signal: 'warn', label: 'descontada', message: 'Descontada — entender por quê' },
-  { from: 0.8, to: 2.5, toInclusive: true, signal: 'ok', label: 'razoável', message: 'Faixa razoável' },
-  { from: 2.5, to: null, signal: 'warn', label: 'esticada', message: 'Preço esticado' },
+  { from: null, to: 0.8, signal: 'warn', label: 'descontada', message: 'Custa menos que o patrimônio — vale entender por quê' },
+  { from: 0.8, to: 2.5, toInclusive: true, signal: 'ok', label: 'razoável', message: 'Preço razoável em relação ao patrimônio' },
+  { from: 2.5, to: null, signal: 'warn', label: 'esticada', message: 'Custa bem mais que o patrimônio' },
 ];
 
 export const BANDS_ROE: readonly Band[] = [
@@ -63,14 +63,14 @@ export const BANDS_ROE: readonly Band[] = [
  * is ordinary, where the same numbers would read as good and suspicious on a stock.
  */
 export const BANDS_DIVIDEND_YIELD_FII: readonly Band[] = [
-  { from: null, to: 0.06, signal: 'warn', label: 'baixo', message: 'Baixo p/ FII' },
-  { from: 0.06, to: 0.16, toInclusive: true, signal: 'ok', label: 'faixa normal', message: 'Faixa normal p/ FII' },
+  { from: null, to: 0.06, signal: 'warn', label: 'baixo', message: 'Rende pouco para um fundo imobiliário' },
+  { from: 0.06, to: 0.16, toInclusive: true, signal: 'ok', label: 'faixa normal', message: 'Rende dentro do normal para fundo imobiliário' },
   {
     from: 0.16,
     to: null,
     signal: 'warn',
     label: 'acima do mercado',
-    message: 'Muito acima do mercado — risco de crédito ou distribuição não recorrente',
+    message: 'Rende bem acima dos outros fundos — costuma indicar risco de não receber, ou um pagamento que não se repete',
   },
 ];
 
@@ -84,11 +84,11 @@ export const BANDS_PRICE_TO_BOOK_FII: readonly Band[] = [
     to: 0.85,
     signal: 'warn',
     label: 'descontada',
-    message: 'Descontada — mercado precificando risco, investigar relatório gerencial',
+    message: 'Vale menos que o patrimônio do fundo — o mercado está vendo algum risco; procure o motivo no relatório gerencial',
   },
-  { from: 0.85, to: 1.05, toInclusive: true, signal: 'ok', label: 'em linha', message: 'Em linha com patrimônio' },
-  { from: 1.05, to: 1.1, toInclusive: true, signal: 'ok', label: 'leve ágio', message: 'Leve ágio sobre patrimônio' },
-  { from: 1.1, to: null, signal: 'warn', label: 'ágio', message: 'Ágio sobre patrimônio' },
+  { from: 0.85, to: 1.05, toInclusive: true, signal: 'ok', label: 'em linha', message: 'Custa perto do que o patrimônio do fundo vale' },
+  { from: 1.05, to: 1.1, toInclusive: true, signal: 'ok', label: 'leve ágio', message: 'Custa pouco acima do patrimônio do fundo' },
+  { from: 1.1, to: null, signal: 'warn', label: 'ágio', message: 'Custa bem mais que o patrimônio do fundo' },
 ];
 
 /** A bank's return on equity is the core reading, so the ruler is stricter than the general one. */
@@ -117,15 +117,15 @@ export const BANDS_PROFIT_CAGR: readonly Band[] = [
 
 /** A fund's real payout, measured against FFO because it reports no accounting profit. */
 export const BANDS_PAYOUT_FFO: readonly Band[] = [
-  { from: null, to: 0.85, signal: 'ok', label: 'retendo', message: 'Retendo parte do resultado' },
-  { from: 0.85, to: 1.05, toInclusive: true, signal: 'ok', label: 'coberta', message: 'Distribuição coberta pelo FFO' },
+  { from: null, to: 0.85, signal: 'ok', label: 'retendo', message: 'Paga menos do que arrecada e guarda a diferença' },
+  { from: 0.85, to: 1.05, toInclusive: true, signal: 'ok', label: 'coberta', message: 'O que paga cabe no que o fundo arrecada de aluguel e juros' },
   {
     from: 1.05,
     to: 1.5,
     toInclusive: true,
     signal: 'warn',
     label: 'acima do FFO',
-    message: 'Distribuindo acima do FFO — consumindo reserva ou ganho de capital',
+    message: 'Paga mais do que arrecada — a diferença sai de venda de imóvel ou do caixa',
   },
   /**
    * Beyond half again the operating result the distribution is not a period effect. Leaving
@@ -137,7 +137,7 @@ export const BANDS_PAYOUT_FFO: readonly Band[] = [
     to: null,
     signal: 'bad',
     label: 'muito acima',
-    message: 'Distribuição muito acima do FFO — não sustentada pelo resultado recorrente',
+    message: 'Paga muito mais do que arrecada de aluguel e juros — a diferença vem de venda de imóvel ou do caixa, e esse nível de pagamento não se mantém',
   },
 ];
 
@@ -212,37 +212,44 @@ export function resolveNetDebtToEbitda(f: Fundamentals): number | null {
   return f.netDebtToEbitda ?? computeNetDebtToEbitda(f.netDebt, f.ebitda);
 }
 
+/**
+ * Plain Portuguese, and the consequence rather than the accounting term. The short band
+ * labels carry the jargon-free shorthand for the ruler; these lines are where the reader
+ * finds out what the number actually means for them.
+ */
 export const MESSAGES = {
   noData: 'Sem dado na fonte',
-  informational: 'Informativo — sem faixa de referência',
-  notApplicableFii: 'Não se aplica a FII',
+  informational: 'Informativo — não entra no veredito',
+  notApplicableFii: 'Não se aplica a fundo imobiliário',
   notApplicableFinancial:
-    'EBITDA e dívida não se aplicam a banco/seguradora — alavancagem é a natureza do negócio, regulada por Basileia',
+    'Banco e seguradora vivem de captar e emprestar dinheiro, então dívida grande é o normal do negócio — quem controla esse limite é o Banco Central, não este indicador',
   unreliableCyclicalPayout:
-    'lucro contábil deprimido/distorcido — payout sobre lucro não é confiável; verificar política de dividendos da empresa, geralmente baseada em EBITDA ou FCL',
+    'O lucro deste período está distorcido, então dividir o dividendo por ele não diz nada. Veja no relatório da empresa qual base ela usa para pagar — normalmente a geração de caixa, não o lucro',
   unreliableCyclicalRoe:
-    'lucro contábil deprimido/distorcido no fundo do ciclo — ROE sobre esse lucro não mede a rentabilidade do negócio',
+    'O lucro deste período está distorcido, então o retorno calculado sobre ele não mede a rentabilidade real do negócio',
   unreliableNonRecurring:
-    'lucro do período possivelmente afetado por evento não recorrente — conferir release de resultados',
+    'O lucro deste período parece afetado por algo fora do dia a dia da empresa — confira o comunicado de resultados antes de usar este número',
   cyclicalYield:
-    'dividendo cíclico — varia com preço da commodity, não projetar como renda estável',
-  deleveraging: 'Alavancagem alta, em desalavancagem',
-  leveragingUp: 'Alavancagem alta e subindo',
-  holdingDiscount: 'Desconto de holding (estrutural)',
+    'Dividendo que depende do preço da commodity: sobe e desce com o ciclo, então não conte com ele como renda fixa',
+  deleveraging: 'Dívida alta, mas caindo há dois períodos seguidos',
+  leveragingUp: 'Dívida alta e ainda subindo',
+  holdingDiscount: 'Vale menos que a soma das empresas que ela tem — normal em holding, não é pechincha por si só',
   holdingNote:
-    'Holding — cotação costuma embutir desconto sobre o valor das participações; P/VP baixo aqui é estrutural, não necessariamente barganha',
+    'Holding: a cotação dela costuma valer menos que a soma das empresas que ela controla. Isso é próprio do formato, não um desconto de oportunidade',
   fiiNote:
-    'FII distribui ≥95% do resultado por obrigação legal — conferir no relatório gerencial a composição da distribuição (juros vs ganho de capital) e inadimplência da carteira',
-  cdiSpread: 'Compare o prêmio sobre o CDI, não o yield absoluto',
+    'Fundo imobiliário é obrigado por lei a distribuir ao menos 95% do que apura. Vale abrir o relatório gerencial para ver quanto do que ele paga vem de aluguel e juros, quanto vem de venda de imóvel, e quantos inquilinos estão atrasando',
+  cdiSpread:
+    'Quanto o fundo rende acima do CDI, que é o rendimento sem risco. É esse excedente que paga o risco de estar num fundo, não o rendimento cheio',
   cdiMissing: 'Sem taxa CDI para comparar',
-  noHistory: 'Sem histórico de proventos na fonte',
-  variation: 'Dispersão do provento anual — quanto maior, menos previsível a renda',
-  interestOnCapital: 'Fatia paga como JCP nos últimos 12 meses, que é tributada na fonte',
+  noHistory: 'Sem histórico de pagamentos na fonte',
+  variation: 'O quanto o pagamento anual oscila. Quanto maior, menos previsível é a renda',
+  interestOnCapital:
+    'Parte paga como JCP nos últimos 12 meses. Diferente do dividendo, o JCP já sai com 15% de imposto retido',
   nextPayment: 'Próximo pagamento já declarado',
-  perShare: 'Provento por ação no último ano completo',
-  rangePosition: 'Posição do preço na faixa de 52 semanas',
+  perShare: 'Quanto foi pago por ação no último ano completo, em reais',
+  rangePosition: 'Onde o preço está entre a mínima e a máxima do último ano',
   inconclusive:
-    'dados insuficientes ou distorcidos para diagnóstico automático — análise manual necessária',
+    'os números que chegaram não permitem um diagnóstico automático — vale olhar caso a caso',
 } as const;
 
 /**
@@ -586,7 +593,7 @@ export function diagnose(f: Fundamentals, options: DiagnoseOptions = {}): Diagno
     indicators.push(
       buildIndicator({
         key: 'payoutFfo',
-        label: 'Payout s/ FFO',
+        label: 'Paga vs. arrecada',
         value: payoutOverFfo(f),
         format: 'percent',
         bands: BANDS_PAYOUT_FFO,
@@ -596,7 +603,7 @@ export function diagnose(f: Fundamentals, options: DiagnoseOptions = {}): Diagno
     indicators.push(
       withOverride({
         key: 'profitCagr5y',
-        label: 'CAGR lucro 5a',
+        label: 'Lucro 5a (ao ano)',
         value: f.profitCagr5y,
         format: 'percent',
         bands: BANDS_PROFIT_CAGR,
@@ -634,19 +641,67 @@ export function diagnose(f: Fundamentals, options: DiagnoseOptions = {}): Diagno
       'percent',
       MESSAGES.interestOnCapital,
     ),
-    contextRow('roic', 'ROIC', f.roic, 'percent', MESSAGES.informational),
-    contextRow('netMargin', 'Margem líquida', f.netMargin, 'percent', MESSAGES.informational),
-    contextRow('ebitdaMargin', 'Margem EBITDA', f.ebitdaMargin, 'percent', MESSAGES.informational),
-    contextRow('currentRatio', 'Liquidez corrente', f.currentRatio, 'multiple', MESSAGES.informational),
-    contextRow('netDebtToEquity', 'Dív. líq./Patrimônio', f.netDebtToEquity, 'multiple', MESSAGES.informational),
-    contextRow('revenueCagr5y', 'CAGR receita 5a', f.revenueCagr5y, 'percent', MESSAGES.informational),
+    contextRow(
+      'roic',
+      'ROIC',
+      f.roic,
+      'percent',
+      'Retorno sobre todo o capital investido, incluindo o que veio de dívida',
+    ),
+    contextRow(
+      'netMargin',
+      'Margem líquida',
+      f.netMargin,
+      'percent',
+      'De cada real vendido, quanto sobra de lucro no fim',
+    ),
+    contextRow(
+      'ebitdaMargin',
+      'Margem operacional',
+      f.ebitdaMargin,
+      'percent',
+      'De cada real vendido, quanto sobra antes de juros, impostos e depreciação',
+    ),
+    contextRow(
+      'currentRatio',
+      'Liquidez corrente',
+      f.currentRatio,
+      'multiple',
+      'Quantas vezes o que a empresa tem a receber no curto prazo cobre o que ela deve no curto prazo',
+    ),
+    contextRow(
+      'netDebtToEquity',
+      'Dívida/Patrimônio',
+      f.netDebtToEquity,
+      'multiple',
+      'Quantas vezes a dívida líquida cabe no patrimônio da empresa',
+    ),
+    contextRow(
+      'revenueCagr5y',
+      'Receita 5a (ao ano)',
+      f.revenueCagr5y,
+      'percent',
+      'Quanto a receita cresceu por ano, na média dos últimos cinco anos',
+    ),
     contextRow('range52w', 'Posição na faixa 52s', positionIn52Weeks(f), 'percent', MESSAGES.rangePosition),
   );
 
   if (isFund) {
     indicators.push(
-      contextRow('vacancy', 'Vacância', f.vacancy, 'percent', MESSAGES.informational),
-      contextRow('ffoYield', 'FFO Yield', f.ffoYield, 'percent', MESSAGES.informational),
+      contextRow(
+        'vacancy',
+        'Vacância',
+        f.vacancy,
+        'percent',
+        'Quanto da área do fundo está sem inquilino',
+      ),
+      contextRow(
+        'ffoYield',
+        'Arrecadação do fundo',
+        f.ffoYield,
+        'percent',
+        'Quanto o fundo arrecada de aluguel e juros por ano, em relação ao preço da cota',
+      ),
     );
   }
 
