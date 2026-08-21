@@ -1,20 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { provenanceLabel } from '../src/provenance';
-import type { ProvenanceMap } from '../src/types';
+import { emptyProvenance, type ProvenanceMap } from '../src/types';
 
-function map(parcial: Partial<ProvenanceMap> = {}): ProvenanceMap {
-  return {
-    price: null,
-    dividendYield12m: null,
-    priceEarnings: null,
-    priceToBook: null,
-    roe: null,
-    netDebt: null,
-    ebitda: null,
-    netDebtToEbitda: null,
-    payout: null,
-    ...parcial,
-  };
+function map(partial: Partial<ProvenanceMap> = {}): ProvenanceMap {
+  return { ...emptyProvenance(), ...partial };
 }
 
 describe('provenanceLabel', () => {

@@ -4,6 +4,8 @@ import {
   emptyFundamentals,
   type AssetKind,
   type FundamentalField,
+  type PeerContext,
+  type PeerMap,
   type SourceReading,
 } from '../types';
 import { fetchHtml, labelKey, parseNumber } from './scraping';
@@ -31,7 +33,76 @@ const STOCK_MAPPING: FieldMapping[] = [
     labels: ['Dívida Líquida / Ebitda', 'Divida Liquida/Ebitda'],
     unit: 'multiple',
   },
+  { field: 'roic', labels: ['ROIC'], unit: 'fraction' },
+  { field: 'grossMargin', labels: ['Margem Bruta'], unit: 'fraction' },
+  { field: 'ebitdaMargin', labels: ['Margem Ebitda', 'Margem Ebtida'], unit: 'fraction' },
+  { field: 'netMargin', labels: ['Margem Líquida'], unit: 'fraction' },
+  { field: 'currentRatio', labels: ['Liquidez Corrente'], unit: 'multiple' },
+  {
+    field: 'netDebtToEquity',
+    labels: ['Divida Liquida/Patrimônio', 'Dívida Líquida / Patrimônio'],
+    unit: 'multiple',
+  },
+  { field: 'revenueCagr5y', labels: ['CAGR Receitas 5 anos'], unit: 'fraction' },
+  { field: 'profitCagr5y', labels: ['CAGR Lucros 5 anos'], unit: 'fraction' },
 ];
+
+/** Which sector medians the site publishes, keyed by our indicator name. */
+const PEER_LABELS: Record<string, string[]> = {
+  dividendYield12m: ['Dividend Yield', 'DY'],
+  payout: ['Payout'],
+  roe: ['ROE'],
+  priceEarnings: ['P/L'],
+  priceToBook: ['P/VP'],
+  netDebtToEbitda: ['Dívida Líquida / Ebitda', 'Divida Liquida/Ebitda'],
+};
+
+/**
+ * Each card carries the sector, subsector and segment median next to the company's own
+ * value. Reading them costs nothing and answers the question a single number cannot: is the
+ * paper good, or is the whole sector like this?
+ */
+export function extractPeers(html: string): PeerMap {
+  const $ = cheerio.load(html);
+  const byLabel = new Map<string, PeerContext>();
+
+  $('article.indicator-card').each((_, el) => {
+    const node = $(el);
+    const key = labelKey(node.find('.indicator-card-title').first().text());
+    if (!key || byLabel.has(key)) return;
+
+    const context: PeerContext = {};
+    node.find('.indicator-card-comparison-row').each((__, row) => {
+      const scope = labelKey($(row).find('.indicator-card-comparison-label').first().text());
+      const value = parseNumber($(row).find('strong').first().text());
+      if (value === null) return;
+      if (scope === 'setor') context.sector = value;
+      else if (scope === 'subsetor') context.subsector = value;
+      else if (scope === 'segmento') context.segment = value;
+    });
+
+    if (Object.keys(context).length > 0) byLabel.set(key, context);
+  });
+
+  const peers: PeerMap = {};
+  for (const [field, labels] of Object.entries(PEER_LABELS)) {
+    for (const label of labels) {
+      const found = byLabel.get(labelKey(label));
+      if (!found) continue;
+      // Percent indicators are published in points, same as the values themselves.
+      const scale = PERCENT_PEERS.has(field) ? 0.01 : 1;
+      peers[field] = {
+        ...(found.sector !== undefined ? { sector: found.sector * scale } : {}),
+        ...(found.subsector !== undefined ? { subsector: found.subsector * scale } : {}),
+        ...(found.segment !== undefined ? { segment: found.segment * scale } : {}),
+      };
+      break;
+    }
+  }
+  return peers;
+}
+
+const PERCENT_PEERS = new Set(['dividendYield12m', 'payout', 'roe']);
 
 /**
  * The site carries the raw, unrounded value in the history button's `data-current-value` —
@@ -152,7 +223,15 @@ export function parseInvestidor10(
     }
   }
 
-  return { source: 'investidor10', kind: 'stock', fundamentals, derived: [] };
+  const peers = extractPeers(html);
+
+  return {
+    source: 'investidor10',
+    kind: 'stock',
+    fundamentals,
+    derived: [],
+    ...(Object.keys(peers).length > 0 ? { peers } : {}),
+  };
 }
 
 function wrongRoute(error: unknown): boolean {

@@ -14,6 +14,8 @@ export function formatValue(value: number | null, format: ValueFormat): string {
       return `${nf(1, 1).format(value * 100)}%`;
     case 'multiple':
       return `${nf(2, 2).format(value)}×`;
+    case 'count':
+      return nf(0, 0).format(value);
     case 'currency': {
       const abs = Math.abs(value);
       if (abs >= 1e9) return `R$ ${nf(2, 2).format(value / 1e9)} bi`;

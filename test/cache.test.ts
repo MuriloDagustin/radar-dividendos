@@ -4,21 +4,12 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TTL_MS, openCache, type Cache } from '../src/cache';
 import { diagnose } from '../src/diagnosis';
-import { DISCLAIMER, emptyFundamentals, type Analysis, type ProvenanceMap } from '../src/types';
-
-function emptyProvenance(): ProvenanceMap {
-  return {
-    price: null,
-    dividendYield12m: null,
-    priceEarnings: null,
-    priceToBook: null,
-    roe: null,
-    netDebt: null,
-    ebitda: null,
-    netDebtToEbitda: null,
-    payout: null,
-  };
-}
+import {
+  DISCLAIMER,
+  emptyFundamentals,
+  emptyProvenance,
+  type Analysis,
+} from '../src/types';
 
 function fakeAnalysis(ticker: string): Analysis {
   const fundamentals = {
@@ -34,6 +25,8 @@ function fakeAnalysis(ticker: string): Analysis {
     ticker,
     kind: 'stock',
     classification: { category: 'evergreen', rawSector: 'Energia Elétrica', uncertain: false },
+    dividends: null,
+    dividendHistory: null,
     notes: [],
     generatedAt: '2026-08-20T14:00:00.000Z',
     fundamentals,

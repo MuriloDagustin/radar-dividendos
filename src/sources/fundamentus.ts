@@ -102,6 +102,21 @@ export function parseFundamentus(html: string, ticker: string): SourceReading {
   fundamentals.roe = asFraction('ROE');
   fundamentals.netDebt = asNumber('Dív. Líquida');
   fundamentals.payout = asFraction('Payout');
+  fundamentals.roic = asFraction('ROIC');
+  fundamentals.grossMargin = asFraction('Marg. Bruta');
+  fundamentals.netMargin = asFraction('Marg. Líquida');
+  fundamentals.currentRatio = asNumber('Liquidez Corr');
+  fundamentals.netDebtToEquity = asNumber('Dív Líq / Patrim');
+  fundamentals.revenueCagr5y = asFraction('Cres. Rec (5a)');
+  fundamentals.low52w = asNumber('Min 52 sem');
+  fundamentals.high52w = asNumber('Max 52 sem');
+
+  // Fund sheet only: FFO is a fund's operating result, and the distribution is measured
+  // against it rather than against an accounting profit the fund does not report.
+  fundamentals.ffoYield = asFraction('FFO Yield');
+  fundamentals.ffoPerShare = asNumber('FFO/Cota');
+  fundamentals.distributedIncome = asNumber('Rend. Distribuído');
+  fundamentals.vacancy = asFraction('Vacância Média');
 
   const derived: FundamentalField[] = [];
 

@@ -4,9 +4,38 @@
 
 /* Equal-width bands: the rule scale is categorical, not linear. */
 .track {
+  position: relative;
   display: flex;
   gap: 2px;
   height: 22px;
+}
+
+/*
+ * Sector median: a hollow tick, deliberately quieter than the needle. It answers "is the
+ * paper good or is the whole sector like this" without competing for attention.
+ */
+.peer {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  left: var(--position);
+  width: 1px;
+  margin-left: -0.5px;
+  background: var(--ink-faint);
+  opacity: 0.85;
+  z-index: 1;
+}
+
+.peer::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -2px;
+  width: 5px;
+  height: 5px;
+  border: 1px solid var(--ink-faint);
+  border-radius: 50%;
+  background: var(--paper-high);
 }
 
 .band {

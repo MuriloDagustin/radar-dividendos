@@ -4,9 +4,13 @@ import type {
   Band,
   Category,
   Diagnosis,
+  DividendRecord,
   Fundamentals,
   Indicator,
+  IndicatorGroup,
   LeverageTrend,
+  PeerContext,
+  PeerMap,
   Signal,
   Verdict,
 } from './types';
@@ -92,6 +96,49 @@ export const BANDS_ROE_FINANCIAL: readonly Band[] = [
   { from: null, to: 0.12, signal: 'warn', label: 'fraca', message: 'Rentabilidade fraca' },
   { from: 0.12, to: 0.18, signal: 'ok', label: 'ok', message: 'Rentabilidade ok' },
   { from: 0.18, to: null, signal: 'ok', label: 'forte', message: 'Rentabilidade forte' },
+];
+
+/**
+ * Consecutive complete years with a payment. Five years is the usual bar for calling an
+ * income stream established; below three there is not enough record to judge. These bounds
+ * are ours, not something a source publishes.
+ */
+export const BANDS_DIVIDEND_STREAK: readonly Band[] = [
+  { from: null, to: 3, signal: 'warn', label: 'curto', message: 'Histórico curto — menos de 3 anos completos' },
+  { from: 3, to: 5, signal: 'ok', label: 'regular', message: 'Pagamento regular' },
+  { from: 5, to: null, signal: 'ok', label: 'estabelecido', message: 'Pagamento estabelecido' },
+];
+
+/** Zero is the only bound here: a shrinking bottom line cannot fund a growing dividend. */
+export const BANDS_PROFIT_CAGR: readonly Band[] = [
+  { from: null, to: 0, signal: 'warn', label: 'encolhendo', message: 'Lucro encolhendo em 5 anos' },
+  { from: 0, to: null, signal: 'ok', label: 'crescendo', message: 'Lucro crescendo em 5 anos' },
+];
+
+/** A fund's real payout, measured against FFO because it reports no accounting profit. */
+export const BANDS_PAYOUT_FFO: readonly Band[] = [
+  { from: null, to: 0.85, signal: 'ok', label: 'retendo', message: 'Retendo parte do resultado' },
+  { from: 0.85, to: 1.05, toInclusive: true, signal: 'ok', label: 'coberta', message: 'Distribuição coberta pelo FFO' },
+  {
+    from: 1.05,
+    to: 1.5,
+    toInclusive: true,
+    signal: 'warn',
+    label: 'acima do FFO',
+    message: 'Distribuindo acima do FFO — consumindo reserva ou ganho de capital',
+  },
+  /**
+   * Beyond half again the operating result the distribution is not a period effect. Leaving
+   * this at a warning let a fund paying out more than twice its FFO be headlined solid, and
+   * a verdict that contradicts its own panel is the worst failure this tool has.
+   */
+  {
+    from: 1.5,
+    to: null,
+    signal: 'bad',
+    label: 'muito acima',
+    message: 'Distribuição muito acima do FFO — não sustentada pelo resultado recorrente',
+  },
 ];
 
 export function bandFor(bands: readonly Band[], value: number): Band | null {
@@ -188,15 +235,26 @@ export const MESSAGES = {
     'FII distribui ≥95% do resultado por obrigação legal — conferir no relatório gerencial a composição da distribuição (juros vs ganho de capital) e inadimplência da carteira',
   cdiSpread: 'Compare o prêmio sobre o CDI, não o yield absoluto',
   cdiMissing: 'Sem taxa CDI para comparar',
+  noHistory: 'Sem histórico de proventos na fonte',
+  variation: 'Dispersão do provento anual — quanto maior, menos previsível a renda',
+  interestOnCapital: 'Fatia paga como JCP nos últimos 12 meses, que é tributada na fonte',
+  nextPayment: 'Próximo pagamento já declarado',
+  perShare: 'Provento por ação no último ano completo',
+  rangePosition: 'Posição do preço na faixa de 52 semanas',
   inconclusive:
     'dados insuficientes ou distorcidos para diagnóstico automático — análise manual necessária',
 } as const;
 
 /**
  * A profit figure that cannot be trusted as a denominator. Any of: an earnings multiple so
- * high the profit is clearly depressed, a company paying dividends with no positive
- * earnings at all, or near-zero return on equity alongside a real dividend — all three
- * point at a bottom line distorted by something that is not the operation.
+ * high the profit is clearly depressed, negative earnings behind a dividend, or near-zero
+ * return on equity alongside a real dividend — each points at a bottom line distorted by
+ * something that is not the operation.
+ *
+ * A *missing* earnings multiple is treated as evidence only when nothing else vouches for
+ * the profit. Sources do omit P/L when earnings are negative, but they also just omit it;
+ * reading absence as distortion would mark a healthy 18% ROE company unreliable, and
+ * absence is never a value here.
  */
 export function distortedProfit(input: {
   priceEarnings: number | null;
@@ -205,9 +263,11 @@ export function distortedProfit(input: {
 }): boolean {
   const { priceEarnings, roe, dividendYield } = input;
   const paysDividend = dividendYield !== null && dividendYield > 0;
+  const profitVouchedFor = roe !== null && roe > 0.03;
 
   if (priceEarnings !== null && priceEarnings > 40) return true;
-  if (paysDividend && (priceEarnings === null || priceEarnings < 0)) return true;
+  if (priceEarnings !== null && priceEarnings < 0 && paysDividend) return true;
+  if (priceEarnings === null && paysDividend && !profitVouchedFor) return true;
   if (roe !== null && roe < 0.03 && dividendYield !== null && dividendYield > 0.05) return true;
 
   return false;
@@ -295,6 +355,10 @@ interface IndicatorInput {
   value: number | null;
   format: Indicator['format'];
   bands: readonly Band[] | null;
+  group?: IndicatorGroup;
+  peers?: PeerContext;
+  /** Replaces the generic "no data" line when absence has a specific reason. */
+  emptyMessage?: string;
   /** Set to bypass the bands entirely with a fixed reading (na / unrel). */
   override?: Assessment;
   /** Applied after the bands, to soften or reword a band result. */
@@ -302,7 +366,7 @@ interface IndicatorInput {
 }
 
 function buildIndicator(input: IndicatorInput): Indicator {
-  const { key, label, value, format, bands, override, adjust } = input;
+  const { key, label, value, format, bands, override, adjust, group, peers, emptyMessage } = input;
 
   const fromBands = bands ? assessWith(bands, value) : null;
   const assessment = override ?? (adjust ? adjust(fromBands) : fromBands);
@@ -310,18 +374,41 @@ function buildIndicator(input: IndicatorInput): Indicator {
   const message = assessment
     ? assessment.message
     : value === null
-      ? MESSAGES.noData
+      ? (emptyMessage ?? MESSAGES.noData)
       : MESSAGES.informational;
 
   return {
     key,
     label,
+    group: group ?? 'core',
     // A reading with no meaning must not show a number that invites reading it anyway.
     value: assessment?.signal === 'na' ? null : value,
     format,
     bands: bands ?? null,
     signal: assessment?.signal ?? null,
     message,
+    ...(peers ? { peers } : {}),
+  };
+}
+
+/** Reads like the banded rows but carries no signal: shown, never weighed. */
+function contextRow(
+  key: string,
+  label: string,
+  value: number | null,
+  format: Indicator['format'],
+  message: string,
+  emptyMessage?: string,
+): Indicator {
+  return {
+    key,
+    label,
+    group: 'context',
+    value,
+    format,
+    bands: null,
+    signal: null,
+    message: value === null ? (emptyMessage ?? MESSAGES.noData) : message,
   };
 }
 
@@ -332,6 +419,27 @@ export interface DiagnoseOptions {
   leverageHistory?: readonly number[];
   /** Annualized CDI as a fraction, for the fund's premium over the risk-free rate. */
   cdiAnnual?: number;
+  /** What the dividend history says, when one could be read. */
+  dividends?: DividendRecord | null;
+  /** Sector medians per indicator key. */
+  peers?: PeerMap;
+}
+
+/**
+ * A fund's payout measured against FFO instead of profit. Both come from the same sheet and
+ * the same period, so the ratio is exact rather than a cross-source guess.
+ */
+export function payoutOverFfo(f: Fundamentals): number | null {
+  if (f.dividendYield12m === null || f.ffoYield === null || f.ffoYield <= 0) return null;
+  return f.dividendYield12m / f.ffoYield;
+}
+
+/** Where the price sits between the 52-week low and high, as a fraction. */
+export function positionIn52Weeks(f: Fundamentals): number | null {
+  const { price, low52w, high52w } = f;
+  if (price === null || low52w === null || high52w === null) return null;
+  if (high52w <= low52w) return null;
+  return (price - low52w) / (high52w - low52w);
 }
 
 /** Indicators that carry no meaning inside a real estate fund. */
@@ -376,9 +484,16 @@ export function diagnose(f: Fundamentals, options: DiagnoseOptions = {}): Diagno
     return undefined;
   }
 
+  const peers = options.peers ?? {};
+
   function withOverride(input: IndicatorInput): Indicator {
     const override = overrideFor(input.key);
-    return buildIndicator(override ? { ...input, override } : input);
+    const peer = peers[input.key];
+    return buildIndicator({
+      ...input,
+      ...(override ? { override } : {}),
+      ...(peer ? { peers: peer } : {}),
+    });
   }
 
   const indicators: Indicator[] = [
@@ -452,18 +567,87 @@ export function diagnose(f: Fundamentals, options: DiagnoseOptions = {}): Diagno
     }),
   ];
 
+  const record = options.dividends ?? null;
+
+  // Consistency is the thing a snapshot cannot show, and the thing income depends on.
+  indicators.push(
+    buildIndicator({
+      key: 'dividendStreak',
+      label: 'Anos seguidos pagos',
+      value: record?.consecutiveYears ?? null,
+      format: 'count',
+      bands: BANDS_DIVIDEND_STREAK,
+      emptyMessage: MESSAGES.noHistory,
+    }),
+  );
+
+  // A fund reports no accounting profit, so its payout is measured against FFO.
+  if (isFund) {
+    indicators.push(
+      buildIndicator({
+        key: 'payoutFfo',
+        label: 'Payout s/ FFO',
+        value: payoutOverFfo(f),
+        format: 'percent',
+        bands: BANDS_PAYOUT_FFO,
+      }),
+    );
+  } else {
+    indicators.push(
+      withOverride({
+        key: 'profitCagr5y',
+        label: 'CAGR lucro 5a',
+        value: f.profitCagr5y,
+        format: 'percent',
+        bands: BANDS_PROFIT_CAGR,
+      }),
+    );
+  }
+
   // The premium over the risk-free rate is what makes a fund's yield comparable at all.
   if (isFund) {
     const spread = cdiSpread(f.dividendYield12m, options.cdiAnnual ?? null);
-    indicators.push({
-      key: 'dyVsCdi',
-      label: 'DY − CDI',
-      value: spread,
-      format: 'percent',
-      bands: null,
-      signal: null,
-      message: spread === null ? MESSAGES.cdiMissing : MESSAGES.cdiSpread,
-    });
+    indicators.push(
+      contextRow('dyVsCdi', 'DY − CDI', spread, 'percent', MESSAGES.cdiSpread, MESSAGES.cdiMissing),
+    );
+  }
+
+  indicators.push(
+    contextRow(
+      'dividendPerShare',
+      'Provento/ação (últ. ano)',
+      record?.lastFullYear?.amount ?? null,
+      'currency',
+      MESSAGES.perShare,
+    ),
+    contextRow(
+      'dividendVariation',
+      'Variação do provento',
+      record?.variation ?? null,
+      'percent',
+      MESSAGES.variation,
+    ),
+    contextRow(
+      'interestOnCapitalShare',
+      'Fatia em JCP',
+      record?.interestOnCapitalShare ?? null,
+      'percent',
+      MESSAGES.interestOnCapital,
+    ),
+    contextRow('roic', 'ROIC', f.roic, 'percent', MESSAGES.informational),
+    contextRow('netMargin', 'Margem líquida', f.netMargin, 'percent', MESSAGES.informational),
+    contextRow('ebitdaMargin', 'Margem EBITDA', f.ebitdaMargin, 'percent', MESSAGES.informational),
+    contextRow('currentRatio', 'Liquidez corrente', f.currentRatio, 'multiple', MESSAGES.informational),
+    contextRow('netDebtToEquity', 'Dív. líq./Patrimônio', f.netDebtToEquity, 'multiple', MESSAGES.informational),
+    contextRow('revenueCagr5y', 'CAGR receita 5a', f.revenueCagr5y, 'percent', MESSAGES.informational),
+    contextRow('range52w', 'Posição na faixa 52s', positionIn52Weeks(f), 'percent', MESSAGES.rangePosition),
+  );
+
+  if (isFund) {
+    indicators.push(
+      contextRow('vacancy', 'Vacância', f.vacancy, 'percent', MESSAGES.informational),
+      contextRow('ffoYield', 'FFO Yield', f.ffoYield, 'percent', MESSAGES.informational),
+    );
   }
 
   const counts: Record<Signal, number> = { ok: 0, warn: 0, bad: 0, na: 0, unrel: 0 };
@@ -471,7 +655,7 @@ export function diagnose(f: Fundamentals, options: DiagnoseOptions = {}): Diagno
     if (i.signal) counts[i.signal] += 1;
   }
 
-  const banded = indicators.filter((i) => i.bands !== null);
+  const banded = indicators.filter((i) => i.bands !== null && i.group === 'core');
   const applicable = banded.filter((i) => i.signal !== 'na').length;
   const present = banded.filter(
     (i) => i.signal === 'ok' || i.signal === 'warn' || i.signal === 'bad',

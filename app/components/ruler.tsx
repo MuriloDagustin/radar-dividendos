@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import type { Band, Signal, ValueFormat } from '@/src/types';
+import type { Band, PeerContext, Signal, ValueFormat } from '@/src/types';
 import { formatBound } from '@/app/format';
 import styles from './ruler.module.css';
 
@@ -59,12 +59,25 @@ interface Props {
   format: ValueFormat;
   signal: Signal | null;
   emptyLabel?: string;
+  peers?: PeerContext;
+}
+
+/** Absolute position of a value across the whole ruler, in equal-width band space. */
+function positionOnRuler(
+  bands: readonly Band[],
+  value: number,
+  extent: { below: number; above: number },
+): number | null {
+  const index = bandIndex(bands, value);
+  const band = bands[index];
+  if (!band) return null;
+  return (index + positionInBand(band, value, extent)) / bands.length;
 }
 
 /**
  * Decorative for screen readers: the card already announces value, band and message as text.
  */
-export function Ruler({ indicatorKey, bands, value, format, signal, emptyLabel }: Props) {
+export function Ruler({ indicatorKey, bands, value, format, signal, emptyLabel, peers }: Props) {
   if (value === null || signal === null || !PLACEABLE.has(signal)) {
     return (
       <div className={styles.empty} aria-hidden="true">
@@ -82,9 +95,20 @@ export function Ruler({ indicatorKey, bands, value, format, signal, emptyLabel }
     '--count': bands.length,
   } as CSSProperties;
 
+  // The sector median, so the reader can tell a good paper from a good sector.
+  const peerValue = peers?.subsector ?? peers?.sector ?? null;
+  const peerPosition = peerValue === null ? null : positionOnRuler(bands, peerValue, extent);
+
   return (
     <div className={styles.ruler} style={root} aria-hidden="true">
       <div className={styles.track}>
+        {peerPosition !== null ? (
+          <span
+            className={styles.peer}
+            style={{ '--position': `${peerPosition * 100}%` } as CSSProperties}
+            title={`mediana do setor: ${formatBound(peerValue, format)}`}
+          />
+        ) : null}
         {bands.map((band, i) => {
           const isActive = i === activeIndex;
           return (

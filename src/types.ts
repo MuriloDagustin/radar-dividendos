@@ -4,10 +4,25 @@ export const FUNDAMENTAL_FIELDS = [
   'priceEarnings',
   'priceToBook',
   'roe',
+  'roic',
   'netDebt',
   'ebitda',
   'netDebtToEbitda',
+  'netDebtToEquity',
+  'currentRatio',
+  'grossMargin',
+  'ebitdaMargin',
+  'netMargin',
+  'revenueCagr5y',
+  'profitCagr5y',
+  'low52w',
+  'high52w',
   'payout',
+  /** FII only: operating result yield, the fund's answer to an earnings yield. */
+  'ffoYield',
+  'ffoPerShare',
+  'distributedIncome',
+  'vacancy',
 ] as const;
 
 export type FundamentalField = (typeof FUNDAMENTAL_FIELDS)[number];
@@ -38,6 +53,8 @@ export const ASSET_KIND_NAME: Record<AssetKind, string> = {
 
 export interface SourceReading {
   source: Source;
+  /** Sector medians for the indicators this source compares. */
+  peers?: PeerMap;
   /** Sector text this source published, for the classification lookup. */
   sector?: SectorInfo;
   /** What the source recognized the paper to be. Absent when it cannot tell. */
@@ -91,6 +108,57 @@ export interface Classification {
 /** Where leverage is heading over the last periods, when a history could be read. */
 export type LeverageTrend = 'falling' | 'rising' | 'flat' | 'unknown';
 
+export interface DividendYear {
+  year: number;
+  /** Currency per share, as the source published it. */
+  amount: number;
+}
+
+export interface DividendEvent {
+  /** Ex-dividend date, dd/mm/yyyy as published. */
+  exDate: string;
+  paymentDate: string | null;
+  amount: number;
+  /** "DIVIDENDO", "JRS CAP PROPRIO", "Rendimento" — taxation differs between them. */
+  kind: string;
+}
+
+export interface DividendHistory {
+  source: Source;
+  perYear: DividendYear[];
+  events: DividendEvent[];
+}
+
+/**
+ * What the history says about the income stream itself, which no snapshot can show: a yield
+ * paid every year for a decade is a different asset from the same yield paid once.
+ */
+export interface DividendRecord {
+  yearsPaid: number;
+  /** Complete years in a row with a payment, counting back from the last complete year. */
+  consecutiveYears: number;
+  /** Years where the amount fell more than a token amount against the year before. */
+  cuts: number;
+  /** Coefficient of variation over the complete years — dispersion of the payment. */
+  variation: number | null;
+  lastFullYear: DividendYear | null;
+  /** Change from the year before last to the last complete year, as a fraction. */
+  lastChange: number | null;
+  /** Payment already declared with a date still ahead. */
+  nextPayment: DividendEvent | null;
+  /** Share of the last twelve months paid as interest on capital, which is taxed. */
+  interestOnCapitalShare: number | null;
+}
+
+/** Sector medians a source publishes next to an indicator, for context on the ruler. */
+export interface PeerContext {
+  sector?: number;
+  subsector?: number;
+  segment?: number;
+}
+
+export type PeerMap = Record<string, PeerContext>;
+
 export interface Assessment {
   signal: Signal;
   message: string;
@@ -108,13 +176,22 @@ export interface Band {
   message: string;
 }
 
-export type ValueFormat = 'percent' | 'multiple' | 'currency';
+export type ValueFormat = 'percent' | 'multiple' | 'currency' | 'count';
+
+/**
+ * `core` carries the verdict and gets a ruler; `context` is the supporting panel, shown
+ * compactly. Splitting them is what keeps the card readable as indicators pile up.
+ */
+export type IndicatorGroup = 'core' | 'context';
 
 export interface Indicator {
   key: string;
   label: string;
+  group: IndicatorGroup;
   value: number | null;
   format: ValueFormat;
+  /** Sector median for this indicator, when a source published one. */
+  peers?: PeerContext;
   /** `null` on an informational indicator: no bands, no weight on the verdict. */
   bands: readonly Band[] | null;
   signal: Signal | null;
@@ -156,6 +233,8 @@ export interface Analysis {
   ticker: string;
   kind: AssetKind;
   classification: Classification;
+  dividends: DividendRecord | null;
+  dividendHistory: DividendHistory | null;
   /** Structural remarks about the company that are not tied to one indicator. */
   notes: string[];
   generatedAt: string;
@@ -171,16 +250,11 @@ export interface Analysis {
 export const DISCLAIMER =
   'Ferramenta educacional — confira os dados na fonte. Não é recomendação de investimento.';
 
+/** Built from the field list so a new field cannot be forgotten in one of the two places. */
 export function emptyFundamentals(): Fundamentals {
-  return {
-    price: null,
-    dividendYield12m: null,
-    priceEarnings: null,
-    priceToBook: null,
-    roe: null,
-    netDebt: null,
-    ebitda: null,
-    netDebtToEbitda: null,
-    payout: null,
-  };
+  return Object.fromEntries(FUNDAMENTAL_FIELDS.map((f) => [f, null])) as Fundamentals;
+}
+
+export function emptyProvenance(): ProvenanceMap {
+  return Object.fromEntries(FUNDAMENTAL_FIELDS.map((f) => [f, null])) as ProvenanceMap;
 }

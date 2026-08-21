@@ -228,3 +228,52 @@
   font-size: 0.8rem;
   color: var(--ink-mid);
 }
+
+/*
+ * Supporting panel: a dense grid with no rulers. These numbers inform without judging, and
+ * giving them the same visual weight as the banded rows would drown the verdict.
+ */
+.context {
+  margin: 0 1.1rem;
+  padding: 0.8rem 0 0.2rem;
+  border-top: 1px solid var(--rule);
+}
+
+.contextGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: 0.5rem 1.2rem;
+  margin: 0.55rem 0 0;
+}
+
+.contextItem {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  border-bottom: 1px dotted var(--rule);
+  padding-bottom: 0.2rem;
+}
+
+.contextLabel {
+  font-size: 0.75rem;
+  color: var(--ink-mid);
+  margin: 0;
+}
+
+.contextValue {
+  margin: 0 0 0 auto;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.nextPayment {
+  margin: 0.8rem 1.1rem 0;
+  padding: 0.5rem 0.7rem;
+  background: var(--paper);
+  border-left: 2px solid var(--ok);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: 0.8rem;
+  color: var(--ink-mid);
+}

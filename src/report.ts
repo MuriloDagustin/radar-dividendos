@@ -54,6 +54,8 @@ export function formatIndicatorValue(indicator: Indicator): string {
       return formatCurrency(indicator.value);
     case 'multiple':
       return formatMultiple(indicator.value);
+    case 'count':
+      return String(indicator.value);
   }
 }
 
@@ -67,6 +69,13 @@ function width(text: string): number {
 function pad(text: string, target: number, side: 'left' | 'right' = 'left'): string {
   const missing = Math.max(0, target - width(text));
   return side === 'left' ? text + ' '.repeat(missing) : ' '.repeat(missing) + text;
+}
+
+/** The sector median, so a good number can be told apart from a good sector. */
+function peerMark(indicator: Indicator): string {
+  const peer = indicator.peers?.subsector ?? indicator.peers?.sector;
+  if (peer === undefined) return '';
+  return pc.dim(` (setor ${formatIndicatorValue({ ...indicator, value: peer })})`);
 }
 
 function provenanceMark(analysis: Analysis, key: string): string {
@@ -95,11 +104,16 @@ export function renderAnalysis(analysis: Analysis): string {
     lines.push(pc.dim(`  ${note}`));
   }
 
-  const labelWidth = Math.max(...analysis.diagnosis.indicators.map((i) => i.label.length));
-  const values = analysis.diagnosis.indicators.map(formatIndicatorValue);
+  const core = analysis.diagnosis.indicators.filter((i) => i.group === 'core');
+  const context = analysis.diagnosis.indicators.filter(
+    (i) => i.group === 'context' && i.value !== null,
+  );
+
+  const labelWidth = Math.max(...core.map((i) => i.label.length));
+  const values = core.map(formatIndicatorValue);
   const valueWidth = Math.max(...values.map((v) => v.length));
 
-  analysis.diagnosis.indicators.forEach((indicator, index) => {
+  core.forEach((indicator, index) => {
     const mark = indicator.signal ? MARK[indicator.signal] : '·';
     const value = values[index] ?? '—';
     lines.push(
@@ -112,10 +126,31 @@ export function renderAnalysis(analysis: Analysis): string {
         pad(value, valueWidth, 'right'),
         '  ',
         paint(indicator.signal, indicator.message),
+        peerMark(indicator),
         provenanceMark(analysis, indicator.key),
       ].join(''),
     );
   });
+
+  if (context.length > 0) {
+    lines.push('');
+    // Two columns of supporting numbers: informative, never part of the verdict.
+    const cells = context.map((i) => `${i.label} ${formatIndicatorValue(i)}`);
+    for (let i = 0; i < cells.length; i += 2) {
+      const left = cells[i] ?? '';
+      const right = cells[i + 1] ?? '';
+      lines.push(pc.dim(`    ${left.padEnd(38)}${right}`));
+    }
+  }
+
+  const next = analysis.dividends?.nextPayment;
+  if (next) {
+    lines.push(
+      pc.dim(
+        `    próximo pagamento ${next.amount.toFixed(4)} por ação em ${next.paymentDate} (${next.kind.toLowerCase()})`,
+      ),
+    );
+  }
 
   const { coverage, verdict: outcome } = analysis.diagnosis;
   if (outcome === 'indeterminate') {

@@ -113,6 +113,10 @@ existe em nenhuma fonte volta `null`** — nada é estimado.
 | Mais de 1 ativo por requisição | ❌ plano Startup |
 | Taxa SELIC / inflação | ❌ plano Startup — o CDI vem do Banco Central |
 
+O **histórico de proventos** não passa por nenhum paywall: sai do próprio Fundamentus, em
+HTML renderizado. O histórico anual de indicadores (para a trajetória de alavancagem) segue
+inacessível — é carregado por JS nos scrapers e é plano pago na brapi.
+
 **Consequência prática:** a trajetória de alavancagem (que abranda `bad` para `warn` numa
 cíclica) precisa dos módulos de histórico. A lógica está implementada e testada, e a busca
 segue a spec — mas **no plano Gratuito não há de onde tirar a série**, então a trajetória fica
@@ -262,6 +266,43 @@ Ticker terminado em 3 ou 4 tem as classes irmãs consultadas na brapi; se outra 
 única chamada `/quote/T1,T2,T3`, mas o plano Gratuito aceita **1 ativo por requisição** —
 então tenta a combinada e cai para uma chamada por classe. Falha aí nunca quebra a análise.
 
+## Histórico, contexto e pares
+
+O radar não era só um painel curto — era uma **foto sem filme**. Para carteira de renda o que
+decide não é o yield de hoje, é a consistência, e nada disso estava visível.
+
+### Histórico de proventos
+
+Vem da página `proventos.php` / `fii_proventos.php` do Fundamentus — mesma fonte que já
+raspo, HTML renderizado, com tabela ano→valor e os eventos individuais (data-com, data de
+pagamento e **tipo**). Daí sai:
+
+| Indicador | Por que decide compra |
+|---|---|
+| **Anos seguidos pagos** (com faixa) | A única medida direta de consistência da renda |
+| **Provento/ação no último ano** | O que você de fato planeja receber, em reais |
+| **Variação do provento** | Dispersão. TAEE11 tem 50,7% contra 19% do MXRF11 — mesma "renda", previsibilidade oposta |
+| **Fatia em JCP** | JCP é tributado na fonte e dividendo não; muda o que chega na conta |
+| **Próximo pagamento** | Data e valor já declarados |
+
+### O ponto cego que isso fechou
+
+TAEE11 era **SÓLIDA**. Com o `CAGR de lucro 5a = −6,9%` no painel, virou **ATENÇÃO**. Lucro
+encolhendo 7% ao ano com payout de 76% é uma conta que não fecha, e antes nada mostrava.
+
+### Comparação com pares
+
+O Investidor10 publica a mediana de setor, subsetor e segmento ao lado de cada indicador. Ela
+entra na régua como um **tique vazado**, deliberadamente mais discreto que a agulha: responde
+"o papel é bom ou o setor todo é assim?". O DY da TAEE11 é 8,0% contra 3,0% do setor; o ROE é
+20,1% contra 11,9%.
+
+### Painel de contexto
+
+ROIC, margens, liquidez corrente, dívida/patrimônio, CAGR de receita e posição na faixa de 52
+semanas entram num grid compacto **sem régua e sem peso no veredito**. Dar a eles o mesmo
+espaço visual dos indicadores com faixa afogaria o veredito.
+
 ## FIIs: régua própria
 
 Um FII não é uma empresa com poucos indicadores — é outra classe de ativo, em outra escala.
@@ -272,8 +313,15 @@ e está em linha num fundo.
 |---|---|
 | **DY 12m** | `< 6%` baixo p/ FII (warn) · `6–16%` faixa normal (ok) · `> 16%` muito acima do mercado — risco de crédito ou distribuição não recorrente (warn) |
 | **P/VP** | `< 0,85` descontada, investigar relatório gerencial (warn) · `0,85–1,05` em linha com patrimônio (ok) · `1,05–1,10` leve ágio (ok) · `> 1,10` ágio (warn) |
+| **Payout s/ FFO** | `< 0,85` retendo (ok) · `0,85–1,05` coberta (ok) · `1,05–1,50` acima do FFO (warn) · `> 1,50` muito acima, não sustentada pelo resultado recorrente (bad) |
 | **DY − CDI** | informativo, sem faixa: o prêmio sobre a taxa livre de risco |
 | Payout, Dívida líq./EBITDA, ROE | `na` — não se aplicam |
+
+Um FII não reporta lucro contábil, então o payout dele é medido contra o **FFO**. A conta é
+`DY ÷ FFO Yield`, os dois da mesma ficha e do mesmo período — exata, não um palpite entre
+fontes. E ela achou coisa séria: **CPTS11 distribui 228% do FFO** (DY de 14,7% contra FFO
+Yield de 6,4%). A distribuição não vem do resultado recorrente, e o yield absoluto esconde
+isso por completo.
 
 **Faixa 1,05–1,10 é minha, não sua.** A spec deu `0,85–1,05` para "em linha" e `> 1,1` para
 ágio, deixando 1,05–1,10 sem regra. Fechei o buraco com uma faixa própria de leve ágio, `ok`,
@@ -353,7 +401,7 @@ Uma fonte falhar não aborta a análise: a outra é usada e a falha fica registr
 npm test
 ```
 
-530 testes. Cobrem todas as faixas do motor de diagnóstico **e cada limite exato**
+587 testes. Cobrem todas as faixas do motor de diagnóstico **e cada limite exato**
 (`0.13`, `0.06`, `0.03`, `1.0`, `0.40`, `0.25`, `0`, `1.5`, `2.5`, `3.5`, `0.8`, `0.15`,
 `0.08`), os campos `null`, as invariantes da tabela de faixas (contígua, sem lacuna, cada
 limite numa faixa só), a matemática da agulha da régua, o parser do Fundamentus contra HTML
@@ -375,3 +423,12 @@ Regressões travadas por teste, com os números reais de 20/08/2026:
   chamaria de "alto demais"; P/VP sai warn de desconto — a régua de ação o chamaria de
   razoável. Os dois contrastes estão travados por teste.
 - **TAEE11**: não cai em `fii` nem quando uma fonte rotula o setor dele como fundo.
+- **Histórico real** (fixtures de `proventos.php`): TAEE11 com 16 anos seguidos e cortes pelo
+  caminho, MXRF11 com dispersão muito menor — o contraste é o que justifica medir dispersão.
+
+### Limiares que são meus, não da especificação
+
+Estes não vêm de fonte nenhuma; são escolhas minhas, e estão aqui para você contestar:
+`anos seguidos pagos` (3 e 5), `payout sobre FFO` (0,85 / 1,05 / 1,50), P/VP de FII em
+1,05–1,10, e a tolerância de 5% que separa corte de ruído de calendário. O `CAGR de lucro`
+usa zero, que não é escolha.

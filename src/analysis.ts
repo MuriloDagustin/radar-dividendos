@@ -11,7 +11,9 @@ import {
 import { interpret } from './ai';
 import { mergeReadings } from './merge';
 import { looksLikeTicker, normalizeTicker } from './numbers';
+import { summarizeDividends } from './dividends';
 import { fetchCdi } from './sources/bcb';
+import { fetchProventos } from './sources/proventos';
 import {
   fetchBrapi,
   fetchLeverageHistory,
@@ -26,6 +28,7 @@ import {
   SOURCE_NAME,
   type Analysis,
   type AssetKind,
+  type PeerMap,
   type SectorInfo,
   type Source,
   type SourceReading,
@@ -77,6 +80,17 @@ function resolveSector(readings: SourceReading[]): SectorInfo | null {
     if (!merged.sector && reading.sector.sector) merged.sector = reading.sector.sector;
   }
   return Object.keys(merged).length > 0 ? merged : null;
+}
+
+/** Sector medians a source publishes; the first source carrying a key wins. */
+function resolvePeers(readings: SourceReading[]): PeerMap {
+  const merged: PeerMap = {};
+  for (const reading of readings) {
+    for (const [key, context] of Object.entries(reading.peers ?? {})) {
+      if (!merged[key]) merged[key] = context;
+    }
+  }
+  return merged;
 }
 
 /** Below this ratio the difference in liquidity is not worth mentioning. */
@@ -164,17 +178,22 @@ export async function analyze(rawTicker: string, options: AnalyzeOptions = {}): 
     const { fundamentals, provenance } = mergeReadings(readings);
     const isFund = kind === 'fii' || classification.category === 'fii';
 
-    // Each extra lookup only serves one category, so only that category pays for it.
-    const [leverageHistory, cdi] = await Promise.all([
+    // Each extra lookup serves one purpose and none of them can gate the analysis.
+    const [leverageHistory, cdi, dividendHistory] = await Promise.all([
       classification.category === 'cyclical'
         ? fetchLeverageHistory(ticker, token).catch(() => null)
         : Promise.resolve(null),
       isFund ? fetchCdi().catch(() => null) : Promise.resolve(null),
+      fetchProventos(ticker, kind).catch(() => null),
     ]);
+
+    const dividends = dividendHistory ? summarizeDividends(dividendHistory) : null;
 
     const diagnosis = diagnose(fundamentals, {
       kind,
       category: classification.category,
+      peers: resolvePeers(readings),
+      dividends,
       ...(leverageHistory ? { leverageHistory } : {}),
       ...(cdi ? { cdiAnnual: cdi.annual } : {}),
     });
@@ -201,6 +220,8 @@ export async function analyze(rawTicker: string, options: AnalyzeOptions = {}): 
       ticker,
       kind,
       classification,
+      dividends,
+      dividendHistory,
       notes,
       generatedAt: new Date().toISOString(),
       fundamentals,

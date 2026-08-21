@@ -48,6 +48,7 @@ export const PAGE_HTML = `<!doctype html>
   .badge.inconclusive  { background: rgba(180,154,224,.15); color: #b49ae0; }
   .notes { margin: .5rem 0 .75rem; display: grid; gap: .3rem; }
   .notes div { font-size: .8rem; color: var(--muted); border-left: 2px solid var(--border); padding-left: .5rem; }
+  .context { display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: .3rem .9rem; margin-top: .75rem; padding-top: .6rem; border-top: 1px solid var(--border); font-size: .78rem; color: var(--muted); }
   table { width: 100%; border-collapse: collapse; }
   td { padding: .35rem 0; border-bottom: 1px solid var(--border); vertical-align: top; }
   tr:last-child td { border-bottom: 0; }
@@ -125,7 +126,7 @@ function provenanceOf(analysis, key) {
 }
 
 function render(analysis) {
-  const rows = analysis.diagnosis.indicators.map((i) => {
+  const rows = analysis.diagnosis.indicators.filter((i) => i.group !== 'context').map((i) => {
     const cls = i.signal ?? 'none';
     const prov = provenanceOf(analysis, i.key);
     return \`<tr>
@@ -134,6 +135,11 @@ function render(analysis) {
       <td class="msg \${cls}">\${esc(i.message)}\${prov ? \` <span class="meta">[\${esc(prov)}]</span>\` : ''}</td>
     </tr>\`;
   }).join('');
+
+  const context = analysis.diagnosis.indicators
+    .filter((i) => i.group === 'context' && i.value !== null)
+    .map((i) => \`<div>\${esc(i.label)}: <strong>\${esc(formatValue(i.value, i.format))}</strong></div>\`)
+    .join('');
 
   const sourceNotes = analysis.sources.filter((f) => f.detail)
     .map((f) => \`<div class="meta">\${esc(sourceName(f.source))} \${f.status === 'failed' ? 'fora' : 'ressalva'} — \${esc(f.detail ?? '')}</div>\`)
@@ -164,6 +170,7 @@ function render(analysis) {
     </div>
     \${companyNotes ? \`<div class="notes">\${companyNotes}</div>\` : ''}
     <table>\${rows}</table>
+    \${context ? \`<div class="context">\${context}</div>\` : ''}
     \${sourceNotes}
     \${ia}
   </div>\`;

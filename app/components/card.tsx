@@ -63,6 +63,7 @@ function IndicatorRow({
         value={indicator.value}
         format={indicator.format}
         signal={indicator.signal}
+        {...(indicator.peers ? { peers: indicator.peers } : {})}
         {...(indicator.signal && EMPTY_RULER_LABEL[indicator.signal]
           ? { emptyLabel: EMPTY_RULER_LABEL[indicator.signal] as string }
           : {})}
@@ -76,9 +77,34 @@ function IndicatorRow({
   );
 }
 
+/** The supporting panel: shown compactly, never with a ruler, never weighed. */
+function ContextPanel({ indicators }: { indicators: Indicator[] }) {
+  const filled = indicators.filter((i) => i.value !== null);
+  if (filled.length === 0) return null;
+
+  return (
+    <div className={styles.context}>
+      <span className="tag">contexto</span>
+      <dl className={styles.contextGrid}>
+        {filled.map((indicator) => (
+          <div key={indicator.key} className={styles.contextItem} title={indicator.message}>
+            <dt className={styles.contextLabel}>{indicator.label}</dt>
+            <dd className={styles.contextValue}>
+              {formatValue(indicator.value, indicator.format)}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
 export function Card({ analysis }: { analysis: Analysis }) {
   const price = analysis.diagnosis.indicators.find((i) => i.key === 'price');
-  const rest = analysis.diagnosis.indicators.filter((i) => i.key !== 'price');
+  const rest = analysis.diagnosis.indicators.filter(
+    (i) => i.key !== 'price' && i.group === 'core',
+  );
+  const context = analysis.diagnosis.indicators.filter((i) => i.group === 'context');
   const notes = analysis.sources.filter((s) => s.detail);
   const { coverage, verdict } = analysis.diagnosis;
 
@@ -118,6 +144,17 @@ export function Card({ analysis }: { analysis: Analysis }) {
           <IndicatorRow key={indicator.key} indicator={indicator} analysis={analysis} order={i} />
         ))}
       </div>
+
+      <ContextPanel indicators={context} />
+
+      {analysis.dividends?.nextPayment ? (
+        <p className={styles.nextPayment}>
+          <span className="tag">próximo pagamento</span> {analysis.dividends.nextPayment.amount
+            .toLocaleString('pt-BR', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}{' '}
+          por ação em {analysis.dividends.nextPayment.paymentDate} (
+          {analysis.dividends.nextPayment.kind.toLowerCase()})
+        </p>
+      ) : null}
 
       {verdict === 'indeterminate' ? (
         <div className={styles.notices}>

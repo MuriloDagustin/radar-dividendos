@@ -169,7 +169,7 @@ describe('ITUB4 regression: a bank is judged without leverage', () => {
   });
 
   it('the verdict is computed over the four indicators that remain', () => {
-    expect(diagnosis.coverage.applicable).toBe(4);
+    expect(diagnosis.coverage.applicable).toBe(6);
     expect(diagnosis.coverage.present).toBe(4);
     expect(diagnosis.coverage.notApplicable).toBe(1);
   });

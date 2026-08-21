@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   BANDS_DIVIDEND_YIELD,
+  BANDS_PAYOUT_FFO,
   BANDS_DIVIDEND_YIELD_FII,
   BANDS_PRICE_TO_BOOK,
   BANDS_PRICE_TO_BOOK_FII,
@@ -10,6 +11,8 @@ import {
   cdiSpread,
   diagnose,
   dividendYieldBands,
+  payoutOverFfo,
+  positionIn52Weeks,
   priceToBookBands,
 } from '../src/diagnosis';
 import { classify } from '../src/classification';
@@ -319,7 +322,7 @@ describe('CPTS11 regression', () => {
   });
 
   it('the verdict rests on the two indicators that apply', () => {
-    expect(diagnosis.coverage).toMatchObject({ applicable: 2, present: 2, notApplicable: 3 });
+    expect(diagnosis.coverage).toMatchObject({ applicable: 4, present: 2, notApplicable: 3 });
     // One warning out of two readings is not two warnings, so it is not "attention".
     expect(diagnosis.verdict).toBe('solid');
   });
@@ -367,5 +370,103 @@ describe('TAEE11 must never be treated as a fund', () => {
 
   it('gets no fund note', () => {
     expect(categoryNotes(classify('TAEE11', TAESA_SECTOR).category)).toEqual([]);
+  });
+});
+
+describe('payoutOverFfo', () => {
+  it('is the yield divided by the FFO yield, both from the same sheet', () => {
+    expect(payoutOverFfo({ ...emptyFundamentals(), dividendYield12m: 0.126, ffoYield: 0.113 }))
+      .toBeCloseTo(1.115, 3);
+  });
+
+  it('is null without either side, and never divides by zero', () => {
+    expect(payoutOverFfo({ ...emptyFundamentals(), dividendYield12m: 0.126 })).toBeNull();
+    expect(payoutOverFfo({ ...emptyFundamentals(), ffoYield: 0.113 })).toBeNull();
+    expect(
+      payoutOverFfo({ ...emptyFundamentals(), dividendYield12m: 0.126, ffoYield: 0 }),
+    ).toBeNull();
+  });
+
+  it.each([
+    [0.7, 'ok', 'retendo'],
+    [0.9, 'ok', 'coberta'],
+    [1.05, 'ok', 'coberta'],
+    [1.06, 'warn', 'acima do FFO'],
+    [1.5, 'warn', 'acima do FFO'],
+    [1.51, 'bad', 'muito acima'],
+    [2.29, 'bad', 'muito acima'],
+  ])('a payout of %s over FFO reads %s', (ratio, signal, label) => {
+    expect(bandFor(BANDS_PAYOUT_FFO, ratio)).toMatchObject({ signal, label });
+  });
+
+  it('a fund paying out more than twice its FFO is never headlined solid', () => {
+    // CPTS11 as the sources reported it: 14.7% distributed against a 6.4% FFO yield.
+    const d = diagnose(
+      { ...emptyFundamentals(), dividendYield12m: 0.147, ffoYield: 0.064, priceToBook: 0.85 },
+      { category: 'fii' },
+    );
+    expect(pick(d.indicators, 'payoutFfo').value).toBeCloseTo(2.297, 3);
+    expect(pick(d.indicators, 'payoutFfo').signal).toBe('bad');
+    expect(d.verdict).toBe('fragile');
+  });
+
+  it('replaces the profit payout on a fund, which reports no accounting profit', () => {
+    const d = diagnose(
+      { ...emptyFundamentals(), dividendYield12m: 0.126, ffoYield: 0.113, priceToBook: 1 },
+      { category: 'fii' },
+    );
+    expect(pick(d.indicators, 'payout').signal).toBe('na');
+    expect(pick(d.indicators, 'payoutFfo')).toMatchObject({ signal: 'warn' });
+  });
+
+  it('does not appear on a company', () => {
+    const d = diagnose({ ...emptyFundamentals(), dividendYield12m: 0.08 }, { category: 'evergreen' });
+    expect(d.indicators.find((i) => i.key === 'payoutFfo')).toBeUndefined();
+  });
+});
+
+describe('supporting rows', () => {
+  it('a fund gets vacancy and FFO yield in the context panel', () => {
+    const d = diagnose(
+      { ...emptyFundamentals(), dividendYield12m: 0.12, vacancy: 0, ffoYield: 0.113 },
+      { category: 'fii' },
+    );
+    const context = d.indicators.filter((i) => i.group === 'context').map((i) => i.key);
+    expect(context).toContain('vacancy');
+    expect(context).toContain('ffoYield');
+  });
+
+  it('a company does not get the fund-only rows', () => {
+    const context = diagnose(emptyFundamentals(), { category: 'evergreen' }).indicators
+      .filter((i) => i.group === 'context')
+      .map((i) => i.key);
+    expect(context).not.toContain('vacancy');
+    expect(context).not.toContain('ffoYield');
+  });
+
+  it('no supporting row ever carries a signal', () => {
+    const d = diagnose(
+      { ...emptyFundamentals(), roic: 0.14, netMargin: 0.36, currentRatio: 3.48, vacancy: 0 },
+      { category: 'fii' },
+    );
+    for (const row of d.indicators.filter((i) => i.group === 'context')) {
+      expect(row.signal, row.key).toBeNull();
+      expect(row.bands, row.key).toBeNull();
+    }
+  });
+});
+
+describe('positionIn52Weeks', () => {
+  it('places the price between the low and the high', () => {
+    expect(
+      positionIn52Weeks({ ...emptyFundamentals(), price: 37.5, low52w: 31.5, high52w: 44.5 }),
+    ).toBeCloseTo(0.4615, 4);
+  });
+
+  it('is null with an incomplete range or a degenerate one', () => {
+    expect(positionIn52Weeks({ ...emptyFundamentals(), price: 37.5, low52w: 31.5 })).toBeNull();
+    expect(
+      positionIn52Weeks({ ...emptyFundamentals(), price: 37.5, low52w: 40, high52w: 40 }),
+    ).toBeNull();
   });
 });

@@ -28,7 +28,8 @@ describe('distortedProfit', () => {
     ['P/E just above the ceiling', { priceEarnings: 40.01, roe: 0.2, dividendYield: 0.05 }],
     ['P/E far above it', { priceEarnings: 45.45, roe: 0.053, dividendYield: 0.066 }],
     ['dividends with negative earnings', { priceEarnings: -8, roe: 0.1, dividendYield: 0.04 }],
-    ['dividends with no P/E at all', { priceEarnings: null, roe: 0.1, dividendYield: 0.04 }],
+    ['dividends with no P/E and no ROE to vouch for the profit', { priceEarnings: null, roe: null, dividendYield: 0.04 }],
+    ['dividends with no P/E and a near-zero ROE', { priceEarnings: null, roe: 0.01, dividendYield: 0.04 }],
     ['near-zero ROE against a real yield', { priceEarnings: 20, roe: 0.02, dividendYield: 0.06 }],
   ])('flags %s', (_name, input) => {
     expect(distortedProfit(input)).toBe(true);
@@ -39,6 +40,7 @@ describe('distortedProfit', () => {
     ['an ordinary company', { priceEarnings: 7.9, roe: 0.2, dividendYield: 0.081 }],
     ['no dividend and no earnings', { priceEarnings: null, roe: null, dividendYield: null }],
     ['negative earnings but no dividend', { priceEarnings: -8, roe: 0.1, dividendYield: 0 }],
+    ['a missing P/E when a healthy ROE vouches for the profit', { priceEarnings: null, roe: 0.18, dividendYield: 0.09 }],
     ['low ROE with a yield below the bar', { priceEarnings: 20, roe: 0.02, dividendYield: 0.05 }],
     ['ROE exactly at the floor', { priceEarnings: 20, roe: 0.03, dividendYield: 0.09 }],
   ])('does not flag %s', (_name, input) => {
@@ -122,7 +124,7 @@ describe('financial category', () => {
 
   it('computes the verdict without the inapplicable indicator', () => {
     const d = diagnose(withFundamentals(BANK), { category: 'financial' });
-    expect(d.coverage.applicable).toBe(4);
+    expect(d.coverage.applicable).toBe(6);
     expect(d.coverage.notApplicable).toBe(1);
     expect(d.coverage.present).toBe(4);
     expect(d.verdict).toBe('solid');
@@ -376,10 +378,11 @@ describe('inconclusive verdict', () => {
         priceEarnings: 60,
         priceToBook: 1.4,
         netDebtToEbitda: 1.0,
+        profitCagr5y: 0.05,
       }),
     );
     expect(d.coverage.unreliable).toBe(2);
-    expect(d.coverage.present).toBe(3);
+    expect(d.coverage.present).toBe(4);
     expect(d.verdict).toBe('solid');
   });
 
@@ -418,7 +421,7 @@ describe('a category-critical indicator that cannot be read', () => {
 
   it('the same numbers on an evergreen company still conclude from the rest', () => {
     const d = diagnose(
-      withFundamentals({ ...DISTORTED_BANK, netDebtToEbitda: 1.2 }),
+      withFundamentals({ ...DISTORTED_BANK, netDebtToEbitda: 1.2, profitCagr5y: 0.04 }),
       { category: 'evergreen' },
     );
     expect(d.verdict).toBe('solid');

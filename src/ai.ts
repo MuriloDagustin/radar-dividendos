@@ -28,6 +28,8 @@ function formatValue(indicator: Diagnosis['indicators'][number]): string {
       return formatCurrency(indicator.value);
     case 'multiple':
       return formatMultiple(indicator.value);
+    case 'count':
+      return String(indicator.value);
   }
 }
 

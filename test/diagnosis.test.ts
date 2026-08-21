@@ -246,9 +246,9 @@ const HEALTHY_STOCK: Partial<Fundamentals> = {
 };
 
 describe('diagnose', () => {
-  it('builds the seven indicators in the expected order', () => {
+  it('builds the core indicators in the expected order', () => {
     const d = diagnose(emptyFundamentals());
-    expect(d.indicators.map((i) => i.key)).toEqual([
+    expect(d.indicators.filter((i) => i.group === 'core').map((i) => i.key)).toEqual([
       'price',
       'dividendYield12m',
       'payout',
@@ -256,7 +256,17 @@ describe('diagnose', () => {
       'priceToBook',
       'roe',
       'priceEarnings',
+      'dividendStreak',
+      'profitCagr5y',
     ]);
+  });
+
+  it('keeps the supporting rows out of the core panel', () => {
+    const d = diagnose(emptyFundamentals());
+    const context = d.indicators.filter((i) => i.group === 'context').map((i) => i.key);
+    expect(context).toContain('roic');
+    expect(context).toContain('dividendVariation');
+    expect(context.every((k) => !['dividendYield12m', 'payout'].includes(k))).toBe(true);
   });
 
   it('price and P/E are shown but carry no signal and no weight', () => {
@@ -276,21 +286,25 @@ describe('diagnose', () => {
   it('labels an absent field as having no data', () => {
     const d = diagnose(emptyFundamentals());
     for (const indicator of d.indicators) {
-      expect(indicator.value).toBeNull();
-      expect(indicator.signal).toBeNull();
-      expect(indicator.message).toBe(MESSAGES.noData);
+      expect(indicator.value, indicator.key).toBeNull();
+      expect(indicator.signal, indicator.key).toBeNull();
     }
+    // The dividend streak says why it is empty rather than repeating the generic line.
+    expect(d.indicators.find((i) => i.key === 'dividendStreak')?.message).toBe(
+      MESSAGES.noHistory,
+    );
+    expect(d.indicators.find((i) => i.key === 'payout')?.message).toBe(MESSAGES.noData);
   });
 
   it('an empty analysis is indeterminate, not solid', () => {
     const d = diagnose(emptyFundamentals());
     expect(d.verdict).toBe('indeterminate');
     expect(d.coverage).toEqual({
-      applicable: 5,
+      applicable: 7,
       present: 0,
       notApplicable: 0,
       unreliable: 0,
-      minimumForVerdict: 3,
+      minimumForVerdict: 4,
     });
   });
 
@@ -311,8 +325,8 @@ describe('diagnose', () => {
 
   it('a healthy company closes as solid', () => {
     const d = diagnose(withFundamentals(HEALTHY_STOCK));
-    expect(d.counts).toEqual({ ok: 5, warn: 0, bad: 0, na: 0, unrel: 0 });
-    expect(d.coverage).toMatchObject({ applicable: 5, present: 5 });
+    expect(d.counts).toMatchObject({ ok: 5, warn: 0, bad: 0 });
+    expect(d.coverage).toMatchObject({ applicable: 7, present: 5 });
     expect(d.verdict).toBe('solid');
   });
 
@@ -320,7 +334,7 @@ describe('diagnose', () => {
     const d = diagnose(
       withFundamentals({ ...HEALTHY_STOCK, dividendYield12m: 0.04, priceToBook: 0.5 }),
     );
-    expect(d.counts).toEqual({ ok: 3, warn: 2, bad: 0, na: 0, unrel: 0 });
+    expect(d.counts).toMatchObject({ ok: 3, warn: 2, bad: 0 });
     expect(d.verdict).toBe('attention');
   });
 
@@ -361,7 +375,7 @@ describe('diagnose for a FII', () => {
   it('counts coverage over the two indicators that apply', () => {
     const d = diagnose(withFundamentals(FUND), { kind: 'fii' });
     expect(d.coverage).toEqual({
-      applicable: 2,
+      applicable: 4,
       present: 2,
       notApplicable: 3,
       unreliable: 0,
@@ -376,9 +390,9 @@ describe('diagnose for a FII', () => {
     expect(d.indicators.find((i) => i.key === 'payout')?.value).toBeNull();
   });
 
-  it('a fund with only one of the two is indeterminate', () => {
+  it('a fund with only one reading is indeterminate', () => {
     const d = diagnose(withFundamentals({ dividendYield12m: 0.1292 }), { kind: 'fii' });
-    expect(d.coverage).toMatchObject({ applicable: 2, present: 1 });
+    expect(d.coverage).toMatchObject({ applicable: 4, present: 1 });
     expect(d.verdict).toBe('indeterminate');
   });
 

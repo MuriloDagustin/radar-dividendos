@@ -44,7 +44,9 @@ type Resposta =
   | { html: Uint8Array<ArrayBuffer>; status?: number }
   | { erro: string };
 
-type Routes = Partial<Record<'brapi' | 'investidor10' | 'statusinvest' | 'fundamentus', Resposta>>;
+type Routes = Partial<
+  Record<'brapi' | 'investidor10' | 'statusinvest' | 'fundamentus' | 'proventos', Resposta>
+>;
 
 const OFFLINE: Resposta = { erro: 'ECONNREFUSED' };
 
@@ -54,13 +56,16 @@ function route(rotas: Routes): void {
     'fetch',
     vi.fn(async (entrada: URL | string) => {
       const url = String(entrada);
+      // The dividend history is a separate Fundamentus page, so it gets its own route.
       const chave = url.includes('brapi.dev')
         ? 'brapi'
         : url.includes('investidor10')
           ? 'investidor10'
           : url.includes('statusinvest')
             ? 'statusinvest'
-            : 'fundamentus';
+            : url.includes('proventos.php')
+              ? 'proventos'
+              : 'fundamentus';
 
       const alvo = rotas[chave] ?? OFFLINE;
       if ('erro' in alvo) throw new Error(alvo.erro);
@@ -112,7 +117,8 @@ describe('analyze', () => {
     route(allUp());
     const analysis = await analyze('TAEE11', NO_CACHE);
 
-    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(4);
+    // Four sources plus the optional dividend history page.
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(5);
     expect(analysis.sources.map((f) => f.source)).toEqual([
       'brapi',
       'investidor10',

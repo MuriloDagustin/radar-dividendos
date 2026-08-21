@@ -4,8 +4,8 @@ import { PAGE_HTML } from '../src/page';
 import {
   DISCLAIMER,
   emptyFundamentals,
+  emptyProvenance,
   type Analysis,
-  type ProvenanceMap,
 } from '../src/types';
 
 interface FakeElement {
@@ -54,20 +54,6 @@ function loadPageScript(): { output: FakeElement; render: (a: unknown) => void }
   return { output, render: factory(fakeDocument).render };
 }
 
-function emptyProvenance(): ProvenanceMap {
-  return {
-    price: null,
-    dividendYield12m: null,
-    priceEarnings: null,
-    priceToBook: null,
-    roe: null,
-    netDebt: null,
-    ebitda: null,
-    netDebtToEbitda: null,
-    payout: null,
-  };
-}
-
 function fakeAnalysis(): Analysis {
   const fundamentals = {
     ...emptyFundamentals(),
@@ -83,6 +69,8 @@ function fakeAnalysis(): Analysis {
     ticker: 'TAEE11',
     kind: 'stock',
     classification: { category: 'evergreen', rawSector: 'Energia Elétrica', uncertain: false },
+    dividends: null,
+    dividendHistory: null,
     notes: [],
     generatedAt: '2026-08-20T14:00:00.000Z',
     fundamentals,

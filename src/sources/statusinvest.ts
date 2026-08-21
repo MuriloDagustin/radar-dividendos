@@ -36,6 +36,16 @@ const MAPPING: FieldMapping[] = [
     labels: ['Dív. líquida/EBITDA', 'Dívida líquida/EBITDA'],
     unit: 'multiple',
   },
+  { field: 'roic', labels: ['ROIC'], unit: 'fraction' },
+  { field: 'grossMargin', labels: ['M. Bruta'], unit: 'fraction' },
+  { field: 'ebitdaMargin', labels: ['M. EBITDA'], unit: 'fraction' },
+  { field: 'netMargin', labels: ['M. Líquida'], unit: 'fraction' },
+  { field: 'currentRatio', labels: ['Liq. corrente'], unit: 'multiple' },
+  { field: 'netDebtToEquity', labels: ['Dív. líquida/PL'], unit: 'multiple' },
+  { field: 'revenueCagr5y', labels: ['CAGR Receitas 5 anos'], unit: 'fraction' },
+  { field: 'profitCagr5y', labels: ['CAGR Lucros 5 anos'], unit: 'fraction' },
+  { field: 'low52w', labels: ['Min. 52 semanas'], unit: 'multiple' },
+  { field: 'high52w', labels: ['Máx. 52 semanas'], unit: 'multiple' },
 ];
 
 /**
