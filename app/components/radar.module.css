@@ -186,6 +186,19 @@
   color: var(--indigo);
 }
 
+.shortcutActive {
+  border-color: var(--indigo);
+  color: var(--indigo);
+  background: var(--paper-high);
+}
+
+.divider {
+  width: 1px;
+  height: 1rem;
+  background: var(--rule-strong);
+  margin: 0 0.3rem;
+}
+
 .results {
   margin-top: 2.25rem;
   display: grid;
@@ -245,4 +258,14 @@
   .submit {
     flex: 1;
   }
+}
+
+/* Cross-card remark: two funds sharing a segment is a fact about the set, not about a card. */
+.overlap {
+  padding: 0.55rem 0.8rem;
+  border-left: 2px solid var(--warn);
+  background: var(--paper);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: 0.82rem;
+  color: var(--ink-mid);
 }

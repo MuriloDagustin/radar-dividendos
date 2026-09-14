@@ -35,6 +35,11 @@ publica aparece como régua tracejada e vazia, nunca estimado.
 A análise é compartilhável por URL: `/?t=TAEE11%20ITSA4` (some `&ia=1` para pedir a leitura
 por IA).
 
+O botão **triagem de FIIs · 5 filtros** (ou `/?fiis=1`) troca os cartões por uma tabela com
+**todos os FIIs da B3 acima de R$ 1 bi** passados pelos cinco filtros, preenchida conforme o
+servidor termina cada fundo. Clicar num ticker abre o cartão dele. Veja
+[Triagem de mercado](#triagem-de-mercado-todos-os-fiis-pelos-5-filtros).
+
 ### CLI
 
 Roda via `tsx`, sem build.
@@ -44,6 +49,8 @@ npx tsx src/cli.ts TAEE11 ITSA4        # relatório colorido no terminal
 npx tsx src/cli.ts TAEE11 --json       # saída JSON
 npx tsx src/cli.ts TAEE11 --ai         # + interpretação da IA
 npx tsx src/cli.ts TAEE11 --no-cache   # ignora e não grava o cache
+npx tsx src/cli.ts --fiis              # todos os FIIs acima de R$ 1 bi pelos 5 filtros
+npx tsx src/cli.ts --fiis --json       # a mesma triagem em JSON
 npx tsx src/cli.ts --serve             # API + página em http://localhost:3000
 npx tsx src/cli.ts --serve --porta 8080
 npx tsx src/cli.ts --help
@@ -85,6 +92,7 @@ Iguais nos dois servidores (Next.js e Hono):
 |---|---|
 | `GET /` | Interface. No Next.js, o app React; no Hono, uma página HTML mínima. |
 | `GET /api/analise/:ticker` | JSON da análise. `?ia=1` acrescenta a leitura por IA. |
+| `GET /api/fiis` | Triagem de todos os FIIs acima de R$ 1 bi pelos 5 filtros. No Next.js, **NDJSON em streaming** (um evento por linha: `universe`, `fund`/`failure` por fundo, `done` com o relatório); no Hono, o relatório JSON de uma vez, quando termina. |
 
 Status de erro: `400` ticker fora do padrão da B3, `404` ticker inexistente, `502` todas as
 fontes indisponíveis ou com formato inesperado.
@@ -325,8 +333,11 @@ e está em linha num fundo.
 | Payout, Dívida líq./EBITDA, ROE | `na` — não se aplicam |
 
 Um FII não reporta lucro contábil, então o payout dele é medido contra o **FFO**. A conta é
-`DY ÷ FFO Yield`, os dois da mesma ficha e do mesmo período — exata, não um palpite entre
-fontes. E ela achou coisa séria: **CPTS11 distribui 228% do FFO** (DY de 14,7% contra FFO
+`DY ÷ FFO Yield`, e ela é feita **dentro do parser do Fundamentus**, a única fonte que publica
+o FFO Yield — os dois números saem da mesma ficha e da mesma janela, e o campo chega marcado
+`derivado`. Fazer a divisão depois da mescla pareceria igual e não é: o DY que vence a mescla
+é o do Investidor10, com outra janela, e para o HGLG11 isso imprimia **137%** onde a ficha diz
+**111%**. O motor só cai na divisão entre campos mesclados se nenhuma fonte trouxe a razão pronta. E ela achou coisa séria: **CPTS11 distribui 228% do FFO** (DY de 14,7% contra FFO
 Yield de 6,4%). A distribuição não vem do resultado recorrente, e o yield absoluto esconde
 isso por completo.
 
@@ -356,6 +367,130 @@ sinal mais forte: se algum scraper teve de usar a rota de fundo (`/fiis/`,
 
 SAPR11 é o caso que mostra por que a lista importa: a brapi não devolve setor para ele, então
 "termina em 11" sozinho seria um chute.
+
+## FIIs: os 5 filtros e o desempate
+
+A régua de indicadores diz se os números de um fundo estão saudáveis. Ela não diz se o fundo
+é **candidato** a uma carteira de renda — isso é uma triagem, com critérios que não são
+indicadores: segmento, tamanho, idade, custo e quem gere. Para FII o cartão ganha um bloco
+próprio, **acima dos indicadores**, com cinco filtros eliminatórios e três critérios de
+desempate. Ele fica ao lado do veredito, não dentro dele: um fundo pode ser SÓLIDA nos
+números e reprovar no segmento, e as duas coisas têm de ficar visíveis ao mesmo tempo.
+
+| # | Filtro | Passa quando | Fonte |
+|---|---|---|---|
+| 1 | **Segmento resiliente** | Logística, shoppings, lajes corporativas ou renda urbana. Reprova por nome: hotel, hospital, residencial, desenvolvimento (segmento *ou mandato*) e fundo de fundos. **Híbrido de tijolo sai como `sem dado`**: a fonte usa a palavra para qualquer mistura, e o KNRI11 (lajes + logística) não pode reprovar pelo mesmo motivo que um fundo de terras. Híbrido de papel, papel puro e agências reprovam como "fora da lista". | Investidor10 (`SEGMENTO`, `TIPO DE FUNDO`, `MANDATO`) |
+| 2 | **Patrimônio acima de R$ 1 bilhão** | PL ≥ R$ 1 bi. | Investidor10 (`VALOR PATRIMONIAL`), Fundamentus (`Patrim Líquido`, exato) |
+| 3 | **Mais de 5 anos de bolsa** | 5+ anos completos seguidos pagando, pelo histórico de proventos. Sem histórico, vale a marca "listado há mais de 5 anos" do Investidor10, com a ressalva dita. | Fundamentus (`fii_proventos.php`), Investidor10 (checklist) |
+| 4 | **Custo total até 1,15% ao ano** | Taxa ≤ 1,15%. A regra original dizia 1,1%; o teto subiu meio ponto-base depois que o KNRI11 reprovou por 1,11%. | Investidor10 (`TAXA DE ADMINISTRAÇÃO`) |
+| 5 | **Gestora de primeira linha** | A gestora está numa lista de referência. | Investidor10 (texto "Sobre") |
+
+Cada critério sai como `passou`, `não passou` ou `sem dado`, com o valor que sustentou a
+leitura e uma linha em português dizendo o que ele implica. O resumo do bloco conta os dois
+separadamente: *"Passou em 4 de 5 filtros · 1 sem dado"*.
+
+**Desempate — só depois de passar pelos 5 filtros.** Os três critérios são calculados sempre,
+mas o bloco fica esmaecido e rotulado *"só vale depois de passar pelos 5 filtros"* enquanto
+algum filtro não passou:
+
+- **Vacância baixa e estável**: abaixo de 10%. "Estável" nenhuma fonte publica — a linha manda
+  olhar o histórico no relatório gerencial. Em fundo de papel o critério não se aplica, e o
+  `0,00%` que a fonte imprime **não vira nota máxima**.
+- **P/VP abaixo de 1**: comprar o imóvel com desconto sobre o laudo.
+- **Dividendo sustentado pelo aluguel**: distribuição até 105% do FFO, o mesmo limite da faixa
+  "coberta" de *Paga vs. arrecada*. Acima disso a diferença vem de venda de ativo ou do caixa.
+- **Um fundo por segmento**: é uma regra sobre a carteira, não sobre um fundo, então é
+  avaliada sobre o conjunto analisado junto. Se `HGLG11 XPLG11` entram na mesma consulta, a
+  página e o CLI avisam que os dois são de logística.
+
+### O que as fontes não dão, e como isso aparece
+
+- **Custo total.** A fonte publica só a taxa de administração; em muitos fundos ela inclui a
+  gestão, em outros não, e performance é sempre à parte. A linha do filtro diz isso
+  explicitamente e manda ao regulamento. Taxa escrita sem percentual legível (`R$ 30 mil
+  mensais`) sai como `sem dado` com o texto original à vista.
+- **Gestora.** O Investidor10 não tem um campo; o nome é lido da prosa ("gerido pela Pátria
+  Investimentos e administrado pelo Banco Genial", "conta com gestão da XP Asset Management").
+  O nome precisa começar com maiúscula, senão "gestão de imóveis logísticos" viraria gestora.
+- **Lista de gestoras.** É minha e está em `REFERENCE_MANAGERS`: casas com histórico público
+  longo em FIIs listados. Gestora **fora da lista não reprova** — sai como `sem dado` com o
+  nome e a instrução de conferir histórico, relatórios e governança. Ausência numa lista não
+  é evidência de nada.
+- **Segmento do Fundamentus.** A ficha arquiva o HGLG11 como "Multicategoria". Um rótulo
+  grosso desses reprovaria o fundo pelo motivo errado, então dela só se lê o patrimônio.
+- **Lajes AAA.** Nenhuma fonte diz o padrão dos imóveis. Lajes corporativas passam com a
+  ressalva de conferir no relatório se são AAA.
+
+### O que a triagem achou nos fundos reais (03/09/2026)
+
+- **HGLG11** passa nos 5 filtros (logística, R$ 7,59 bi, 9 anos seguidos pagando, 0,60%,
+  Pátria). No desempate, vacância 2,9% e P/VP 0,89 passam — e a distribuição **não** passa:
+  paga mais do que o FFO.
+- **MXRF11** passa em 4 de 5: reprova só no segmento, por ser fundo de papel. Vacância "não se
+  aplica", em vez do 0% enganoso.
+- **XPLG11** passa em 4 de 5 com a gestora lida da prosa (XP Asset Management) e, junto com
+  HGLG11, dispara o aviso de segmento repetido.
+
+## Triagem de mercado: todos os FIIs pelos 5 filtros
+
+Os cinco filtros julgam um fundo por vez. Para escolher onde investir a pergunta é a inversa:
+**quais** fundos da B3 passam hoje? A triagem de mercado responde isso com o mesmo motor,
+sem critério novo.
+
+1. **Universo.** A lista "todos os FIIs" do Fundamentus (`fii_resultado.php`) é a única fonte
+   gratuita com todos os fundos numa requisição só: ~550 fundos com segmento, cotação, DY,
+   P/VP, valor de mercado, liquidez e vacância. As colunas são achadas pelo cabeçalho, não
+   pela posição, e a página lança `FORMATO_INESPERADO` se alguma sumir.
+2. **Pré-seleção pelo tamanho.** O patrimônio não está na lista, mas *valor de mercado ÷ P/VP*
+   é o patrimônio por definição do múltiplo — álgebra, não estimativa. Só fundos com esse
+   valor **≥ R$ 950 mi** seguem: a margem de 5% cobre o arredondamento do P/VP em duas casas, e
+   quem decide é o patrimônio exato da ficha, no filtro 2. Isso corta ~550 fundos para ~85
+   consultas. Fundo sem valor de mercado ou sem P/VP na lista fica de fora — na prática, não
+   negocia.
+3. **Análise completa de cada candidato.** Cada um passa pelo mesmo `analyze` de um ticker
+   digitado, quatro por vez, **compartilhando o cache**: o resultado por fundo é idêntico ao
+   do cartão, e a triagem seguinte (ou um clique no ticker) sai do SQLite. A primeira rodada
+   leva uns 3–4 minutos; as próximas, segundos, até o TTL de 12h vencer.
+4. **Três grupos, e a ordem de cada um.**
+   - **Passaram nos 5 filtros** — ordenados por quantos critérios de desempate passam, depois
+     pelo P/VP (mais desconto primeiro), depois pelo ticker. O aviso de *um fundo por
+     segmento* é calculado sobre este grupo.
+   - **Falta conferir à mão** — nenhum filtro reprovou, mas algum ficou `sem dado`. Ordenados
+     por quanto falta. É onde caem fundos cuja gestora a fonte não nomeou, ou cuja ficha veio
+     incompleta; a tabela diz exatamente o que conferir.
+   - **Reprovados** — com o primeiro filtro que reprovou ao lado. Recolhidos por padrão na
+     página; no CLI, uma linha por fundo.
+   - **Sem análise** — fundos para os quais nenhuma fonte respondeu, com o erro.
+
+O CLI mostra o progresso numa linha só em `stderr` (a saída `--json` continua limpa). Na
+página, a rota responde em **streaming NDJSON**: cada fundo chega quando termina, a tabela é
+reordenada no cliente com a mesma função `rank` do servidor, e a barra de progresso é o que
+impede uma conexão de minutos de parecer travada.
+
+### O que a triagem achou (14/09/2026)
+
+553 fundos na lista, 84 acima de R$ 1 bi, 469 pequenos demais. **12 passaram** nos cinco
+filtros: HSLG11 e LVBI11 com 3/3 no desempate (logística, P/VP 0,74 e 0,81, distribuição
+coberta pelo FFO); PVBI11 e HGRE11 (lajes, com a ressalva AAA); VILG11, XPLG11, HGLG11,
+BTLG11 e BRCO11 (logística); HGBS11, XPML11 e GSFI11 (shoppings). Dos 12, **oito não passam
+no desempate da distribuição** — pagam entre 115% e 162% do FFO — e a página avisa que sete
+são do mesmo segmento.
+
+**16 em *falta conferir***: sete híbridos de tijolo que a fonte não desdobra (JSRE11 e BRCR11
+com desconto de 40–50% no laudo, KNRI11, HGRU11, TRXF11, GARE11, ALZR11), quatro pela gestora
+(Tivio, Zagros, ou nenhuma nomeada na prosa) e cinco por fichas incompletas no Investidor10.
+
+**56 reprovados**: 44 no segmento (papel, FoFs, agências, Fiagros — e RBVA11, cujo mandato é
+"Desenvolvimento para renda"), 6 na idade, 4 no patrimônio exato (GALG11 R$ 572 mi, IBBP11
+R$ 998 mi), 3 no custo (HSML11 1,30%, VISC11 1,35%, RZTR11 1,25%). Nenhum falhou. O KNRI11
+reprovava no custo por 1,11% ao ano, um ponto-base acima do teto original de 1,1%; o teto
+subiu para 1,15% e ele passou a *falta conferir*, pelo híbrido.
+
+Dois ajustes vieram desta rodada. A fonte escreve "a gestão é conduzida pelo BTG Pactual Asset
+Management" e o leitor da prosa só conhecia "gerido pela" e "conta com gestão da"; a frase
+entrou, e BTLG11, XPML11 e VILG11 passaram. E "Híbrido" reprovava 19 fundos de tijolo pelo
+mesmo motivo que um fundo de terras — KNRI11, HGRU11 e TRXF11 entre eles; agora sai como
+`sem dado`, e quem decide a mistura é o relatório gerencial.
 
 ## Ações e FIIs
 
@@ -428,14 +563,19 @@ consequência dita na mesma linha: *"já sai com 15% de imposto retido"*.
 npm test
 ```
 
-587 testes. Cobrem todas as faixas do motor de diagnóstico **e cada limite exato**
+663 testes. Cobrem todas as faixas do motor de diagnóstico **e cada limite exato**
 (`0.13`, `0.06`, `0.03`, `1.0`, `0.40`, `0.25`, `0`, `1.5`, `2.5`, `3.5`, `0.8`, `0.15`,
 `0.08`), os campos `null`, as invariantes da tabela de faixas (contígua, sem lacuna, cada
 limite numa faixa só), a matemática da agulha da régua, o parser do Fundamentus contra HTML
 real capturado em `test/fixtures/` (as fixtures grandes vão gzipadas), os parsers do
 Investidor10 e do StatusInvest, a degradação da brapi para o plano Gratuito, as guardas de
 unidade, a mescla com procedência, as etiquetas de procedência, o TTL do cache, o `render` da
-página Hono, e — o mais importante — que **análise sem dado nunca vira "Sólida"**.
+página Hono, os cinco filtros e o desempate de FII em cada limite exato (R$ 1 bi, 5 anos,
+1,15%, vacância 10%, P/VP 1, 105% do FFO) e contra as fichas reais de HGLG11 e MXRF11
+(`test/fixtures/investidor10-*.html.gz`), a triagem de mercado (parser da lista do
+Fundamentus contra HTML real recortado, pré-seleção na margem exata, os três grupos e a
+ordem de cada um, o streaming de eventos com fontes injetadas), e — o mais importante — que
+**análise sem dado nunca vira "Sólida"**.
 
 Regressões travadas por teste, com os números reais de 20/08/2026:
 
@@ -458,4 +598,8 @@ Regressões travadas por teste, com os números reais de 20/08/2026:
 Estes não vêm de fonte nenhuma; são escolhas minhas, e estão aqui para você contestar:
 `anos seguidos pagos` (3 e 5), `payout sobre FFO` (0,85 / 1,05 / 1,50), P/VP de FII em
 1,05–1,10, e a tolerância de 5% que separa corte de ruído de calendário. O `CAGR de lucro`
-usa zero, que não é escolha.
+usa zero, que não é escolha. Na triagem de FII: o teto de vacância de 10%, a lista de
+segmentos resilientes e excluídos (`RESILIENT_SEGMENTS`, `EXCLUDED_SEGMENTS`) e a lista de
+gestoras de referência (`REFERENCE_MANAGERS`), e o teto de custo em 1,15% — a regra dizia
+1,1%, e subiu para não reprovar por um ponto-base. Os limites de R$ 1 bi e 5 anos são os da
+regra, não meus.

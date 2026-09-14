@@ -1,0 +1,257 @@
+.view {
+  margin-top: 2.25rem;
+  display: grid;
+  gap: 1.4rem;
+}
+
+.head {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.lede {
+  max-width: 62ch;
+  color: var(--ink-mid);
+  font-size: 0.92rem;
+}
+
+.status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.2rem;
+  align-items: baseline;
+}
+
+.counter {
+  color: var(--indigo);
+}
+
+/* One thin line under the status: the run is long enough that "still working" has to be visible. */
+.bar {
+  height: 2px;
+  margin-top: -0.9rem;
+  background: var(--rule);
+  overflow: hidden;
+}
+
+.barFill {
+  display: block;
+  height: 100%;
+  background: var(--indigo);
+  transition: width 240ms ease;
+}
+
+.error {
+  padding: 0.85rem 1rem;
+  background: var(--bad-soft);
+  border: 1px solid var(--bad);
+  border-radius: var(--radius);
+  color: var(--bad);
+  font-size: 0.88rem;
+}
+
+.group {
+  padding: 0.9rem 1.1rem 1rem;
+  background: var(--paper-high);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 0.7rem;
+}
+
+.groupHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.groupTitle {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.groupCount {
+  font-size: 0.8rem;
+  color: var(--ink-faint);
+}
+
+.groupNote {
+  font-size: 0.8rem;
+  color: var(--ink-mid);
+}
+
+.toneOk {
+  color: var(--ok);
+}
+
+.toneWarn {
+  color: var(--warn);
+}
+
+.toneBad {
+  color: var(--bad);
+}
+
+.toneUnrel {
+  color: var(--unrel);
+}
+
+.scroll {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.table th {
+  text-align: left;
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid var(--rule-strong);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+
+.thNum {
+  text-align: right !important;
+}
+
+.table td {
+  padding: 0.42rem 0.5rem;
+  border-bottom: 1px dotted var(--rule);
+  vertical-align: top;
+}
+
+.row:last-child td {
+  border-bottom: 0;
+}
+
+.index {
+  width: 1.6rem;
+  font-family: var(--font-mono);
+  color: var(--ink-faint);
+  font-size: 0.75rem;
+}
+
+.ticker {
+  padding: 0.1rem 0.35rem;
+  margin: -0.1rem -0.35rem;
+  border: 0;
+  background: transparent;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--indigo);
+  cursor: pointer;
+  text-decoration: underline dotted transparent;
+  text-underline-offset: 3px;
+  transition: text-decoration-color 140ms ease;
+}
+
+.ticker:hover {
+  text-decoration-color: currentColor;
+}
+
+.segment {
+  color: var(--ink-mid);
+  min-width: 11rem;
+}
+
+.num,
+.numEmpty {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.numEmpty {
+  color: var(--ink-faint);
+}
+
+.tiebreak {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-mid);
+}
+
+.tiebreakFull {
+  color: var(--ok);
+  font-weight: 600;
+}
+
+.remark {
+  min-width: 14rem;
+  font-size: 0.78rem;
+  display: grid;
+  gap: 0.15rem;
+}
+
+.remarkBad {
+  color: var(--bad);
+}
+
+.remarkWarn {
+  color: var(--warn);
+}
+
+.remarkDim {
+  color: var(--ink-faint);
+}
+
+.empty {
+  font-size: 0.85rem;
+  color: var(--ink-faint);
+}
+
+.overlap {
+  padding: 0.55rem 0.8rem;
+  border-left: 2px solid var(--warn);
+  background: var(--paper);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: 0.82rem;
+  color: var(--ink-mid);
+}
+
+.details {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.summary {
+  cursor: pointer;
+  color: var(--indigo);
+  user-select: none;
+}
+
+.failures {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.failureMessage {
+  margin-left: 0.6rem;
+  color: var(--ink-mid);
+}

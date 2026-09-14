@@ -1,12 +1,17 @@
 import pc from 'picocolors';
 import { formatCurrency, formatMultiple, formatPercent } from './numbers';
 import { MESSAGES } from './diagnosis';
+import type { MarketScreen, ScreenedFund } from './fund-market';
+import { describeScreen } from './fund-screen';
 import { provenanceLabel } from './provenance';
 import {
   ASSET_KIND_NAME,
   CATEGORY_NAME,
   SOURCE_NAME,
   type Analysis,
+  type Criterion,
+  type CriterionStatus,
+  type FundScreen,
   type Indicator,
   type Signal,
   type Verdict,
@@ -87,6 +92,34 @@ function provenanceMark(analysis: Analysis, key: string): string {
   return label ? pc.dim(` [${label}]`) : '';
 }
 
+const CRITERION: Record<CriterionStatus, { mark: string; paint: (t: string) => string }> = {
+  pass: { mark: '✓', paint: pc.green },
+  fail: { mark: '✕', paint: pc.red },
+  unknown: { mark: '?', paint: pc.dim },
+};
+
+function criterionLine(criterion: Criterion, index?: number): string {
+  const { mark, paint } = CRITERION[criterion.status];
+  const head = [index !== undefined ? `${index}.` : ' ', criterion.label].join(' ');
+  const value = criterion.value ? pc.dim(`  ${criterion.value}`) : '';
+  return `    ${paint(mark)} ${paint(pc.bold(head))}${value}\n      ${pc.dim(criterion.detail)}`;
+}
+
+/** Filters first, tiebreakers after — dimmed until every filter has passed. */
+export function renderScreen(screen: FundScreen): string[] {
+  const lines = [
+    '',
+    `  ${pc.bold('5 filtros')}  ${screen.passedAll ? pc.green(describeScreen(screen)) : pc.dim(describeScreen(screen))}`,
+    ...screen.filters.map((c, i) => criterionLine(c, i + 1)),
+    '',
+    `  ${pc.bold('Desempate')}  ${pc.dim(
+      screen.passedAll ? 'entre fundos que passaram nos 5 filtros' : 'só vale depois de passar pelos 5 filtros',
+    )}`,
+    ...screen.tiebreakers.map((c) => criterionLine(c)),
+  ];
+  return lines;
+}
+
 export function renderAnalysis(analysis: Analysis): string {
   const lines: string[] = [];
   const verdict = VERDICTS[analysis.diagnosis.verdict];
@@ -107,6 +140,8 @@ export function renderAnalysis(analysis: Analysis): string {
   for (const note of analysis.notes) {
     lines.push(pc.dim(`  ${note}`));
   }
+
+  if (analysis.fundScreen) lines.push(...renderScreen(analysis.fundScreen), '');
 
   const core = analysis.diagnosis.indicators.filter((i) => i.group === 'core');
   const context = analysis.diagnosis.indicators.filter(
@@ -195,6 +230,74 @@ export function renderAnalysis(analysis: Analysis): string {
     ),
   );
 
+  return lines.join('\n');
+}
+
+function shortCriterion(criterion: Criterion): string {
+  return criterion.value ? `${criterion.label} (${criterion.value})` : criterion.label;
+}
+
+/** One line per fund: the numbers a buyer compares first, then what the screen still owes. */
+function fundLine(fund: ScreenedFund, index: number): string {
+  const numbers = [
+    fund.priceToBook !== null ? `P/VP ${formatMultiple(fund.priceToBook)}` : null,
+    fund.dividendYield12m !== null ? `DY ${formatPercent(fund.dividendYield12m)}` : null,
+    fund.netWorth !== null ? formatCurrency(fund.netWorth) : null,
+    fund.vacancy !== null ? `vacância ${formatPercent(fund.vacancy)}` : null,
+    fund.payoutFfo !== null ? `${formatPercent(fund.payoutFfo)} do FFO` : null,
+  ].filter((n): n is string => n !== null);
+
+  const head = `  ${pad(`${index}.`, 3)} ${pc.bold(pc.cyan(pad(fund.ticker, 7)))} ${pad(fund.segment ?? '—', 34)}`;
+  const tiebreak = pc.dim(`desempate ${fund.tiebreakersPassed}/${fund.screen.tiebreakers.length}`);
+  const lines = [`${head} ${tiebreak}`, pc.dim(`       ${numbers.join(' · ')}`)];
+
+  const missing = fund.screen.filters.filter((c) => c.status === 'unknown');
+  if (missing.length > 0) {
+    lines.push(pc.yellow(`       sem dado: ${missing.map(shortCriterion).join('; ')}`));
+  }
+  const tiebreakFails = fund.screen.tiebreakers.filter((c) => c.status === 'fail');
+  if (fund.outcome === 'approved' && tiebreakFails.length > 0) {
+    lines.push(pc.dim(`       não passa: ${tiebreakFails.map(shortCriterion).join('; ')}`));
+  }
+  return lines.join('\n');
+}
+
+export function renderMarketScreen(report: MarketScreen): string {
+  const lines: string[] = [''];
+
+  lines.push(
+    `${pc.bold('Triagem de FIIs')}  ${pc.dim(
+      `${report.universe} fundos listados · ${report.candidates} acima de R$ 1 bi analisados · ${report.skipped} pequenos demais`,
+    )}`,
+  );
+
+  lines.push('', `  ${pc.green(pc.bold(`Passaram nos 5 filtros`))}  ${pc.dim(`${report.approved.length}`)}`);
+  if (report.approved.length === 0) lines.push(pc.dim('    nenhum fundo passou em todos os filtros hoje'));
+  report.approved.forEach((fund, i) => lines.push(fundLine(fund, i + 1)));
+  for (const overlap of report.overlaps) lines.push(pc.yellow(`\n  ${overlap}`));
+
+  lines.push(
+    '',
+    `  ${pc.yellow(pc.bold('Falta conferir à mão'))}  ${pc.dim(
+      `${report.pending.length} · nenhum filtro reprovou, mas faltou dado`,
+    )}`,
+  );
+  report.pending.forEach((fund, i) => lines.push(fundLine(fund, i + 1)));
+
+  lines.push('', `  ${pc.red(pc.bold('Reprovados'))}  ${pc.dim(`${report.rejected.length}`)}`);
+  for (const fund of report.rejected) {
+    const reason = fund.failedOn ? shortCriterion(fund.failedOn) : 'reprovado';
+    lines.push(pc.dim(`    ${pad(fund.ticker, 7)} ${pad(fund.segment ?? '—', 34)} ${reason}`));
+  }
+
+  if (report.failed.length > 0) {
+    lines.push('', `  ${pc.magenta(pc.bold('Sem análise'))}  ${pc.dim(`${report.failed.length}`)}`);
+    for (const failure of report.failed) {
+      lines.push(pc.dim(`    ${pad(failure.ticker, 7)} ${failure.message.split('\n')[0]}`));
+    }
+  }
+
+  lines.push(pc.dim(`\n  gerado em ${new Date(report.generatedAt).toLocaleString('pt-BR')}`));
   return lines.join('\n');
 }
 

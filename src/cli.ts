@@ -6,7 +6,9 @@ loadEnv();
 import { analyze } from './analysis';
 import { openCache } from './cache';
 import { RadarError, errorMessage } from './errors';
-import { renderAnalysis, renderFooter } from './report';
+import { screenMarket } from './screen-market';
+import { segmentOverlaps } from './fund-screen';
+import { renderAnalysis, renderFooter, renderMarketScreen } from './report';
 import { startServer } from './server';
 import { DISCLAIMER } from './types';
 
@@ -14,12 +16,14 @@ const HELP = `
 ${pc.bold('radar-dividendos')} — fundamentos da B3 com diagnóstico determinístico
 
   npx tsx src/cli.ts TAEE11 ITSA4        analisa um ou mais tickers
+  npx tsx src/cli.ts --fiis              lista os FIIs da B3 que passam nos 5 filtros
   npx tsx src/cli.ts --serve             sobe a API + página HTML
 
 Flags
   --json          imprime JSON em vez do relatório colorido
   --ai            acrescenta interpretação da IA (exige ANTHROPIC_API_KEY)
   --no-cache      ignora e não grava o cache SQLite (TTL padrão: 12h)
+  --fiis          triagem de mercado: todos os FIIs acima de R$ 1 bi, pelos 5 filtros
   --serve         modo servidor
   --porta <n>     porta do modo servidor (padrão: 3000)
   -h, --help      esta ajuda
@@ -38,6 +42,7 @@ interface Options {
   ai: boolean;
   cache: boolean;
   serve: boolean;
+  funds: boolean;
   port: number;
   help: boolean;
 }
@@ -49,6 +54,7 @@ export function parseArgs(argv: string[]): Options {
     ai: false,
     cache: true,
     serve: false,
+    funds: false,
     port: 3000,
     help: false,
   };
@@ -67,6 +73,9 @@ export function parseArgs(argv: string[]): Options {
         break;
       case '--serve':
         options.serve = true;
+        break;
+      case '--fiis':
+        options.funds = true;
         break;
       case '--porta': {
         const raw = argv[i + 1];
@@ -99,6 +108,7 @@ async function runCli(options: Options): Promise<number> {
 
   try {
     const results: unknown[] = [];
+    const funds: { ticker: string; segment: string | null }[] = [];
 
     for (const ticker of options.tickers) {
       try {
@@ -107,6 +117,7 @@ async function runCli(options: Options): Promise<number> {
           cache: options.cache,
           sharedCache: cache,
         });
+        if (analysis.fund) funds.push({ ticker: analysis.ticker, segment: analysis.fund.segment });
         if (options.json) results.push(analysis);
         else console.log(renderAnalysis(analysis));
       } catch (error) {
@@ -118,9 +129,19 @@ async function runCli(options: Options): Promise<number> {
       }
     }
 
+    // One fund per segment is the tiebreaker no single analysis can judge.
+    const overlaps = segmentOverlaps(funds);
+
     if (options.json) {
-      console.log(JSON.stringify({ resultados: results, aviso: DISCLAIMER }, null, 2));
+      console.log(
+        JSON.stringify(
+          { resultados: results, ...(overlaps.length > 0 ? { desempate: overlaps } : {}), aviso: DISCLAIMER },
+          null,
+          2,
+        ),
+      );
     } else {
+      for (const overlap of overlaps) console.log(pc.yellow(`\n  ${overlap}`));
       console.log(renderFooter());
     }
   } finally {
@@ -128,6 +149,38 @@ async function runCli(options: Options): Promise<number> {
   }
 
   return failed ? 1 : 0;
+}
+
+/**
+ * The progress line goes to stderr so `--json` output stays parseable, and it is rewritten
+ * in place: eighty funds would otherwise scroll the terminal for nothing.
+ */
+async function runMarketScreen(options: Options): Promise<number> {
+  const progress = (text: string) => {
+    if (process.stderr.isTTY) process.stderr.write(`\r\x1b[2K  ${pc.dim(text)}`);
+  };
+
+  const report = await screenMarket({
+    cache: options.cache,
+    onEvent: (event) => {
+      if (event.type === 'universe') {
+        progress(`${event.universe} fundos na lista · analisando ${event.candidates} acima de R$ 1 bi…`);
+      } else if (event.type === 'fund' || event.type === 'failure') {
+        const ticker = event.type === 'fund' ? event.fund.ticker : event.failure.ticker;
+        progress(`${event.done}/${event.total} · ${ticker}`);
+      } else {
+        progress('');
+      }
+    },
+  });
+
+  if (options.json) {
+    console.log(JSON.stringify(report, null, 2));
+  } else {
+    console.log(renderMarketScreen(report));
+    console.log(renderFooter());
+  }
+  return 0;
 }
 
 async function main(): Promise<void> {
@@ -148,6 +201,16 @@ async function main(): Promise<void> {
 
   if (options.serve) {
     startServer({ port: options.port, ai: options.ai, cache: options.cache });
+    return;
+  }
+
+  if (options.funds) {
+    try {
+      process.exitCode = await runMarketScreen(options);
+    } catch (error) {
+      console.error(pc.red(errorMessage(error)));
+      process.exitCode = 1;
+    }
     return;
   }
 

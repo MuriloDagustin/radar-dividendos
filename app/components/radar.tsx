@@ -9,9 +9,11 @@ import {
   type CSSProperties,
   type FormEvent,
 } from 'react';
+import { segmentOverlaps } from '@/src/fund-screen';
 import type { Analysis } from '@/src/types';
 import { Card } from './card';
 import { Legend } from './legend';
+import { MarketScreenView } from './screen';
 import styles from './radar.module.css';
 
 const PRESETS: { label: string; tickers: string }[] = [
@@ -26,6 +28,9 @@ interface Failure {
 }
 
 type Result = { kind: 'analysis'; analysis: Analysis } | { kind: 'failure'; failure: Failure };
+
+/** Cards for the tickers typed, or the market-wide fund screen — never both at once. */
+type View = 'cards' | 'screen';
 
 function splitTickers(raw: string): string[] {
   const seen = new Set<string>();
@@ -64,6 +69,7 @@ export function Radar({ aiAvailable }: { aiAvailable: boolean }) {
   const [ai, setAi] = useState(false);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<Result[]>([]);
+  const [view, setView] = useState<View>('cards');
   const field = useRef<HTMLInputElement>(null);
   const aiId = useId();
 
@@ -84,9 +90,13 @@ export function Radar({ aiAvailable }: { aiAvailable: boolean }) {
     [aiAvailable],
   );
 
-  // `?t=TAEE11+ITSA4` makes an analysis shareable and reloadable.
+  // `?t=TAEE11+ITSA4` makes an analysis shareable and reloadable; `?fiis=1` opens the screen.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    if (params.get('fiis') === '1') {
+      setView('screen');
+      return;
+    }
     const tickers = params.get('t');
     if (!tickers) return;
     const withAi = params.get('ia') === '1';
@@ -104,7 +114,20 @@ export function Radar({ aiAvailable }: { aiAvailable: boolean }) {
   function submit(raw: string) {
     const tickers = splitTickers(raw);
     if (tickers.length > 0) recordInUrl(tickers, ai && aiAvailable);
+    setView('cards');
     void run(raw, ai);
+  }
+
+  function openScreen() {
+    setResults([]);
+    setView('screen');
+    window.history.replaceState(null, '', '?fiis=1');
+  }
+
+  /** A ticker picked off the screen table opens its card, as if it had been typed. */
+  function pickFromScreen(ticker: string) {
+    setInput(ticker);
+    submit(ticker);
   }
 
   function onSubmit(event: FormEvent) {
@@ -116,6 +139,15 @@ export function Radar({ aiAvailable }: { aiAvailable: boolean }) {
     setInput(tickers);
     submit(tickers);
   }
+
+  // One fund per segment is the tiebreaker that only a set of funds can answer.
+  const overlaps = segmentOverlaps(
+    results.flatMap((r) =>
+      r.kind === 'analysis' && r.analysis.fund
+        ? [{ ticker: r.analysis.ticker, segment: r.analysis.fund.segment }]
+        : [],
+    ),
+  );
 
   return (
     <div className={styles.page}>
@@ -186,18 +218,34 @@ export function Radar({ aiAvailable }: { aiAvailable: boolean }) {
             {preset.label}
           </button>
         ))}
+        <span className={styles.divider} aria-hidden="true" />
+        <button
+          type="button"
+          className={view === 'screen' ? `${styles.shortcut} ${styles.shortcutActive}` : styles.shortcut}
+          onClick={openScreen}
+          aria-pressed={view === 'screen'}
+        >
+          triagem de FIIs · 5 filtros
+        </button>
       </div>
 
-      {loading ? (
+      {view === 'screen' ? <MarketScreenView onPick={pickFromScreen} /> : null}
+
+      {view === 'cards' && loading ? (
         <div className={styles.results}>
           <div className={`${styles.loading} tag`}>consultando as quatro fontes…</div>
         </div>
       ) : null}
 
-      {!loading && results.length === 0 ? <Legend /> : null}
+      {view === 'cards' && !loading && results.length === 0 ? <Legend /> : null}
 
-      {!loading && results.length > 0 ? (
+      {view === 'cards' && !loading && results.length > 0 ? (
         <div className={styles.results}>
+          {overlaps.map((overlap) => (
+            <p key={overlap} className={styles.overlap} role="note">
+              <span className="tag">desempate</span> {overlap}
+            </p>
+          ))}
           {results.map((result, i) =>
             result.kind === 'analysis' ? (
               <div key={result.analysis.ticker} style={{ '--card-order': i } as CSSProperties}>
