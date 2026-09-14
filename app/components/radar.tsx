@@ -11,6 +11,7 @@ import {
 } from 'react';
 import { segmentOverlaps } from '@/src/fund-screen';
 import type { Analysis } from '@/src/types';
+import { STATIC_ONLY_SCREEN, STATIC_SITE, analysisUrl } from '@/app/mode';
 import { Card } from './card';
 import { Legend } from './legend';
 import { MarketScreenView } from './screen';
@@ -42,9 +43,14 @@ function splitTickers(raw: string): string[] {
 }
 
 async function analyzeTicker(ticker: string, ai: boolean): Promise<Result> {
-  const url = `/api/analise/${encodeURIComponent(ticker)}${ai ? '?ia=1' : ''}`;
   try {
-    const response = await fetch(url);
+    const response = await fetch(analysisUrl(ticker, ai));
+
+    // A static host answers a missing fund with an HTML 404, not with our JSON error.
+    if (STATIC_SITE && !response.ok) {
+      return { kind: 'failure', failure: { ticker, message: STATIC_ONLY_SCREEN } };
+    }
+
     const body: unknown = await response.json();
 
     if (!response.ok) {
@@ -69,7 +75,8 @@ export function Radar({ aiAvailable }: { aiAvailable: boolean }) {
   const [ai, setAi] = useState(false);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<Result[]>([]);
-  const [view, setView] = useState<View>('cards');
+  // The snapshot site has nothing to type for, so it opens on what it does have: the screen.
+  const [view, setView] = useState<View>(STATIC_SITE ? 'screen' : 'cards');
   const field = useRef<HTMLInputElement>(null);
   const aiId = useId();
 
@@ -102,6 +109,7 @@ export function Radar({ aiAvailable }: { aiAvailable: boolean }) {
     const withAi = params.get('ia') === '1';
     setInput(tickers.replace(/[,;+]+/g, ' ').trim());
     setAi(withAi);
+    setView('cards');
     void run(tickers, withAi);
   }, [run]);
 
@@ -174,7 +182,7 @@ export function Radar({ aiAvailable }: { aiAvailable: boolean }) {
             className={styles.field}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="TAEE11 ITSA4 MXRF11"
+            placeholder={STATIC_SITE ? 'HGLG11 KNRI11 XPML11' : 'TAEE11 ITSA4 MXRF11'}
             aria-label="Tickers da B3, separados por espaço"
             autoComplete="off"
             spellCheck={false}
@@ -186,7 +194,15 @@ export function Radar({ aiAvailable }: { aiAvailable: boolean }) {
         </button>
       </form>
 
-      <div className={styles.options}>
+      {STATIC_SITE ? (
+        <p className={styles.staticNote}>
+          <span className="tag">instantâneo</span> Versão publicada no GitHub Pages: os dados são um
+          retrato diário gerado por uma GitHub Action, e só os fundos da triagem têm análise pronta.
+          Para consultar qualquer ticker ao vivo, rode o projeto localmente.
+        </p>
+      ) : null}
+
+      <div className={STATIC_SITE ? styles.hidden : styles.options}>
         <label
           className={aiAvailable ? styles.option : `${styles.option} ${styles.optionOff}`}
           htmlFor={aiId}

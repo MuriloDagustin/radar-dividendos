@@ -492,6 +492,29 @@ entrou, e BTLG11, XPML11 e VILG11 passaram. E "Híbrido" reprovava 19 fundos de 
 mesmo motivo que um fundo de terras — KNRI11, HGRU11 e TRXF11 entre eles; agora sai como
 `sem dado`, e quem decide a mistura é o relatório gerencial.
 
+## Publicação no GitHub Pages
+
+O GitHub Pages só serve arquivo estático, e o app precisa de servidor: o scraping não roda no
+navegador (CORS) e o cache é SQLite. O que fica publicado é um **instantâneo diário**, com a
+mesma interface:
+
+1. `npm run snapshot` (`scripts/snapshot.ts`) roda a triagem de mercado ao vivo e grava
+   `public/data/fiis.json` mais `public/data/analise/<TICKER>.json` para cada um dos ~85 fundos
+   analisados — tudo lido do cache que a própria triagem acabou de preencher, nada é buscado
+   duas vezes.
+2. `RADAR_STATIC=1 next build` (`npm run build:static`) faz o export estático em `out/`, com
+   `basePath` no nome do repositório. As rotas de API são removidas antes do build, porque
+   export estático não as carrega e o snapshot as substitui.
+3. A página lê `data/…` em vez de `api/…` (`app/mode.ts`; caminhos relativos, então o mesmo
+   código serve na raiz e no sub-path). Abre direto na triagem, mostra a data do instantâneo e
+   avisa que só os fundos da triagem têm análise pronta — ticker fora dela cai numa mensagem,
+   não num erro de rede.
+
+O workflow `.github/workflows/pages.yml` faz os três passos a cada push em `main`, todo dia
+útil às 08:00 de Brasília, e sob demanda (*Run workflow*). `BRAPI_TOKEN` é opcional, como
+secret do repositório. Se uma fonte bloquear o IP do runner, o fundo sai como `sem dado` ou
+`sem análise` — o retrato publicado diz o que conseguiu ler, nunca inventa.
+
 ## Ações e FIIs
 
 O tipo do papel é descoberto pelas fontes, sem lista de tickers: Investidor10 e StatusInvest

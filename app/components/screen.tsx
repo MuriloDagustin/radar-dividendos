@@ -11,6 +11,7 @@ import {
 import { segmentOverlaps } from '@/src/fund-screen';
 import type { Criterion } from '@/src/types';
 import { formatTimestamp, formatValue } from '@/app/format';
+import { STATIC_SITE, screenUrl } from '@/app/mode';
 import styles from './screen.module.css';
 
 type StreamEvent = ScreenEvent | { type: 'error'; message: string };
@@ -86,6 +87,23 @@ async function readEvents(response: Response, onEvent: (event: StreamEvent) => v
       newline = buffer.indexOf('\n');
     }
   }
+}
+
+/** The snapshot is a finished report; it lands in the same state a completed stream would. */
+function fromReport(report: MarketScreen): State {
+  return {
+    progress: {
+      universe: report.universe,
+      candidates: report.candidates,
+      skipped: report.skipped,
+      done: report.candidates,
+    },
+    funds: [...report.approved, ...report.pending, ...report.rejected],
+    failed: report.failed,
+    report,
+    error: null,
+    running: false,
+  };
 }
 
 function shortCriterion(criterion: Criterion): string {
@@ -208,8 +226,12 @@ export function MarketScreenView({ onPick }: { onPick: (ticker: string) => void 
 
     (async () => {
       try {
-        const response = await fetch('/api/fiis', { signal: controller.signal });
+        const response = await fetch(screenUrl(), { signal: controller.signal });
         if (!response.ok) throw new Error(`A triagem falhou (HTTP ${response.status}).`);
+        if (STATIC_SITE) {
+          setState(fromReport((await response.json()) as MarketScreen));
+          return;
+        }
         await readEvents(response, (event) => setState((s) => apply(s, event)));
         // A stream that ends without its closing event was cut short: say so instead of looking done.
         setState((s) =>
@@ -263,7 +285,9 @@ export function MarketScreenView({ onPick }: { onPick: (ticker: string) => void 
           </span>
         ) : null}
         {state.report ? (
-          <span className={`tag ${styles.counter}`}>concluída · {formatTimestamp(state.report.generatedAt)}</span>
+          <span className={`tag ${styles.counter}`}>
+            {STATIC_SITE ? 'instantâneo de' : 'concluída ·'} {formatTimestamp(state.report.generatedAt)}
+          </span>
         ) : null}
       </div>
       {state.running ? (

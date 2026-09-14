@@ -6,3 +6,6 @@ tsconfig.tsbuildinfo
 *.sqlite
 *.sqlite-wal
 *.sqlite-shm
+# Snapshot written by scripts/snapshot.ts for the static site
+public/data/
+out/

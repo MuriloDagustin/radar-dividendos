@@ -186,6 +186,21 @@
   color: var(--indigo);
 }
 
+.hidden {
+  display: none;
+}
+
+.staticNote {
+  margin-top: 0.9rem;
+  padding: 0.55rem 0.8rem;
+  border-left: 2px solid var(--indigo);
+  background: var(--paper);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: 0.82rem;
+  color: var(--ink-mid);
+  max-width: 62ch;
+}
+
 .shortcutActive {
   border-color: var(--indigo);
   color: var(--indigo);

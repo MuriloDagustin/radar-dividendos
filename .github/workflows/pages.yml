@@ -1,0 +1,54 @@
+name: GitHub Pages
+
+# A daily snapshot: the screen runs against the live sources, the result is written as JSON,
+# and the static build of the app is published reading it.
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 11 * * 1-5' # 08:00 em Brasília, dias úteis, depois da atualização noturna das fontes
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Triagem ao vivo e snapshot em public/data
+        run: npm run snapshot
+        env:
+          BRAPI_TOKEN: ${{ secrets.BRAPI_TOKEN }}
+      # Static export cannot carry route handlers, and the snapshot replaces them anyway.
+      - name: Build estático
+        run: |
+          rm -rf app/api
+          npm run build:static
+        env:
+          RADAR_BASE_PATH: /${{ github.event.repository.name }}
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

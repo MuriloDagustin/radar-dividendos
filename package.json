@@ -12,6 +12,8 @@
     "build": "next build",
     "start": "next start",
     "radar": "tsx src/cli.ts",
+    "snapshot": "tsx scripts/snapshot.ts",
+    "build:static": "RADAR_STATIC=1 next build",
     "serve": "tsx src/cli.ts --serve",
     "test": "vitest run",
     "test:watch": "vitest",
