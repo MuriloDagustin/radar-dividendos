@@ -6,13 +6,14 @@ import styles from './ruler.module.css';
 /**
  * `wash` is the fill of inactive bands: it shows where the rule's good and bad zones are
  * without turning into a traffic light that competes with the band the value landed in.
+ * `text` is the darker step of the same hue, for the label under the active band.
  */
-const COLOR: Record<Signal, { strong: string; wash: string }> = {
-  ok: { strong: 'var(--ok)', wash: 'var(--ok-wash)' },
-  warn: { strong: 'var(--warn)', wash: 'var(--warn-wash)' },
-  bad: { strong: 'var(--bad)', wash: 'var(--bad-wash)' },
-  unrel: { strong: 'var(--unrel)', wash: 'var(--unrel-wash)' },
-  na: { strong: 'var(--ink-faint)', wash: 'var(--rule)' },
+const COLOR: Record<Signal, { fill: string; text: string; wash: string }> = {
+  ok: { fill: 'var(--ok-fill)', text: 'var(--ok)', wash: 'var(--ok-wash)' },
+  warn: { fill: 'var(--warn-fill)', text: 'var(--warn)', wash: 'var(--warn-wash)' },
+  bad: { fill: 'var(--bad-fill)', text: 'var(--bad)', wash: 'var(--bad-wash)' },
+  unrel: { fill: 'var(--unrel-fill)', text: 'var(--unrel)', wash: 'var(--unrel-wash)' },
+  na: { fill: 'var(--muted-soft)', text: 'var(--muted)', wash: 'var(--surface-card)' },
 };
 
 /** Signals with a band position on the ruler; the rest render the empty state. */
@@ -100,7 +101,8 @@ export function Ruler({ indicatorKey, bands, value, format, signal, emptyLabel, 
   const active = bands[activeIndex];
 
   const root = {
-    '--band-color': COLOR[signal].strong,
+    '--band-color': COLOR[signal].fill,
+    '--band-text': COLOR[signal].text,
     '--count': bands.length,
   } as CSSProperties;
 

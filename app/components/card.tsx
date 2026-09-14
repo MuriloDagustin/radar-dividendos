@@ -179,18 +179,21 @@ export function Card({ analysis }: { analysis: Analysis }) {
   return (
     <article className={styles.card}>
       <header className={styles.top}>
-        <h2 className={styles.ticker}>{analysis.ticker}</h2>
-        {price?.value !== null && price !== undefined ? (
-          <span className={styles.price}>{formatValue(price.value, price.format)}</span>
-        ) : null}
-        <Badge diagnosis={analysis.diagnosis} />
-        <span className="tag" title={analysis.classification.rawSector ?? undefined}>
-          {analysis.kind === 'fii' || analysis.classification.category === 'fii'
-            ? ASSET_KIND_NAME.fii
-            : `${ASSET_KIND_NAME.stock} · ${CATEGORY_NAME[analysis.classification.category]}`}
-        </span>
-        <span className={styles.spacer} />
-        <span className={`tag ${styles.origin}`}>
+        <div className={styles.identity}>
+          <h2 className={styles.ticker}>{analysis.ticker}</h2>
+          {price?.value !== null && price !== undefined ? (
+            <span className={styles.price}>{formatValue(price.value, price.format)}</span>
+          ) : null}
+        </div>
+        <div className={styles.meta}>
+          <Badge diagnosis={analysis.diagnosis} />
+          <span className="tag" title={analysis.classification.rawSector ?? undefined}>
+            {analysis.kind === 'fii' || analysis.classification.category === 'fii'
+              ? ASSET_KIND_NAME.fii
+              : `${ASSET_KIND_NAME.stock} · ${CATEGORY_NAME[analysis.classification.category]}`}
+          </span>
+        </div>
+        <span className={styles.origin}>
           {analysis.fromCache ? 'do cache' : 'consulta ao vivo'}
           <br />
           {formatTimestamp(analysis.generatedAt)}
@@ -219,7 +222,7 @@ export function Card({ analysis }: { analysis: Analysis }) {
 
       {analysis.dividends?.nextPayment ? (
         <p className={styles.nextPayment}>
-          <span className="tag">próximo pagamento</span> {analysis.dividends.nextPayment.amount
+          <span className={`tag ${styles.paymentTag}`}>próximo pagamento</span> {analysis.dividends.nextPayment.amount
             .toLocaleString('pt-BR', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}{' '}
           por ação em {analysis.dividends.nextPayment.paymentDate} (
           {analysis.dividends.nextPayment.kind.toLowerCase()})
@@ -264,7 +267,7 @@ export function Card({ analysis }: { analysis: Analysis }) {
 
       {analysis.interpretation ? (
         <div className={styles.ai}>
-          <span className="tag">Leitura por IA · {analysis.interpretation.model}</span>
+          <span className={`tag ${styles.aiTag}`}>Leitura por IA · {analysis.interpretation.model}</span>
           <p className={styles.aiText}>{analysis.interpretation.summary}</p>
           {analysis.interpretation.watchPoints.length > 0 ? (
             <ul className={styles.points}>

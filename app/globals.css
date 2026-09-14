@@ -1,70 +1,89 @@
 /*
- * "Instrument paper" base: cool blue-grey ground, blue-cast ink, and chroma reserved for
- * the band rulers — that is where the information lives.
+ * Tokens from DESIGN.md. One light look only: the system has no dark mode, the cream canvas
+ * is the brand. Coral is reserved for the primary action; dark surfaces carry product chrome
+ * (the AI reading, the screen console, the footer).
  */
 
 :root {
-  --paper: #eceef1;
-  --paper-high: #f7f8f9;
-  --paper-back: #e2e6ea;
-  --ink: #10161c;
-  --ink-mid: #47535f;
-  --ink-faint: #7d8894;
-  --rule: #d3d8de;
-  --rule-strong: #b9c1ca;
-  --indigo: #1f3a5f;
+  --primary: #cc785c;
+  --primary-active: #a9583e;
+  --primary-disabled: #e6dfd8;
 
-  --ok: #0f7b5a;
-  --ok-soft: #cfe6dc;
-  --ok-wash: #dfe8e5;
-  --warn: #a9701a;
-  --warn-soft: #f0e2c6;
-  --warn-wash: #e9e6dc;
-  --bad: #a93429;
-  --bad-soft: #f0d5d1;
-  --bad-wash: #e9e0de;
-  /* A distorted reading gets its own hue: not a grade, a warning about the number. */
-  --unrel: #6b4b9a;
-  --unrel-soft: #e2dcee;
-  --unrel-wash: #e6e3ec;
+  --ink: #141413;
+  --body: #3d3d3a;
+  --body-strong: #252523;
+  --muted: #6c6a64;
+  --muted-soft: #8e8b82;
 
-  --measure: 68rem;
-  --radius: 3px;
+  --hairline: #e6dfd8;
+  --hairline-soft: #ebe6df;
 
-  --shadow: 0 1px 0 rgba(16, 22, 28, 0.04), 0 1px 2px rgba(16, 22, 28, 0.06);
+  --canvas: #faf9f5;
+  --surface-soft: #f5f0e8;
+  --surface-card: #efe9de;
+  --surface-cream-strong: #e8e0d2;
+  --surface-dark: #181715;
+  --surface-dark-elevated: #252320;
+  --surface-dark-soft: #1f1e1b;
+
+  --on-primary: #ffffff;
+  --on-dark: #faf9f5;
+  --on-dark-soft: #a09d96;
+
+  --accent-teal: #5db8a6;
+  --accent-amber: #e8a55a;
+  --success: #5db872;
+  --warning: #d4a017;
+  --error: #c64545;
+
+  /* Coral at 14px on cream is 3.1:1; the pressed shade passes 4.5:1, so running links use it. */
+  --link: var(--primary-active);
+
+  /* The semantic tokens are fill colours (dots, bands). As text on cream they miss 4.5:1, so text gets a darkened step of each. */
+  --ok: #3a7f4c;
+  --warn: #8a6a0c;
+  --bad: #a83a3a;
+  /* A distorted reading is not a grade: it borrows the teal, the palette's one hue outside the traffic light. */
+  --unrel: #2f7f6f;
+
+  --ok-fill: var(--success);
+  --warn-fill: var(--warning);
+  --bad-fill: var(--error);
+  --unrel-fill: var(--accent-teal);
+
+  --ok-soft: color-mix(in srgb, var(--success) 22%, var(--canvas));
+  --warn-soft: color-mix(in srgb, var(--warning) 22%, var(--canvas));
+  --bad-soft: color-mix(in srgb, var(--error) 16%, var(--canvas));
+  --unrel-soft: color-mix(in srgb, var(--accent-teal) 22%, var(--canvas));
+
+  --ok-wash: color-mix(in srgb, var(--success) 16%, var(--surface-soft));
+  --warn-wash: color-mix(in srgb, var(--warning) 16%, var(--surface-soft));
+  --bad-wash: color-mix(in srgb, var(--error) 14%, var(--surface-soft));
+  --unrel-wash: color-mix(in srgb, var(--accent-teal) 16%, var(--surface-soft));
+
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-pill: 9999px;
+
+  --space-xxs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-xxl: 48px;
+  --space-section: clamp(3rem, 7vw, 6rem);
+
+  --measure: 75rem;
+  --gutter: clamp(1rem, 4vw, 2rem);
+
+  --shadow-hover: 0 1px 3px rgba(20, 20, 19, 0.08);
+  --focus-ring: 0 0 0 3px color-mix(in srgb, var(--primary) 15%, transparent);
 
   color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --paper: #14181d;
-    --paper-high: #1b2027;
-    --paper-back: #151a20;
-    --ink: #e8ecf0;
-    --ink-mid: #a3aeba;
-    --ink-faint: #6f7b88;
-    --rule: #2a313a;
-    --rule-strong: #3a434e;
-    --indigo: #90b4e0;
-
-    --ok: #4cc79b;
-    --ok-soft: #17342b;
-    --ok-wash: #1d2724;
-    --warn: #e0a944;
-    --warn-soft: #382c14;
-    --warn-wash: #26241d;
-    --bad: #ef7a6d;
-    --bad-soft: #3a1f1c;
-    --bad-wash: #27211f;
-    --unrel: #b49ae0;
-    --unrel-soft: #2a2338;
-    --unrel-wash: #232130;
-
-    --shadow: 0 1px 0 rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.4);
-
-    color-scheme: dark;
-  }
 }
 
 *,
@@ -79,21 +98,38 @@ html {
 
 body {
   margin: 0;
-  background: var(--paper-back);
-  color: var(--ink);
+  background: var(--canvas);
+  color: var(--body);
   font-family: var(--font-text);
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.55;
-  font-feature-settings: 'ss01';
   -webkit-font-smoothing: antialiased;
 }
 
 h1,
 h2,
-h3,
+h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  /* Garamond figures are old-style by default; a ticker like TAEE11 needs them lining. */
+  font-variant-numeric: lining-nums;
+}
+
 p,
 figure {
   margin: 0;
+}
+
+a {
+  color: var(--link);
+  text-decoration: none;
+}
+
+a:active {
+  text-decoration: underline;
 }
 
 button,
@@ -102,16 +138,15 @@ input {
   color: inherit;
 }
 
-/* Visible, consistent focus: this tool is driven from the keyboard, coming from the CLI. */
 :focus-visible {
-  outline: 2px solid var(--indigo);
+  outline: 2px solid var(--primary);
   outline-offset: 2px;
-  border-radius: 1px;
+  border-radius: var(--radius-xs);
 }
 
 ::selection {
-  background: var(--indigo);
-  color: var(--paper-high);
+  background: var(--surface-cream-strong);
+  color: var(--ink);
 }
 
 .mono {
@@ -119,14 +154,14 @@ input {
   font-variant-numeric: tabular-nums;
 }
 
-/* Structural label: spaced small caps, the register of an instrument legend. */
+/* caption-uppercase: the register of every structural label. */
 .tag {
-  font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 500;
-  letter-spacing: 0.14em;
+  line-height: 1.4;
+  letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: var(--ink-faint);
+  color: var(--muted);
 }
 
 @media (prefers-reduced-motion: reduce) {

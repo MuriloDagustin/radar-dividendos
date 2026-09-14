@@ -10,9 +10,10 @@ const SAMPLE_DY = 0.081;
  */
 export function Legend() {
   return (
-    <section className={styles.legend}>
+    <section className={styles.legend} aria-label="Como ler a régua">
+      <span className="tag">como ler a régua</span>
       <div className={styles.title}>
-        <span className="tag">como ler · dividend yield 12m</span>
+        <h2 className={styles.heading}>Dividend yield 12m</h2>
         <span className={styles.sample}>8,1%</span>
       </div>
 

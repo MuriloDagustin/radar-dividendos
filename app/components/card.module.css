@@ -1,79 +1,87 @@
+/* model-comparison-card: canvas, hairline, no shadow. Depth comes from the panels inside. */
 .card {
-  background: var(--paper-high);
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  overflow: hidden;
+  padding: var(--space-xl);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  background: var(--canvas);
+  display: grid;
+  gap: var(--space-lg);
   animation: enter 400ms cubic-bezier(0.22, 0.9, 0.24, 1) backwards;
+  animation-delay: calc(var(--card-order, 0) * 70ms);
 }
 
-/* Identity strip: the card's one distinct surface, anchoring the ticker. */
+/* Grid items default to min-width auto, and a long unbreakable value would push the card past its border. */
+.card > * {
+  min-width: 0;
+}
+
 .top {
   display: flex;
-  align-items: center;
-  gap: 0.9rem;
-  padding: 0.7rem 1.1rem;
-  background: var(--paper);
-  border-bottom: 1px solid var(--rule);
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-sm) var(--space-lg);
 }
 
+.identity {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-md);
+}
+
+/* display-md */
 .ticker {
-  font-family: var(--font-display);
-  font-size: 1.35rem;
-  font-weight: 700;
-  letter-spacing: 0.01em;
+  font-size: 36px;
   line-height: 1;
+  letter-spacing: -0.5px;
 }
 
 .price {
   font-family: var(--font-mono);
-  font-size: 0.95rem;
-  color: var(--ink-mid);
+  font-size: 18px;
+  color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
 
-.spacer {
-  flex: 1;
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
 }
 
 .origin {
+  margin-left: auto;
   text-align: right;
-  line-height: 1.35;
-}
-
-.body {
-  padding: 0.35rem 1.1rem 1rem;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--muted-soft);
 }
 
 .indicator {
-  padding: 0.85rem 0 0.7rem;
-  border-bottom: 1px solid var(--rule);
-}
-
-.indicator:last-child {
-  border-bottom: 0;
-  padding-bottom: 0.2rem;
+  padding: var(--space-md) 0;
+  border-top: 1px solid var(--hairline-soft);
 }
 
 .indicatorHead {
   display: flex;
   align-items: baseline;
-  gap: 0.6rem;
-  margin-bottom: 0.55rem;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
 }
 
 .name {
-  font-weight: 600;
-  font-size: 0.88rem;
-  letter-spacing: 0.005em;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--ink);
 }
 
 .number {
+  margin-left: auto;
   font-family: var(--font-mono);
-  font-size: 1.05rem;
+  font-size: 18px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
-  margin-left: auto;
 }
 
 .numberOk {
@@ -85,92 +93,299 @@
 .numberBad {
   color: var(--bad);
 }
+.numberUnrel {
+  color: var(--unrel);
+}
 .numberNone {
-  color: var(--ink-faint);
+  color: var(--muted-soft);
 }
 
 .indicatorFoot {
   display: flex;
   align-items: baseline;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
 }
 
 .message {
-  font-size: 0.82rem;
-  color: var(--ink-mid);
+  font-size: 14px;
+  color: var(--body);
 }
 
 .provenance {
   margin-left: auto;
   white-space: nowrap;
+  font-size: 12px;
 }
 
 /* Indicator with no rule: informational, and the layout says so by leaving no ruler room. */
 .informational {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: 0.6rem;
-  padding: 0.6rem 0;
-  border-bottom: 1px solid var(--rule);
+  gap: var(--space-xs) var(--space-sm);
+  padding: var(--space-sm) 0;
+  border-top: 1px solid var(--hairline-soft);
 }
 
 .informational .number {
-  margin-left: auto;
+  font-size: 16px;
 }
 
 .informational .provenance {
   margin-left: 0;
-  min-width: 11rem;
+  min-width: 12rem;
   text-align: right;
 }
 
-.informational:last-child {
-  border-bottom: 0;
+.body > :first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.body > :last-child {
+  padding-bottom: 0;
+}
+
+/* Structural remarks about the company, above the indicators they colour. */
+.notes {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.note {
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  font-size: 14px;
+  color: var(--body);
+}
+
+/*
+ * Supporting panel: a dense grid with no rulers. These numbers inform without judging, and
+ * giving them the same visual weight as the banded rows would drown the verdict.
+ */
+.context {
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--hairline-soft);
+}
+
+.contextGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: var(--space-xs) var(--space-lg);
+  margin: var(--space-sm) 0 0;
+}
+
+.contextItem {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-xs);
+  padding-bottom: var(--space-xxs);
+  border-bottom: 1px solid var(--hairline-soft);
+}
+
+.contextLabel {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.contextValue {
+  margin: 0 0 0 auto;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.nextPayment {
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  background: var(--ok-soft);
+  font-size: 14px;
+  color: var(--body);
+}
+
+.paymentTag {
+  color: var(--ok);
 }
 
 .notices {
-  margin: 0.9rem 1.1rem 0;
-  padding: 0.6rem 0.75rem;
-  border-left: 2px solid var(--rule-strong);
-  background: var(--paper);
-  border-radius: 0 var(--radius) var(--radius) 0;
+  display: grid;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
 }
 
 .notice {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: 14px;
   line-height: 1.5;
-  color: var(--ink-mid);
+  color: var(--muted);
 }
 
-.notice + .notice {
-  margin-top: 0.35rem;
+.notice strong {
+  font-weight: 500;
+  color: var(--body-strong);
 }
 
+/* A source failure outranks a caveat: the text changes colour, the layout does not. */
+.noticeFailure {
+  color: var(--bad);
+}
+
+.noticeUnrel {
+  color: var(--unrel);
+}
+
+/* product-mockup-card-dark: the AI reading is the one panel that is model output, and it shows on dark. */
 .ai {
-  margin: 0.9rem 1.1rem 1.1rem;
-  padding: 0.85rem 1rem;
-  background: var(--paper);
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
+  padding: var(--space-lg);
+  border-radius: var(--radius-lg);
+  background: var(--surface-dark);
+  color: var(--on-dark);
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.aiTag {
+  color: var(--on-dark-soft);
 }
 
 .aiText {
-  margin-top: 0.4rem;
-  font-size: 0.88rem;
-  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.55;
 }
 
 .points {
-  margin: 0.6rem 0 0;
-  padding-left: 1.05rem;
-  font-size: 0.83rem;
-  color: var(--ink-mid);
+  margin: 0;
+  padding-left: 1.2em;
+  display: grid;
+  gap: var(--space-xxs);
+  font-size: 14px;
+  color: var(--on-dark-soft);
 }
 
-.points li + li {
-  margin-top: 0.25rem;
+/*
+ * The five-filter screen. A checklist, not a ruler: each line is a yes, a no, or a shrug,
+ * and the tiebreakers dim until every filter has passed.
+ */
+.screen {
+  padding: var(--space-lg);
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+}
+
+.screenHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-sm);
+}
+
+.screenSummary {
+  font-size: 14px;
+  color: var(--body);
+}
+
+.screenSummaryPass {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ok);
+}
+
+.criteria {
+  list-style: none;
+  margin: var(--space-sm) 0 0;
+  padding: 0;
+}
+
+.criterion {
+  display: flex;
+  gap: var(--space-sm);
+  padding: var(--space-sm) 0;
+  border-top: 1px solid var(--hairline);
+}
+
+.criterion:first-child {
+  border-top: 0;
+}
+
+.mark {
+  flex: 0 0 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.markPass {
+  color: var(--ok);
+  background: color-mix(in srgb, var(--success) 22%, transparent);
+}
+
+.markFail {
+  color: var(--bad);
+  background: color-mix(in srgb, var(--error) 18%, transparent);
+}
+
+.markUnknown {
+  color: var(--muted);
+  background: color-mix(in srgb, var(--muted-soft) 24%, transparent);
+}
+
+.criterionBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.criterionHead {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-xs);
+}
+
+.criterionIndex {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted-soft);
+}
+
+.criterionLabel {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.criterionValue {
+  margin-left: auto;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.criterionDetail {
+  margin: var(--space-xxs) 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--body);
+}
+
+.tiebreak {
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--hairline);
+}
+
+.tiebreakLocked {
+  opacity: 0.55;
 }
 
 @keyframes enter {
@@ -184,218 +399,18 @@
   }
 }
 
-@media (max-width: 34rem) {
-  .top {
-    flex-wrap: wrap;
-    gap: 0.5rem 0.8rem;
+@media (max-width: 40rem) {
+  .card {
+    padding: var(--space-lg);
+  }
+
+  .ticker {
+    font-size: 30px;
   }
 
   .origin {
+    margin-left: 0;
     text-align: left;
     flex-basis: 100%;
   }
-
-  .spacer {
-    display: none;
-  }
-}
-
-/* A source failure outranks a caveat: the text changes colour, the layout does not. */
-.noticeFailure {
-  color: var(--bad);
-}
-
-.numberUnrel {
-  color: var(--unrel);
-}
-
-.noticeUnrel {
-  color: var(--unrel);
-}
-
-/* Structural remarks about the company, above the indicators they colour. */
-.notes {
-  margin: 0.75rem 1.1rem 0;
-  display: grid;
-  gap: 0.35rem;
-}
-
-.note {
-  padding: 0.45rem 0.7rem;
-  background: var(--paper);
-  border-left: 2px solid var(--ink-faint);
-  border-radius: 0 var(--radius) var(--radius) 0;
-  font-size: 0.8rem;
-  color: var(--ink-mid);
-}
-
-/*
- * Supporting panel: a dense grid with no rulers. These numbers inform without judging, and
- * giving them the same visual weight as the banded rows would drown the verdict.
- */
-.context {
-  margin: 0 1.1rem;
-  padding: 0.8rem 0 0.2rem;
-  border-top: 1px solid var(--rule);
-}
-
-.contextGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
-  gap: 0.5rem 1.2rem;
-  margin: 0.55rem 0 0;
-}
-
-.contextItem {
-  display: flex;
-  align-items: baseline;
-  gap: 0.4rem;
-  border-bottom: 1px dotted var(--rule);
-  padding-bottom: 0.2rem;
-}
-
-.contextLabel {
-  font-size: 0.75rem;
-  color: var(--ink-mid);
-  margin: 0;
-}
-
-.contextValue {
-  margin: 0 0 0 auto;
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.nextPayment {
-  margin: 0.8rem 1.1rem 0;
-  padding: 0.5rem 0.7rem;
-  background: var(--paper);
-  border-left: 2px solid var(--ok);
-  border-radius: 0 var(--radius) var(--radius) 0;
-  font-size: 0.8rem;
-  color: var(--ink-mid);
-}
-
-/*
- * The five-filter screen. A checklist, not a ruler: each line is a yes, a no, or a shrug,
- * and the tiebreakers dim until every filter has passed.
- */
-.screen {
-  margin: 0.85rem 1.1rem 0;
-  padding: 0.75rem 0.9rem 0.6rem;
-  background: var(--paper);
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
-}
-
-.screenHead {
-  display: flex;
-  align-items: baseline;
-  gap: 0.6rem;
-}
-
-.screenSummary {
-  font-size: 0.78rem;
-  color: var(--ink-mid);
-}
-
-.screenSummaryPass {
-  font-size: 0.78rem;
-  color: var(--ok);
-  font-weight: 600;
-}
-
-.criteria {
-  list-style: none;
-  margin: 0.45rem 0 0;
-  padding: 0;
-}
-
-.criterion {
-  display: flex;
-  gap: 0.6rem;
-  padding: 0.45rem 0;
-  border-bottom: 1px dotted var(--rule);
-}
-
-.criterion:last-child {
-  border-bottom: 0;
-}
-
-.mark {
-  flex: 0 0 1.35rem;
-  height: 1.35rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  font-weight: 700;
-  margin-top: 0.05rem;
-}
-
-.markPass {
-  color: var(--ok);
-  background: color-mix(in srgb, var(--ok) 14%, transparent);
-}
-
-.markFail {
-  color: var(--bad);
-  background: color-mix(in srgb, var(--bad) 14%, transparent);
-}
-
-.markUnknown {
-  color: var(--ink-faint);
-  background: color-mix(in srgb, var(--ink-faint) 16%, transparent);
-}
-
-.criterionBody {
-  flex: 1;
-  min-width: 0;
-}
-
-.criterionHead {
-  display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
-}
-
-.criterionIndex {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  color: var(--ink-faint);
-}
-
-.criterionLabel {
-  font-weight: 600;
-  font-size: 0.85rem;
-}
-
-.criterionValue {
-  margin-left: auto;
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  color: var(--ink-mid);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.criterionDetail {
-  margin: 0.15rem 0 0;
-  font-size: 0.78rem;
-  line-height: 1.45;
-  color: var(--ink-mid);
-}
-
-.tiebreak {
-  margin-top: 0.7rem;
-  padding-top: 0.6rem;
-  border-top: 1px solid var(--rule);
-}
-
-.tiebreakLocked {
-  opacity: 0.6;
 }

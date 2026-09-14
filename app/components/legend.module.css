@@ -1,57 +1,64 @@
+/* hero-illustration-card: the ruler is the illustration. */
 .legend {
-  margin-top: 2.25rem;
-  padding: 1.1rem 1.2rem 1.2rem;
-  background: var(--paper-high);
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  min-width: 0;
+  padding: var(--space-xl);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+  display: grid;
+  gap: var(--space-md);
 }
 
 .title {
   display: flex;
   align-items: baseline;
-  gap: 0.6rem;
-  margin-bottom: 0.9rem;
+  gap: var(--space-md);
+  margin-top: calc(-1 * var(--space-xs));
+}
+
+/* display-sm */
+.heading {
+  font-size: 28px;
+  line-height: 1.2;
+  letter-spacing: -0.3px;
 }
 
 .sample {
-  font-family: var(--font-mono);
-  font-size: 1.05rem;
-  font-weight: 500;
-  color: var(--ok);
   margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 22px;
+  color: var(--ok);
   font-variant-numeric: tabular-nums;
 }
 
 .notes {
   display: grid;
-  gap: 0.55rem 1.5rem;
-  margin-top: 1.1rem;
-  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: var(--space-sm);
+  margin-top: var(--space-xs);
 }
 
 .note {
   display: grid;
-  grid-template-columns: 1.6rem 1fr;
-  gap: 0.55rem;
+  grid-template-columns: 1.5rem 1fr;
+  gap: var(--space-sm);
   align-items: start;
-  font-size: 0.8rem;
-  color: var(--ink-mid);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--body);
 }
 
 .swatch {
-  height: 0.85rem;
-  margin-top: 0.18rem;
-  border-radius: 1px;
+  height: 14px;
+  margin-top: 4px;
+  border-radius: var(--radius-xs);
 }
 
 .swatchBand {
-  background: var(--ok);
+  background: var(--ok-fill);
 }
 
 .swatchNeedle {
   position: relative;
-  background: var(--rule);
+  background: var(--surface-cream-strong);
 }
 
 .swatchNeedle::after {
@@ -64,5 +71,12 @@
 }
 
 .swatchEmpty {
-  border: 1px dashed var(--rule-strong);
+  border: 1px dashed var(--hairline);
+  background: var(--surface-soft);
+}
+
+@media (max-width: 40rem) {
+  .legend {
+    padding: var(--space-lg);
+  }
 }

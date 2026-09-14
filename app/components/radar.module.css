@@ -1,286 +1,387 @@
 .page {
-  max-width: var(--measure);
-  margin: 0 auto;
-  padding: 2.5rem 1.25rem 4rem;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--canvas);
 }
 
-.header {
+.main {
+  flex: 1;
+}
+
+.container {
+  width: 100%;
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding-inline: var(--gutter);
+}
+
+/* top-nav: flat, canvas, 64px. */
+.nav {
+  min-height: 64px;
   display: flex;
-  align-items: baseline;
-  gap: 0.75rem;
-  padding-bottom: 0.6rem;
-  border-bottom: 1px solid var(--rule-strong);
+  align-items: center;
+  padding-block: var(--space-sm);
+}
+
+.navInner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs) var(--space-md);
 }
 
 .brand {
-  font-family: var(--font-display);
-  font-size: 0.95rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  text-decoration: none;
 }
 
+.brand:active {
+  text-decoration: none;
+}
+
+.mark {
+  flex: none;
+  width: 22px;
+  height: 22px;
+}
+
+/* badge-pill */
 .engine {
   margin-left: auto;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
 }
 
-/* The thesis in one line: why this number can be trusted. */
+/* hero-band: copy on the left, the ruler lesson on the right while there is nothing else to show. */
+.hero {
+  padding-block: var(--space-xxl);
+}
+
+.heroSplit {
+  padding-bottom: var(--space-section);
+}
+
+.heroGrid {
+  display: grid;
+  gap: var(--space-xxl);
+  align-items: start;
+}
+
+@media (min-width: 64rem) {
+  .heroSplit .heroGrid {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    column-gap: clamp(2rem, 5vw, 4rem);
+  }
+}
+
+.heroCopy {
+  min-width: 0;
+}
+
+/* display-xl */
 .thesis {
-  font-family: var(--font-display);
-  font-size: clamp(1.6rem, 4.6vw, 2.6rem);
-  font-weight: 700;
-  line-height: 1.08;
+  font-size: clamp(2.25rem, 1.4rem + 3.6vw, 4rem);
+  line-height: 1.05;
   letter-spacing: -0.02em;
-  margin: 2rem 0 0;
-  max-width: 30ch;
+  max-width: 18ch;
   text-wrap: balance;
 }
 
 .thesis em {
-  font-style: normal;
-  color: var(--indigo);
+  font-style: italic;
 }
 
 .sub {
-  margin: 0.8rem 0 0;
-  max-width: 54ch;
-  color: var(--ink-mid);
-  font-size: 0.95rem;
+  margin-top: var(--space-md);
+  max-width: 56ch;
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--muted);
 }
 
-/* Command field: the tool was born in a terminal, and the input honours that. */
 .command {
-  margin-top: 1.9rem;
+  margin-top: var(--space-xl);
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: stretch;
+  gap: var(--space-xs);
 }
 
-.fieldWrap {
-  flex: 1 1 20rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0 0.75rem;
-  background: var(--paper-high);
-  border: 1px solid var(--rule-strong);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  transition: border-color 140ms ease;
-}
-
-.fieldWrap:focus-within {
-  border-color: var(--indigo);
-}
-
-.caret {
-  font-family: var(--font-mono);
-  color: var(--indigo);
-  font-weight: 600;
-  user-select: none;
-}
-
+/* text-input; tickers are code, so the field is mono while the placeholder stays in the body sans. */
 .field {
-  flex: 1;
-  min-width: 6rem;
-  padding: 0.7rem 0;
-  border: 0;
-  background: none;
-  outline: none;
+  flex: 1 1 16rem;
+  height: 40px;
+  padding: 10px 14px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  background: var(--canvas);
+  color: var(--ink);
   font-family: var(--font-mono);
-  font-size: 1rem;
-  letter-spacing: 0.08em;
+  font-size: 14px;
+  line-height: 1.4;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
+  outline: none;
+}
+
+.field:focus {
+  border-color: var(--primary);
+  box-shadow: var(--focus-ring);
 }
 
 .field::placeholder {
-  color: var(--ink-faint);
+  color: var(--muted-soft);
+  font-family: var(--font-text);
+  letter-spacing: 0;
   text-transform: none;
-  letter-spacing: 0.02em;
 }
 
+/* button-primary: the page's one coral element. */
 .submit {
-  padding: 0.7rem 1.3rem;
-  border: 1px solid var(--indigo);
-  border-radius: var(--radius);
-  background: var(--indigo);
-  color: var(--paper-high);
-  font-family: var(--font-mono);
-  font-size: 0.82rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  height: 40px;
+  padding: 12px 20px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--primary);
+  color: var(--on-primary);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
   cursor: pointer;
-  transition:
-    filter 140ms ease,
-    transform 140ms ease;
-}
-
-.submit:hover:not(:disabled) {
-  filter: brightness(1.15);
 }
 
 .submit:active:not(:disabled) {
-  transform: translateY(1px);
+  background: var(--primary-active);
 }
 
 .submit:disabled {
+  background: var(--primary-disabled);
+  color: var(--muted);
   cursor: progress;
-  opacity: 0.55;
 }
 
-.options {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem 1.2rem;
-  margin-top: 0.8rem;
-}
-
-.option {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  cursor: pointer;
-  user-select: none;
-}
-
-.option input {
-  accent-color: var(--indigo);
-  margin: 0;
-  width: 0.95rem;
-  height: 0.95rem;
-}
-
-.optionOff {
-  cursor: default;
-  opacity: 0.55;
-}
-
-.suggestions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.4rem;
-  margin-top: 1rem;
-}
-
-.shortcut {
-  padding: 0.24rem 0.55rem;
-  border: 1px solid var(--rule-strong);
-  border-radius: 2px;
-  background: transparent;
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.06em;
-  color: var(--ink-mid);
-  cursor: pointer;
-  transition:
-    border-color 140ms ease,
-    color 140ms ease;
-}
-
-.shortcut:hover {
-  border-color: var(--indigo);
-  color: var(--indigo);
+.staticNote {
+  margin-top: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  font-size: 14px;
+  color: var(--body);
+  max-width: 62ch;
 }
 
 .hidden {
   display: none;
 }
 
-.staticNote {
-  margin-top: 0.9rem;
-  padding: 0.55rem 0.8rem;
-  border-left: 2px solid var(--indigo);
-  background: var(--paper);
-  border-radius: 0 var(--radius) var(--radius) 0;
-  font-size: 0.82rem;
-  color: var(--ink-mid);
-  max-width: 62ch;
+.options {
+  margin-top: var(--space-sm);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs) var(--space-lg);
+}
+
+.option {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: 14px;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.option input {
+  accent-color: var(--primary);
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+
+.optionOff {
+  cursor: default;
+  color: var(--muted-soft);
+}
+
+/* category-tab row */
+.suggestions {
+  margin-top: var(--space-lg);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xxs);
+}
+
+.hint {
+  margin-right: var(--space-xs);
+}
+
+.shortcut {
+  padding: 8px 14px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  cursor: pointer;
 }
 
 .shortcutActive {
-  border-color: var(--indigo);
-  color: var(--indigo);
-  background: var(--paper-high);
+  background: var(--surface-card);
+  color: var(--ink);
 }
 
 .divider {
   width: 1px;
-  height: 1rem;
-  background: var(--rule-strong);
-  margin: 0 0.3rem;
+  height: 20px;
+  margin-inline: var(--space-xs);
+  background: var(--hairline);
 }
 
+.band {
+  padding-bottom: var(--space-section);
+}
+
+/* Cards 2-up when there is room; a lone card does not stretch across the whole measure. */
 .results {
-  margin-top: 2.25rem;
   display: grid;
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 34rem), 1fr));
+  gap: var(--space-lg);
+  align-items: start;
 }
 
 .results > * {
-  animation-delay: calc(var(--card-order, 0) * 70ms);
+  min-width: 0;
+}
+
+.results:has(> :only-child) {
+  max-width: 52rem;
 }
 
 .error {
-  padding: 0.85rem 1rem;
+  grid-column: 1 / -1;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
   background: var(--bad-soft);
-  border: 1px solid var(--bad);
-  border-radius: var(--radius);
   color: var(--bad);
-  font-size: 0.88rem;
+  font-size: 14px;
 }
 
 .errorTicker {
+  margin-right: var(--space-xs);
   font-family: var(--font-mono);
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  margin-right: 0.5rem;
+  font-weight: 500;
 }
 
 .loading {
-  padding: 1rem;
-  border: 1px dashed var(--rule-strong);
-  border-radius: var(--radius);
-  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-lg);
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  color: var(--muted);
+  font-size: 14px;
 }
 
+.pulse {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-teal);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+/* Cross-card remark: two funds sharing a segment is a fact about the set, not about a card. */
+.overlap {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-xs) var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  font-size: 14px;
+  color: var(--body);
+}
+
+.overlap::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-amber);
+  align-self: center;
+}
+
+/* footer: the dark band that closes the page. */
 .footer {
-  margin-top: 3rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--rule);
+  margin-top: auto;
+  padding-block: clamp(2.5rem, 6vw, 4rem);
+  background: var(--surface-dark);
+  color: var(--on-dark-soft);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.footerInner {
   display: grid;
-  gap: 0.45rem;
+  gap: var(--space-md);
+}
+
+.footerBrand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  color: var(--on-dark);
+  font-weight: 500;
+}
+
+.footerText {
+  max-width: 64ch;
 }
 
 .footer a {
-  color: var(--indigo);
+  color: var(--on-dark);
+  text-decoration: underline;
+  text-decoration-color: var(--on-dark-soft);
+  text-underline-offset: 3px;
 }
 
-@media (max-width: 34rem) {
-  .header {
-    flex-wrap: wrap;
-    gap: 0.35rem 0.75rem;
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
   }
+  50% {
+    opacity: 0.3;
+  }
+}
 
+@media (max-width: 40rem) {
   .engine {
     margin-left: 0;
-    flex-basis: 100%;
+    white-space: normal;
   }
 
   .submit {
     flex: 1;
   }
-}
-
-/* Cross-card remark: two funds sharing a segment is a fact about the set, not about a card. */
-.overlap {
-  padding: 0.55rem 0.8rem;
-  border-left: 2px solid var(--warn);
-  background: var(--paper);
-  border-radius: 0 var(--radius) var(--radius) 0;
-  font-size: 0.82rem;
-  color: var(--ink-mid);
 }

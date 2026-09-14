@@ -1,15 +1,13 @@
+/* badge-pill, tinted by the verdict. */
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.28rem 0.6rem 0.28rem 0.5rem;
-  border-radius: 2px;
-  border: 1px solid currentColor;
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.11em;
-  text-transform: uppercase;
+  gap: var(--space-xs);
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
   white-space: nowrap;
 }
 
@@ -28,20 +26,17 @@
   background: var(--bad-soft);
 }
 
-/* Signal counts: shows where the verdict came from, not just its label. */
 .counts {
   font-weight: 400;
-  opacity: 0.75;
-  letter-spacing: 0.04em;
+  opacity: 0.8;
 }
 
 /* No verdict is a state of its own: neutral, never mistakable for approval. */
 .indeterminate {
-  color: var(--ink-faint);
-  background: var(--paper);
+  color: var(--muted);
+  background: var(--surface-card);
 }
 
-/* Inconclusive is not a grade: the numbers arrived but could not be read. */
 .inconclusive {
   color: var(--unrel);
   background: var(--unrel-soft);

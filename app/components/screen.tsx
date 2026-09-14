@@ -182,7 +182,8 @@ function Group({
   return (
     <section className={styles.group}>
       <header className={styles.groupHead}>
-        <span className={`${styles.groupTitle} ${toneClass}`}>{title}</span>
+        <span className={`${styles.dot} ${toneClass}`} aria-hidden="true" />
+        <span className={styles.groupTitle}>{title}</span>
         <span className={`mono ${styles.groupCount}`}>{count}</span>
         <span className={styles.groupNote}>{note}</span>
       </header>
@@ -269,32 +270,34 @@ export function MarketScreenView({ onPick }: { onPick: (ticker: string) => void 
         </p>
       </header>
 
-      <div className={styles.status}>
-        {progress ? (
-          <span className="tag">
-            {progress.universe} fundos na lista · {progress.skipped} abaixo de R$ 1 bi · {progress.candidates}{' '}
-            analisados
-          </span>
-        ) : (
-          <span className="tag">lendo a lista de fundos no Fundamentus…</span>
-        )}
-        {state.running && progress ? (
-          <span className={`tag ${styles.counter}`}>
-            {progress.done}/{progress.candidates}
-            {progress.done === 0 ? ' · a primeira vez leva alguns minutos; depois vem do cache' : ''}
-          </span>
-        ) : null}
-        {state.report ? (
-          <span className={`tag ${styles.counter}`}>
-            {STATIC_SITE ? 'instantâneo de' : 'concluída ·'} {formatTimestamp(state.report.generatedAt)}
-          </span>
+      <div className={styles.console}>
+        <div className={styles.status}>
+          {progress ? (
+            <span>
+              {progress.universe} fundos na lista · {progress.skipped} abaixo de R$ 1 bi · {progress.candidates}{' '}
+              analisados
+            </span>
+          ) : (
+            <span>lendo a lista de fundos no Fundamentus…</span>
+          )}
+          {state.running && progress ? (
+            <span className={styles.counter}>
+              {progress.done}/{progress.candidates}
+              {progress.done === 0 ? ' · a primeira vez leva alguns minutos; depois vem do cache' : ''}
+            </span>
+          ) : null}
+          {state.report ? (
+            <span className={styles.counter}>
+              {STATIC_SITE ? 'instantâneo de' : 'concluída ·'} {formatTimestamp(state.report.generatedAt)}
+            </span>
+          ) : null}
+        </div>
+        {state.running ? (
+          <div className={styles.bar} role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100}>
+            <span className={styles.barFill} style={{ width: `${percent}%` }} />
+          </div>
         ) : null}
       </div>
-      {state.running ? (
-        <div className={styles.bar} role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100}>
-          <span className={styles.barFill} style={{ width: `${percent}%` }} />
-        </div>
-      ) : null}
 
       {state.error ? (
         <p className={styles.error} role="alert">
@@ -330,7 +333,7 @@ export function MarketScreenView({ onPick }: { onPick: (ticker: string) => void 
       <Group title="Reprovados" tone="bad" count={rejected.length} note="o primeiro filtro que reprovou, à direita">
         {rejected.length > 0 ? (
           <details className={styles.details}>
-            <summary className={`tag ${styles.summary}`}>mostrar os {rejected.length} reprovados</summary>
+            <summary className={styles.summary}>mostrar os {rejected.length} reprovados</summary>
             <Table>
               <FundRows funds={rejected} numbered={false} onPick={onPick} />
             </Table>
@@ -343,7 +346,8 @@ export function MarketScreenView({ onPick }: { onPick: (ticker: string) => void 
       {state.failed.length > 0 ? (
         <section className={styles.group}>
           <header className={styles.groupHead}>
-            <span className={`${styles.groupTitle} ${styles.toneUnrel}`}>Sem análise</span>
+            <span className={`${styles.dot} ${styles.toneUnrel}`} aria-hidden="true" />
+            <span className={styles.groupTitle}>Sem análise</span>
             <span className={`mono ${styles.groupCount}`}>{state.failed.length}</span>
             <span className={styles.groupNote}>as fontes não responderam para estes</span>
           </header>

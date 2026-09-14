@@ -241,7 +241,7 @@ resultado. Ela não é o único guarda-corpo — veja o detector abaixo.
 
 - **`na`** (não aplicável): o indicador não tem sentido para a categoria. Exibido esmaecido,
   com o motivo, e a régua não é desenhada.
-- **`unrel`** (não confiável): o número existe mas está distorcido. Exibido em roxo, com o
+- **`unrel`** (não confiável): o número existe mas está distorcido. Exibido em verde-água, com o
   valor à vista e a régua vazia — dá para ver o 233,9% e ao mesmo tempo saber que ele não
   sustenta leitura.
 
