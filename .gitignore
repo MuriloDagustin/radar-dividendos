@@ -9,3 +9,4 @@ tsconfig.tsbuildinfo
 # Snapshot written by scripts/snapshot.ts for the static site
 public/data/
 out/
+.claude/
