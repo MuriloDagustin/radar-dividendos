@@ -277,3 +277,125 @@
   font-size: 0.8rem;
   color: var(--ink-mid);
 }
+
+/*
+ * The five-filter screen. A checklist, not a ruler: each line is a yes, a no, or a shrug,
+ * and the tiebreakers dim until every filter has passed.
+ */
+.screen {
+  margin: 0.85rem 1.1rem 0;
+  padding: 0.75rem 0.9rem 0.6rem;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+
+.screenHead {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.screenSummary {
+  font-size: 0.78rem;
+  color: var(--ink-mid);
+}
+
+.screenSummaryPass {
+  font-size: 0.78rem;
+  color: var(--ok);
+  font-weight: 600;
+}
+
+.criteria {
+  list-style: none;
+  margin: 0.45rem 0 0;
+  padding: 0;
+}
+
+.criterion {
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px dotted var(--rule);
+}
+
+.criterion:last-child {
+  border-bottom: 0;
+}
+
+.mark {
+  flex: 0 0 1.35rem;
+  height: 1.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin-top: 0.05rem;
+}
+
+.markPass {
+  color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 14%, transparent);
+}
+
+.markFail {
+  color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 14%, transparent);
+}
+
+.markUnknown {
+  color: var(--ink-faint);
+  background: color-mix(in srgb, var(--ink-faint) 16%, transparent);
+}
+
+.criterionBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.criterionHead {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.criterionIndex {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+}
+
+.criterionLabel {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.criterionValue {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--ink-mid);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.criterionDetail {
+  margin: 0.15rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--ink-mid);
+}
+
+.tiebreak {
+  margin-top: 0.7rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--rule);
+}
+
+.tiebreakLocked {
+  opacity: 0.6;
+}

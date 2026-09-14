@@ -69,3 +69,21 @@ export function parseNumber(raw: string): number | null {
   const value = Number(normalized);
   return Number.isFinite(value) ? value : null;
 }
+
+const SCALE: [RegExp, number][] = [
+  [/bilh/i, 1e9],
+  [/milh/i, 1e6],
+  [/\bmil\b/i, 1e3],
+];
+
+/** "R$ 7,59 Bilhões" → 7_590_000_000. The word carries the scale; without one the number is raw. */
+export function parseScaledAmount(raw: string): number | null {
+  const match = /-?\d[\d.]*(?:,\d+)?/.exec(raw);
+  if (!match) return null;
+  // "1.234.567" has no comma to reveal the dots as thousands separators, so the shape does.
+  const digits = /^-?\d{1,3}(\.\d{3})+$/.test(match[0]) ? match[0].replace(/\./g, '') : match[0];
+  const value = parseNumber(digits);
+  if (value === null) return null;
+  const scale = SCALE.find(([word]) => word.test(raw))?.[1] ?? 1;
+  return value * scale;
+}

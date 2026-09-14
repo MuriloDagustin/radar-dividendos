@@ -433,10 +433,12 @@ export interface DiagnoseOptions {
 }
 
 /**
- * A fund's payout measured against FFO instead of profit. Both come from the same sheet and
- * the same period, so the ratio is exact rather than a cross-source guess.
+ * A fund's payout measured against FFO instead of profit. The source that publishes both
+ * derives it on its own sheet, and that figure wins: dividing a merged yield by a merged
+ * FFO yield can pair two sites with different windows.
  */
 export function payoutOverFfo(f: Fundamentals): number | null {
+  if (f.payoutFfo !== null) return f.payoutFfo;
   if (f.dividendYield12m === null || f.ffoYield === null || f.ffoYield <= 0) return null;
   return f.dividendYield12m / f.ffoYield;
 }

@@ -27,6 +27,8 @@ function fakeAnalysis(ticker: string): Analysis {
     classification: { category: 'evergreen', rawSector: 'Energia Elétrica', uncertain: false },
     dividends: null,
     dividendHistory: null,
+    fund: null,
+    fundScreen: null,
     notes: [],
     generatedAt: '2026-08-20T14:00:00.000Z',
     fundamentals,

@@ -1,14 +1,16 @@
 import * as cheerio from 'cheerio';
 import { SourceUnavailableError, TickerNotFoundError, UnexpectedFormatError } from '../errors';
+import { parsePtBrNumber } from '../numbers';
 import {
   emptyFundamentals,
   type AssetKind,
   type FundamentalField,
+  type FundProfile,
   type PeerContext,
   type PeerMap,
   type SourceReading,
 } from '../types';
-import { fetchHtml, labelKey, parseNumber } from './scraping';
+import { fetchHtml, labelKey, parseNumber, parseScaledAmount } from './scraping';
 
 const URL_BASE = 'https://investidor10.com.br';
 const SOURCE = 'Investidor10';
@@ -165,6 +167,94 @@ export function extractFundCards(html: string): Map<string, number> {
   return values;
 }
 
+/** "0,60% a.a (mínimo de R$ 60 mil mensais)" → 0.006. Only the yearly percentage is read. */
+export function parseFee(raw: string): number | null {
+  const match = /(\d+(?:[.,]\d+)?)\s*%/.exec(raw);
+  if (!match || !match[1]) return null;
+  const value = parseNumber(match[1]);
+  // 0,90 / 100 lands on 0.009000000000000001; the fee is a two-decimal figure by nature.
+  return value === null ? null : Number((value / 100).toPrecision(12));
+}
+
+/**
+ * The "about" prose is the only place the site names who runs the fund, and it words it
+ * several ways: "gerido pela Pátria Investimentos e administrado pelo Banco Genial",
+ * "administrado pela Vórtx ... e conta com gestão da XP Asset Management", "a gestão é
+ * conduzida pelo BTG Pactual Asset Management". A name has to start with a capital, or
+ * "gestão de imóveis logísticos" would be read as a manager.
+ */
+export function extractManagement(text: string): { manager: string | null; administrator: string | null } {
+  const clean = text.replace(/\s+/g, ' ');
+  // A name ends at punctuation, at the next clause, or at a period that closes a sentence
+  // (not the one inside "S.A.").
+  const end = String.raw`(?=,|;|\.(?:\s|$)| e (?:gerid|administrad|conta)| com | que | cuja)`;
+  const pick = (...patterns: string[]): string | null => {
+    for (const pattern of patterns) {
+      const match = new RegExp(pattern + end, 'u').exec(clean);
+      const name = match?.[1]?.trim();
+      if (name) return name;
+    }
+    return null;
+  };
+  return {
+    manager: pick(
+      String.raw`[Gg]erid[oa]s? pel[ao]s? (?:gestora )?(\p{Lu}.+?)`,
+      String.raw`[Gg]est[ãa]o (?:ativa |passiva )?(?:[ée] )?(?:conduzida |realizada |feita |exercida )?(?:da|de|do|pela|pelo) (\p{Lu}.+?)`,
+      String.raw`[Gg]estora (?:é|e) (?:a |o )?(\p{Lu}.+?)`,
+    ),
+    administrator: pick(
+      String.raw`[Aa]dministrad[oa]s? pel[ao]s? (\p{Lu}.+?)`,
+      String.raw`[Aa]dministra[çc][ãa]o (?:[ée] )?(?:conduzida |realizada |feita |exercida )?pel[ao]s? (\p{Lu}.+?)`,
+    ),
+  };
+}
+
+/**
+ * The fund sheet's information table: segment, type, fee, size, vacancy. The buy-and-hold
+ * checklist below it is read for one fact only, the listing age, which nothing else gives.
+ */
+export function extractFundProfile(html: string): { profile: Partial<FundProfile>; vacancy: number | null } {
+  const $ = cheerio.load(html);
+  const cells = new Map<string, string>();
+
+  $('#table-indicators .cell').each((_, el) => {
+    const node = $(el);
+    const key = labelKey(node.find('.name').first().text());
+    const value = node.find('.value').first().text().replace(/\s+/g, ' ').trim();
+    if (key && value && !cells.has(key)) cells.set(key, value);
+  });
+
+  const text = (key: string): string | null => cells.get(key) ?? null;
+  const feeText = text('taxadeadministracao');
+  const vacancyText = text('vacancia');
+  const netWorthText = text('valorpatrimonial');
+  const shareholdersText = text('numerodecotistas');
+
+  const listing = $('#checklist #styled-checkbox-years');
+  const about = $('#about-section .text-content')
+    .find('p, h3, li')
+    .toArray()
+    .map((el) => $(el).text())
+    .join(' ');
+  const management = extractManagement(about);
+
+  const profile: Partial<FundProfile> = {
+    segment: text('segmento'),
+    fundType: text('tipodefundo'),
+    mandate: text('mandato'),
+    netWorth: netWorthText ? parseScaledAmount(netWorthText) : null,
+    adminFee: feeText ? parseFee(feeText) : null,
+    adminFeeText: feeText,
+    shareholders: shareholdersText ? parsePtBrNumber(shareholdersText) : null,
+    listedOver5Years: listing.length > 0 ? listing.attr('checked') !== undefined : null,
+    manager: management.manager,
+    administrator: management.administrator,
+  };
+
+  const vacancy = vacancyText ? parseNumber(vacancyText) : null;
+  return { profile, vacancy: vacancy === null ? null : vacancy / 100 };
+}
+
 function parseFund(html: string): SourceReading {
   const cards = extractFundCards(html);
 
@@ -178,7 +268,10 @@ function parseFund(html: string): SourceReading {
   if (dy !== undefined) fundamentals.dividendYield12m = dy / 100;
   fundamentals.priceToBook = cards.get('p/vp') ?? null;
 
-  return { source: 'investidor10', kind: 'fii', fundamentals, derived: [] };
+  const { profile, vacancy } = extractFundProfile(html);
+  fundamentals.vacancy = vacancy;
+
+  return { source: 'investidor10', kind: 'fii', fundamentals, derived: [], fund: profile };
 }
 
 export function parseInvestidor10(

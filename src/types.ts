@@ -20,6 +20,8 @@ export const FUNDAMENTAL_FIELDS = [
   'payout',
   /** FII only: operating result yield, the fund's answer to an earnings yield. */
   'ffoYield',
+  /** FII only: distribution over FFO, derived on the sheet that publishes both, never across sources. */
+  'payoutFfo',
   'ffoPerShare',
   'distributedIncome',
   'vacancy',
@@ -55,6 +57,8 @@ export interface SourceReading {
   source: Source;
   /** Sector medians for the indicators this source compares. */
   peers?: PeerMap;
+  /** Fund sheet facts (segment, size, fee, manager) a source published. */
+  fund?: Partial<FundProfile>;
   /** Sector text this source published, for the classification lookup. */
   sector?: SectorInfo;
   /** What the source recognized the paper to be. Absent when it cannot tell. */
@@ -81,6 +85,53 @@ export const CONCLUSIVE_SIGNALS = ['ok', 'warn', 'bad'] as const;
  * `inconclusive`: the numbers are there but too many are inapplicable or distorted.
  */
 export type Verdict = 'solid' | 'attention' | 'fragile' | 'indeterminate' | 'inconclusive';
+
+/**
+ * What a fund sheet says about the fund itself, as opposed to its price. These are the
+ * inputs of the five-filter screen; none of them is an indicator with a ruler.
+ */
+export interface FundProfile {
+  /** "Logístico / Indústria / Galpões", "Shoppings", "Híbrido"… as the source words it. */
+  segment: string | null;
+  /** "Fundo de Tijolo", "Fundo de Papel", "Fundo de Fundos". */
+  fundType: string | null;
+  /** "Renda", "Desenvolvimento", "Híbridos"… */
+  mandate: string | null;
+  /** Net worth in BRL. */
+  netWorth: number | null;
+  /** Administration fee as a fraction per year (0.006 = 0,60% a.a.). */
+  adminFee: number | null;
+  /** The fee as written, kept because minimums and tiers do not fit in one number. */
+  adminFeeText: string | null;
+  manager: string | null;
+  administrator: string | null;
+  shareholders: number | null;
+  /** The source's own "listed for more than five years" flag, when it publishes one. */
+  listedOver5Years: boolean | null;
+}
+
+export type CriterionStatus = 'pass' | 'fail' | 'unknown';
+
+export interface Criterion {
+  key: string;
+  label: string;
+  status: CriterionStatus;
+  /** The number or text the judgement rests on, formatted for display. */
+  value: string | null;
+  detail: string;
+}
+
+/**
+ * The five-filter screen for real estate funds. Filters are eliminatory; tiebreakers only
+ * rank funds that passed every filter, which is why `passedAll` gates them.
+ */
+export interface FundScreen {
+  filters: Criterion[];
+  tiebreakers: Criterion[];
+  passed: number;
+  unknown: number;
+  passedAll: boolean;
+}
 
 export type Category = 'financial' | 'cyclical' | 'holding' | 'fii' | 'evergreen';
 
@@ -235,6 +286,10 @@ export interface Analysis {
   classification: Classification;
   dividends: DividendRecord | null;
   dividendHistory: DividendHistory | null;
+  /** Fund sheet facts, merged across sources. Null for a company. */
+  fund: FundProfile | null;
+  /** The five-filter screen. Null for a company. */
+  fundScreen: FundScreen | null;
   /** Structural remarks about the company that are not tied to one indicator. */
   notes: string[];
   generatedAt: string;
@@ -257,4 +312,19 @@ export function emptyFundamentals(): Fundamentals {
 
 export function emptyProvenance(): ProvenanceMap {
   return Object.fromEntries(FUNDAMENTAL_FIELDS.map((f) => [f, null])) as ProvenanceMap;
+}
+
+export function emptyFundProfile(): FundProfile {
+  return {
+    segment: null,
+    fundType: null,
+    mandate: null,
+    netWorth: null,
+    adminFee: null,
+    adminFeeText: null,
+    manager: null,
+    administrator: null,
+    shareholders: null,
+    listedOver5Years: null,
+  };
 }

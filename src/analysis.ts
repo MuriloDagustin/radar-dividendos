@@ -9,6 +9,7 @@ import {
   errorMessage,
 } from './errors';
 import { interpret } from './ai';
+import { listInPortuguese, mergeFundProfiles, screenFund } from './fund-screen';
 import { mergeReadings } from './merge';
 import { looksLikeTicker, normalizeTicker } from './numbers';
 import { summarizeDividends } from './dividends';
@@ -53,12 +54,6 @@ function attempts(ticker: string): { source: Source; run: () => Promise<SourceRe
     { source: 'statusinvest', run: () => fetchStatusInvest(ticker) },
     { source: 'fundamentus', run: () => fetchFundamentus(ticker) },
   ];
-}
-
-/** "a, b e c" — pt-BR enumeration, so the error message reads like a sentence. */
-function listInPortuguese(names: string[]): string {
-  if (names.length <= 1) return names[0] ?? '';
-  return `${names.slice(0, -1).join(', ')} e ${names.at(-1)}`;
 }
 
 /** Sources that recognize the kind agree in practice; the first opinion settles it. */
@@ -189,6 +184,11 @@ export async function analyze(rawTicker: string, options: AnalyzeOptions = {}): 
 
     const dividends = dividendHistory ? summarizeDividends(dividendHistory) : null;
 
+    // The five-filter screen sits beside the verdict, not inside it: the verdict reads the
+    // fund's numbers, the screen decides whether the fund is even a candidate.
+    const fund = isFund ? mergeFundProfiles(readings) : null;
+    const fundScreen = isFund ? screenFund({ profile: fund, fundamentals, dividends }) : null;
+
     const diagnosis = diagnose(fundamentals, {
       kind,
       category: classification.category,
@@ -222,6 +222,8 @@ export async function analyze(rawTicker: string, options: AnalyzeOptions = {}): 
       classification,
       dividends,
       dividendHistory,
+      fund,
+      fundScreen,
       notes,
       generatedAt: new Date().toISOString(),
       fundamentals,

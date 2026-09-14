@@ -1,10 +1,14 @@
 import type { CSSProperties } from 'react';
+import { describeScreen } from '@/src/fund-screen';
 import { provenanceLabel } from '@/src/provenance';
 import {
   ASSET_KIND_NAME,
   CATEGORY_NAME,
   SOURCE_NAME,
   type Analysis,
+  type Criterion,
+  type CriterionStatus,
+  type FundScreen,
   type Indicator,
   type Signal,
 } from '@/src/types';
@@ -99,6 +103,70 @@ function ContextPanel({ indicators }: { indicators: Indicator[] }) {
   );
 }
 
+const CRITERION_MARK: Record<CriterionStatus, { glyph: string; className: string | undefined; title: string }> = {
+  pass: { glyph: '✓', className: styles.markPass, title: 'passou' },
+  fail: { glyph: '✕', className: styles.markFail, title: 'não passou' },
+  unknown: { glyph: '?', className: styles.markUnknown, title: 'sem dado para julgar' },
+};
+
+function CriterionRow({ criterion, index }: { criterion: Criterion; index?: number }) {
+  const mark = CRITERION_MARK[criterion.status];
+  return (
+    <li className={styles.criterion}>
+      <span className={`${styles.mark} ${mark.className ?? ''}`} title={mark.title} aria-label={mark.title}>
+        {mark.glyph}
+      </span>
+      <div className={styles.criterionBody}>
+        <div className={styles.criterionHead}>
+          {index !== undefined ? <span className={styles.criterionIndex}>{index}</span> : null}
+          <span className={styles.criterionLabel}>{criterion.label}</span>
+          {criterion.value ? <span className={styles.criterionValue}>{criterion.value}</span> : null}
+        </div>
+        <p className={styles.criterionDetail}>{criterion.detail}</p>
+      </div>
+    </li>
+  );
+}
+
+/**
+ * The five-filter screen: eliminatory filters, then the tiebreakers that only count once
+ * every filter passed. Shown above the indicators because, for a fund, whether it is a
+ * candidate at all comes before how its numbers read.
+ */
+function FundScreenPanel({ screen }: { screen: FundScreen }) {
+  return (
+    <section className={styles.screen} aria-label="Cinco filtros para fundo imobiliário">
+      <div className={styles.screenHead}>
+        <span className="tag">5 filtros</span>
+        <span className={screen.passedAll ? styles.screenSummaryPass : styles.screenSummary}>
+          {describeScreen(screen)}
+        </span>
+      </div>
+      <ol className={styles.criteria}>
+        {screen.filters.map((c, i) => (
+          <CriterionRow key={c.key} criterion={c} index={i + 1} />
+        ))}
+      </ol>
+
+      <div className={screen.passedAll ? styles.tiebreak : `${styles.tiebreak} ${styles.tiebreakLocked}`}>
+        <div className={styles.screenHead}>
+          <span className="tag">desempate</span>
+          <span className={styles.screenSummary}>
+            {screen.passedAll
+              ? 'Entre fundos que passaram nos 5 filtros'
+              : 'Só vale depois de passar pelos 5 filtros'}
+          </span>
+        </div>
+        <ul className={styles.criteria}>
+          {screen.tiebreakers.map((c) => (
+            <CriterionRow key={c.key} criterion={c} />
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
 export function Card({ analysis }: { analysis: Analysis }) {
   const price = analysis.diagnosis.indicators.find((i) => i.key === 'price');
   const rest = analysis.diagnosis.indicators.filter(
@@ -138,6 +206,8 @@ export function Card({ analysis }: { analysis: Analysis }) {
           ))}
         </div>
       ) : null}
+
+      {analysis.fundScreen ? <FundScreenPanel screen={analysis.fundScreen} /> : null}
 
       <div className={styles.body}>
         {rest.map((indicator, i) => (

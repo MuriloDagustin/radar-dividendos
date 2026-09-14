@@ -48,6 +48,17 @@ export const PAGE_HTML = `<!doctype html>
   .badge.inconclusive  { background: rgba(180,154,224,.15); color: #b49ae0; }
   .notes { margin: .5rem 0 .75rem; display: grid; gap: .3rem; }
   .notes div { font-size: .8rem; color: var(--muted); border-left: 2px solid var(--border); padding-left: .5rem; }
+  .screen { margin: .5rem 0 .9rem; padding: .6rem .75rem; border: 1px solid var(--border); border-radius: 8px; }
+  .screen h3 { margin: 0 0 .3rem; font-size: .8rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .screen h3 span { text-transform: none; letter-spacing: 0; font-weight: 400; margin-left: .5rem; }
+  .screen ol, .screen ul { margin: 0; padding: 0; list-style: none; }
+  .screen li { padding: .3rem 0; border-bottom: 1px dotted var(--border); font-size: .85rem; }
+  .screen li:last-child { border-bottom: 0; }
+  .screen .mark { display: inline-block; width: 1.2rem; font-weight: 700; }
+  .screen .detail { display: block; color: var(--muted); font-size: .78rem; }
+  .screen .value { float: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .screen .locked { opacity: .6; }
+  .pass { color: var(--ok); } .fail { color: var(--bad); } .unknown { color: var(--muted); }
   .context { display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: .3rem .9rem; margin-top: .75rem; padding-top: .6rem; border-top: 1px solid var(--border); font-size: .78rem; color: var(--muted); }
   table { width: 100%; border-collapse: collapse; }
   td { padding: .35rem 0; border-bottom: 1px solid var(--border); vertical-align: top; }
@@ -154,6 +165,23 @@ function render(analysis) {
   const companyNotes = (analysis.notes ?? [])
     .map((n) => \`<div>\${esc(n)}</div>\`).join('');
 
+  const MARK = { pass: '✓', fail: '✕', unknown: '?' };
+  const criterion = (c, i) => \`<li><span class="mark \${esc(c.status)}">\${MARK[c.status] ?? '?'}</span>
+      <strong>\${i !== undefined ? i + 1 + '. ' : ''}\${esc(c.label)}</strong>
+      \${c.value ? \`<span class="value">\${esc(c.value)}</span>\` : ''}
+      <span class="detail">\${esc(c.detail)}</span></li>\`;
+  const s = analysis.fundScreen;
+  const screen = s ? \`<div class="screen">
+      <h3>5 filtros <span class="\${s.passedAll ? 'pass' : ''}">\${s.passedAll
+        ? 'Passou nos ' + s.filters.length + ' filtros'
+        : 'Passou em ' + s.passed + ' de ' + s.filters.length + ' filtros' + (s.unknown ? ' · ' + s.unknown + ' sem dado' : '')}</span></h3>
+      <ol>\${s.filters.map(criterion).join('')}</ol>
+      <div class="\${s.passedAll ? '' : 'locked'}">
+        <h3 style="margin-top:.6rem">Desempate <span>\${s.passedAll ? 'entre fundos que passaram nos 5 filtros' : 'só vale depois de passar pelos 5 filtros'}</span></h3>
+        <ul>\${s.tiebreakers.map((c) => criterion(c)).join('')}</ul>
+      </div>
+    </div>\` : '';
+
   const category = analysis.classification?.category;
   const kindLabel = analysis.kind === 'fii' || category === 'fii'
     ? 'FII'
@@ -169,6 +197,7 @@ function render(analysis) {
         \${esc(new Date(analysis.generatedAt).toLocaleString('pt-BR'))}</span>
     </div>
     \${companyNotes ? \`<div class="notes">\${companyNotes}</div>\` : ''}
+    \${screen}
     <table>\${rows}</table>
     \${context ? \`<div class="context">\${context}</div>\` : ''}
     \${sourceNotes}

@@ -5,6 +5,7 @@ import {
   emptyFundamentals,
   type AssetKind,
   type FundamentalField,
+  type FundProfile,
   type SectorInfo,
   type SourceReading,
 } from '../types';
@@ -120,6 +121,18 @@ export function parseFundamentus(html: string, ticker: string): SourceReading {
 
   const derived: FundamentalField[] = [];
 
+  // Yield and FFO yield come from the same sheet and the same window, so their ratio is
+  // exact here. Computed later over merged fields it would divide one site's yield by
+  // another's FFO — for HGLG11 that read 137% where the sheet says 111%.
+  if (
+    fundamentals.dividendYield12m !== null &&
+    fundamentals.ffoYield !== null &&
+    fundamentals.ffoYield > 0
+  ) {
+    fundamentals.payoutFfo = fundamentals.dividendYield12m / fundamentals.ffoYield;
+    derived.push('payoutFfo');
+  }
+
   const directEbitda = asNumber('EBITDA');
   if (directEbitda !== null) {
     fundamentals.ebitda = directEbitda;
@@ -136,7 +149,20 @@ export function parseFundamentus(html: string, ticker: string): SourceReading {
 
   const sector = sectorFromCells(cells);
 
-  return { source: 'fundamentus', kind, fundamentals, derived, ...(sector ? { sector } : {}) };
+  // Only the exact net worth is taken from the fund sheet. Its "Segmento" cell files a
+  // logistics fund as "Multicategoria", and a coarse label would fail the segment filter
+  // for the wrong reason.
+  const fund: Partial<FundProfile> | null =
+    kind === 'fii' ? { netWorth: asNumber('Patrim Líquido') } : null;
+
+  return {
+    source: 'fundamentus',
+    kind,
+    fundamentals,
+    derived,
+    ...(sector ? { sector } : {}),
+    ...(fund ? { fund } : {}),
+  };
 }
 
 export async function fetchFundamentus(ticker: string): Promise<SourceReading> {
