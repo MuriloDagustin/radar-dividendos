@@ -4,7 +4,6 @@ import { analyze } from './analysis';
 import { openCache } from './cache';
 import { RadarError, errorMessage } from './errors';
 import { screenMarket, screenStocks } from './screen-market';
-import { PAGE_HTML } from './page';
 import { DISCLAIMER } from './types';
 
 const STATUS_BY_CODE: Record<string, 400 | 404 | 502> = {
@@ -27,7 +26,19 @@ export function createApp(options: Pick<ServerOptions, 'ai' | 'cache'>): Hono {
   const cache = openCache({ enabled: options.cache });
   const app = new Hono();
 
-  app.get('/', (c) => c.html(PAGE_HTML));
+  // The interface is the Next app: a second one written by hand here only ever lagged behind it.
+  app.get('/', (c) =>
+    c.json({
+      nome: 'Radar de Dividendos',
+      interface: 'npm run dev — o app Next.js serve a interface e estas mesmas rotas',
+      rotas: {
+        'GET /api/analise/:ticker': 'Análise de um papel, em JSON',
+        'GET /api/fiis': 'Triagem de todos os FIIs acima de R$ 1 bi pelos 5 filtros',
+        'GET /api/acoes': 'Triagem de toda ação acima de R$ 5 mi por dia pelos 5 filtros',
+      },
+      aviso: DISCLAIMER,
+    }),
+  );
 
   app.get('/api/analise/:ticker', async (c) => {
     const ticker = c.req.param('ticker');
@@ -82,7 +93,7 @@ export function startServer(options: ServerOptions): void {
   const app = createApp(options);
   serve({ fetch: app.fetch, port: options.port }, (info) => {
     console.log(`Radar de Dividendos em http://localhost:${info.port}`);
-    console.log(`  GET /                     página HTML`);
+    console.log(`  GET /                     índice das rotas (JSON)`);
     console.log(`  GET /api/analise/:ticker  JSON`);
     console.log(`  GET /api/fiis             triagem de FIIs pelos 5 filtros (JSON)`);
     console.log(`  GET /api/acoes            triagem de ações pelos 5 filtros (JSON)`);

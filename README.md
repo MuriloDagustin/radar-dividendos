@@ -2,7 +2,7 @@
 
 Analisa fundamentos de **ações e FIIs** da B3 e emite um diagnóstico **determinístico** (sem
 IA) por indicador, com veredito geral. Quatro fontes gratuitas, procedência de cada número à
-mostra, e três interfaces sobre o mesmo motor: app Next.js, CLI e uma API HTTP enxuta.
+mostra, e duas interfaces sobre o mesmo motor — app Next.js e CLI — mais uma API HTTP enxuta.
 
 > O código (identificadores, comentários, nomes de arquivo) é em inglês; as strings de
 > interface ficam em pt-BR, que é o idioma do produto.
@@ -62,7 +62,7 @@ npx tsx src/cli.ts --fiis              # todos os FIIs acima de R$ 1 bi pelos 5 
 npx tsx src/cli.ts --fiis --json       # a mesma triagem em JSON
 npx tsx src/cli.ts --acoes             # toda ação acima de R$ 5 mi/dia pelos 5 filtros
 npx tsx src/cli.ts --acoes --json
-npx tsx src/cli.ts --serve             # API + página em http://localhost:3000
+npx tsx src/cli.ts --serve             # API HTTP em http://localhost:3000
 npx tsx src/cli.ts --serve --porta 8080
 npx tsx src/cli.ts --help
 ```
@@ -97,11 +97,12 @@ O rótulo entre colchetes é a procedência do número: qual fonte o entregou, e
 
 ## Rotas HTTP
 
-Iguais nos dois servidores (Next.js e Hono):
+Iguais nos dois servidores (Next.js e Hono), com uma diferença: a interface é o app Next.
+O Hono serve só a API — uma segunda interface escrita à mão aqui só ficava para trás do app.
 
 | Rota | Resposta |
 |---|---|
-| `GET /` | Interface. No Next.js, o app React (com as rotas `/analise`, `/fiis`, `/acoes` e `/carteira`); no Hono, uma página HTML mínima. |
+| `GET /` | No Next.js, o app React (com as rotas `/analise`, `/fiis`, `/acoes` e `/carteira`); no Hono, o índice das rotas em JSON. |
 | `GET /api/analise/:ticker` | JSON da análise. `?ia=1` acrescenta a leitura por IA. |
 | `GET /api/fiis` | Triagem de todos os FIIs acima de R$ 1 bi pelos 5 filtros. No Next.js, **NDJSON em streaming** (um evento por linha: `universe`, `fund`/`failure` por fundo, `done` com o relatório); no Hono, o relatório JSON de uma vez, quando termina. |
 | `GET /api/acoes` | Triagem de toda ação acima de R$ 5 mi/dia pelos 5 filtros de ação. Mesmo desenho: NDJSON no Next.js (`universe`, `stock`/`failure`, `done`), JSON de uma vez no Hono. |
@@ -715,10 +716,10 @@ mesma interface:
 2. `RADAR_STATIC=1 next build` (`npm run build:static`) faz o export estático em `out/`, com
    `basePath` no nome do repositório. As rotas de API são removidas antes do build, porque
    export estático não as carrega e o snapshot as substitui.
-3. A página lê `data/…` em vez de `api/…` (`app/mode.ts`; caminhos relativos, então o mesmo
-   código serve na raiz e no sub-path). Abre direto na triagem de FIIs, mostra a data do
-   instantâneo e avisa que só os papéis das triagens têm análise pronta — ticker fora delas
-   cai numa mensagem, não num erro de rede.
+3. A página lê `data/…` em vez de `api/…` (`app/mode.ts`; caminhos absolutos com o base path,
+   porque o app tem sub-rotas e um caminho relativo resolveria contra `/fiis`). A home avisa
+   que os dados são um retrato diário e que só os papéis das triagens têm análise pronta —
+   ticker fora delas cai numa mensagem, não num erro de rede.
 
 O workflow `.github/workflows/pages.yml` faz os três passos a cada push em `main`, todo dia
 útil às 08:00 de Brasília, e sob demanda (*Run workflow*). `BRAPI_TOKEN` é opcional, como

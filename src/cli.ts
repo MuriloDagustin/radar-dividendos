@@ -18,7 +18,7 @@ ${pc.bold('radar-dividendos')} — fundamentos da B3 com diagnóstico determiní
   npx tsx src/cli.ts TAEE11 ITSA4        analisa um ou mais tickers
   npx tsx src/cli.ts --fiis              lista os FIIs da B3 que passam nos 5 filtros
   npx tsx src/cli.ts --acoes             lista as ações da B3 que passam nos 5 filtros
-  npx tsx src/cli.ts --serve             sobe a API + página HTML
+  npx tsx src/cli.ts --serve             sobe a API HTTP (a interface é o npm run dev)
 
 Flags
   --json          imprime JSON em vez do relatório colorido
