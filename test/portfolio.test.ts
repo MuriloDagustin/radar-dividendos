@@ -41,7 +41,7 @@ const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
 
 describe('capWeights', () => {
   const weighted = (score: number, segment = 'A', ticker = `T${score}`) => ({
-    fund: fund(ticker, { segment }),
+    holding: fund(ticker, { segment }),
     price: 100,
     score,
   });
@@ -121,7 +121,7 @@ describe('buildPortfolio: equal split', () => {
     );
     expect(p.excluded).toEqual([
       { ticker: 'A', reason: 'sem cotação na fonte' },
-      { ticker: 'C', reason: 'a fatia não compra uma cota' },
+      { ticker: 'C', reason: 'a fatia não compra um papel inteiro' },
     ]);
     expect(p.positions.map((x) => x.ticker)).toEqual(['B']);
     expect(p.positions[0]?.shares).toBe(10);

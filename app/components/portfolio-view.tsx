@@ -1,0 +1,97 @@
+'use client';
+
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { useMemo } from 'react';
+import { splitTickers } from '@/app/tickers';
+import { PortfolioBuilder } from './portfolio';
+import { useScreenFeed } from './screen-feed';
+import { SCREENS, type ScreenKey, type ScreenSpec, type ScreenedItem } from './screen-spec';
+import { ScreenConsole } from './screen-view';
+import styles from './screen.module.css';
+
+function Wallet<T extends ScreenedItem>({ spec, tickers }: { spec: ScreenSpec<T>; tickers: string[] }) {
+  const state = useScreenFeed(spec);
+  const key = tickers.join(',');
+
+  const { chosen, pending } = useMemo(() => {
+    const wanted = new Set(tickers);
+    const ranked = spec.rank(state.items);
+    // Ranking order, approved before pending — the same order the table showed.
+    const chosen = [...ranked.approved, ...ranked.pending].filter((item) => wanted.has(item.ticker));
+    const pending = new Set(
+      ranked.pending.filter((item) => wanted.has(item.ticker)).map((item) => item.ticker),
+    );
+    return { chosen, pending };
+    // `key` stands for the ticker list; `tickers` is a fresh array on every render.
+  }, [spec, state.items, key]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const holdings = useMemo(() => chosen.map(spec.holding), [spec, chosen]);
+
+  return (
+    <div className={styles.view}>
+      <header className={styles.head}>
+        <h1 className={styles.title}>Carteira</h1>
+        <p className={styles.lede}>
+          Os {spec.words.items} que você marcou na <Link href={spec.path}>{spec.title}</Link>, divididos
+          pelo valor que você tem: quantas {spec.words.shares} de cada, quanta renda por mês, e o que muda
+          reinvestindo.
+        </p>
+      </header>
+
+      {state.running || state.error ? <ScreenConsole spec={spec} state={state} /> : null}
+
+      {state.error ? (
+        <p className={styles.error} role="alert">
+          {state.error}
+        </p>
+      ) : chosen.length === 0 ? (
+        <p className={styles.empty}>
+          {state.running
+            ? `esperando a triagem carregar os ${spec.words.items} selecionados…`
+            : `nenhum dos ${spec.words.items} selecionados está nesta triagem`}
+        </p>
+      ) : (
+        <PortfolioBuilder
+          holdings={holdings}
+          pending={pending}
+          words={spec.words}
+          backHref={spec.path}
+        />
+      )}
+    </div>
+  );
+}
+
+function Empty() {
+  return (
+    <div className={styles.view}>
+      <header className={styles.head}>
+        <h1 className={styles.title}>Carteira</h1>
+        <p className={styles.lede}>
+          Marque os papéis numa das triagens e clique em <strong>montar carteira</strong>: aqui eles
+          viram uma lista de compras, com quantas cotas de cada, a renda estimada por mês e a projeção
+          de reinvestir.
+        </p>
+      </header>
+      <p className={styles.empty}>
+        nada selecionado ainda — comece pela <Link href="/fiis">triagem de FIIs</Link> ou pela{' '}
+        <Link href="/acoes">triagem de ações</Link>
+      </p>
+    </div>
+  );
+}
+
+/** The selection travels in the URL, so a carteira is as shareable as an analysis. */
+export function PortfolioPage() {
+  const params = useSearchParams();
+  const kind: ScreenKey = params.get('papel') === 'acoes' ? 'acoes' : 'fiis';
+  const tickers = splitTickers(params.get('t') ?? '');
+
+  if (tickers.length === 0) return <Empty />;
+  return kind === 'fiis' ? (
+    <Wallet spec={SCREENS.fiis} tickers={tickers} />
+  ) : (
+    <Wallet spec={SCREENS.acoes} tickers={tickers} />
+  );
+}

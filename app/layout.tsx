@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Cormorant_Garamond, Inter, JetBrains_Mono } from 'next/font/google';
 import { DISCLAIMER } from '@/src/types';
+import { Shell } from '@/app/components/shell';
 import './globals.css';
 
 // Cormorant Garamond at 500 is the open substitute DESIGN.md names for the licensed display serif.
@@ -39,7 +40,9 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR" className={`${display.variable} ${text.variable} ${mono.variable}`}>
-      <body>{children}</body>
+      <body>
+        <Shell>{children}</Shell>
+      </body>
     </html>
   );
 }

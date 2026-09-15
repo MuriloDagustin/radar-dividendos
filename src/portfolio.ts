@@ -1,12 +1,23 @@
-import type { ScreenedFund } from './fund-market';
 import { labelKey } from './sources/scraping';
 
 export type AllocationMode = 'equal' | 'quality' | 'yield';
 
+/**
+ * What the arithmetic needs off a screened paper, fund or company alike. The segment is the
+ * fund's segment or the company's sector: whatever the concentration cap should count.
+ */
+export interface Holding {
+  ticker: string;
+  segment: string | null;
+  price: number | null;
+  dividendYield12m: number | null;
+  tiebreakersPassed: number;
+}
+
 export const MODE_NAME: Record<AllocationMode, { label: string; detail: string }> = {
   equal: {
     label: 'divisão igual',
-    detail: 'O mesmo valor em cada fundo aprovado. Simples e previsível.',
+    detail: 'O mesmo valor em cada papel selecionado. Simples e previsível.',
   },
   quality: {
     label: 'peso pela qualidade',
@@ -15,7 +26,7 @@ export const MODE_NAME: Record<AllocationMode, { label: string; detail: string }
   yield: {
     label: 'maximizar renda',
     detail:
-      'Mais dinheiro em quem paga mais, com teto por fundo e por segmento para não concentrar no que pode ser o mais arriscado.',
+      'Mais dinheiro em quem paga mais, com teto por papel e por segmento para não concentrar no que pode ser o mais arriscado.',
   },
 };
 
@@ -54,15 +65,15 @@ export interface Portfolio {
 }
 
 export interface Weighted {
-  fund: ScreenedFund;
+  holding: Holding;
   price: number;
   score: number;
 }
 
 const EPSILON = 1e-9;
 
-function segmentOf(fund: ScreenedFund): string {
-  return fund.segment ? labelKey(fund.segment) : `sem-segmento:${fund.ticker}`;
+function segmentOf(holding: Holding): string {
+  return holding.segment ? labelKey(holding.segment) : `sem-segmento:${holding.ticker}`;
 }
 
 /**
@@ -99,7 +110,7 @@ export function capWeights(
     let overSegment = false;
     const segments = new Map<string, number[]>();
     items.forEach((item, i) => {
-      const key = segmentOf(item.fund);
+      const key = segmentOf(item.holding);
       segments.set(key, [...(segments.get(key) ?? []), i]);
     });
     for (const members of segments.values()) {
@@ -124,15 +135,17 @@ export function capWeights(
   return weights;
 }
 
-function scoreFor(fund: ScreenedFund, mode: AllocationMode): number | null {
+function scoreFor(holding: Holding, mode: AllocationMode): number | null {
   switch (mode) {
     case 'equal':
       return 1;
-    // +1 so a fund passing no tiebreaker still gets a slice: it did pass the five filters.
+    // +1 so a paper passing no tiebreaker still gets a slice: it did pass the five filters.
     case 'quality':
-      return fund.tiebreakersPassed + 1;
+      return holding.tiebreakersPassed + 1;
     case 'yield':
-      return fund.dividendYield12m !== null && fund.dividendYield12m > 0 ? fund.dividendYield12m : null;
+      return holding.dividendYield12m !== null && holding.dividendYield12m > 0
+        ? holding.dividendYield12m
+        : null;
   }
 }
 
@@ -142,7 +155,7 @@ function scoreFor(fund: ScreenedFund, mode: AllocationMode): number | null {
  */
 function effectiveCaps(items: Weighted[], mode: AllocationMode): { perFund: number; perSegment: number } {
   if (mode !== 'yield') return { perFund: 1, perSegment: 1 };
-  const segments = new Set(items.map((w) => segmentOf(w.fund))).size;
+  const segments = new Set(items.map((w) => segmentOf(w.holding))).size;
   return {
     perFund: Math.max(MAX_PER_FUND, 1 / items.length),
     perSegment: Math.max(MAX_PER_SEGMENT, 1 / Math.max(1, segments)),
@@ -150,29 +163,29 @@ function effectiveCaps(items: Weighted[], mode: AllocationMode): { perFund: numb
 }
 
 /**
- * Whole shares only — a fund trades in units of one — so each target is rounded down and
- * the change is then spent one share at a time on whichever fund is furthest below its
+ * Whole shares only — a paper trades in units of one — so each target is rounded down and
+ * the change is then spent one share at a time on whichever paper is furthest below its
  * target, until no position can afford another share.
  */
 export function buildPortfolio(
-  funds: ScreenedFund[],
+  holdings: Holding[],
   amount: number,
   mode: AllocationMode,
 ): Portfolio {
   const excluded: Portfolio['excluded'] = [];
   const items: Weighted[] = [];
 
-  for (const fund of funds) {
-    if (fund.price === null || fund.price <= 0) {
-      excluded.push({ ticker: fund.ticker, reason: 'sem cotação na fonte' });
+  for (const holding of holdings) {
+    if (holding.price === null || holding.price <= 0) {
+      excluded.push({ ticker: holding.ticker, reason: 'sem cotação na fonte' });
       continue;
     }
-    const score = scoreFor(fund, mode);
+    const score = scoreFor(holding, mode);
     if (score === null) {
-      excluded.push({ ticker: fund.ticker, reason: 'sem dividend yield para pesar' });
+      excluded.push({ ticker: holding.ticker, reason: 'sem dividend yield para pesar' });
       continue;
     }
-    items.push({ fund, price: fund.price, score });
+    items.push({ holding, price: holding.price, score });
   }
 
   const empty: Portfolio = {
@@ -212,14 +225,14 @@ export function buildPortfolio(
   items.forEach((item, i) => {
     const count = shares[i] as number;
     if (count === 0) {
-      excluded.push({ ticker: item.fund.ticker, reason: 'a fatia não compra uma cota' });
+      excluded.push({ ticker: item.holding.ticker, reason: 'a fatia não compra um papel inteiro' });
       return;
     }
     const invested = count * item.price;
-    const dy = item.fund.dividendYield12m;
+    const dy = item.holding.dividendYield12m;
     positions.push({
-      ticker: item.fund.ticker,
-      segment: item.fund.segment,
+      ticker: item.holding.ticker,
+      segment: item.holding.segment,
       price: item.price,
       dividendYield12m: dy,
       targetWeight: weights[i] as number,

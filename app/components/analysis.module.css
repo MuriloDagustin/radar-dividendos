@@ -1,0 +1,160 @@
+.container {
+  width: 100%;
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding-inline: var(--gutter);
+}
+
+.band {
+  padding-block: var(--space-xl) var(--space-section);
+}
+
+.head {
+  margin-bottom: var(--space-lg);
+  display: grid;
+  gap: var(--space-xs);
+}
+
+/* display-sm */
+.title {
+  font-size: 28px;
+  line-height: 1.2;
+}
+
+.lede {
+  max-width: 68ch;
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs) var(--space-lg);
+}
+
+.count {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.option {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: 14px;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.option input {
+  accent-color: var(--primary);
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+
+.optionOff {
+  cursor: default;
+  color: var(--muted-soft);
+}
+
+.emptyGrid {
+  display: grid;
+  gap: var(--space-lg);
+  align-items: start;
+}
+
+@media (min-width: 64rem) {
+  .emptyGrid {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 4fr);
+  }
+}
+
+.emptyNote {
+  font-size: 15px;
+  color: var(--muted);
+  max-width: 48ch;
+}
+
+/* Cards 2-up when there is room; auto-fit collapses the empty track so a lone card takes the whole measure. */
+.results {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 34rem), 1fr));
+  gap: var(--space-lg);
+  align-items: start;
+}
+
+.results > * {
+  min-width: 0;
+}
+
+.error {
+  grid-column: 1 / -1;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  background: var(--bad-soft);
+  color: var(--bad);
+  font-size: 14px;
+}
+
+.errorTicker {
+  margin-right: var(--space-xs);
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-lg);
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.pulse {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-teal);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+/* Cross-card remark: two funds sharing a segment is a fact about the set, not about a card. */
+.overlap {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-xs) var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  font-size: 14px;
+  color: var(--body);
+}
+
+.overlap::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-amber);
+  align-self: center;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}

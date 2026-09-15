@@ -1,0 +1,132 @@
+.page {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--canvas);
+}
+
+.main {
+  flex: 1;
+}
+
+.container {
+  width: 100%;
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding-inline: var(--gutter);
+}
+
+/* top-nav: flat, canvas, sticky — a long screening table scrolls under it. */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  border-bottom: 1px solid var(--hairline-soft);
+  background: color-mix(in srgb, var(--canvas) 92%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.headerInner {
+  min-height: 64px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs) var(--space-lg);
+  padding-block: var(--space-xs);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  text-decoration: none;
+}
+
+.brand:active {
+  text-decoration: none;
+}
+
+.mark {
+  flex: none;
+  width: 22px;
+  height: 22px;
+}
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xxs);
+}
+
+/* nav-link */
+.link {
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  text-decoration: none;
+}
+
+.link:active {
+  text-decoration: none;
+}
+
+.linkActive {
+  background: var(--surface-card);
+  color: var(--ink);
+}
+
+.search {
+  margin-left: auto;
+  flex: 0 1 24rem;
+  min-width: 14rem;
+}
+
+/* footer: the dark band that closes the page. */
+.footer {
+  margin-top: auto;
+  padding-block: clamp(2.5rem, 6vw, 4rem);
+  border-top: 1px solid var(--inverse-border);
+  background: var(--surface-inverse);
+  color: var(--on-inverse-soft);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.footerInner {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.footerBrand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  color: var(--on-inverse);
+  font-weight: 500;
+}
+
+.footerText {
+  max-width: 64ch;
+}
+
+.footer a {
+  color: var(--on-inverse);
+  text-decoration: underline;
+  text-decoration-color: var(--on-inverse-soft);
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 52rem) {
+  .search {
+    margin-left: 0;
+    flex-basis: 100%;
+  }
+}

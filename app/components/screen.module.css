@@ -1,6 +1,12 @@
 .view {
+  width: 100%;
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding-inline: var(--gutter);
+  padding-block: var(--space-xl) var(--space-section);
   display: grid;
   gap: var(--space-lg);
+  align-content: start;
 }
 
 .head {
@@ -350,4 +356,74 @@
 
 .groupAction:active {
   text-decoration: underline;
+}
+
+.headLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-md);
+}
+
+.refresh {
+  padding: 4px 12px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.refresh:hover {
+  border-color: var(--primary);
+  color: var(--ink);
+}
+
+/* The selection follows the reader out of the table, so it has to stay in sight. */
+.pickBar {
+  position: sticky;
+  bottom: var(--space-lg);
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm) var(--space-lg);
+  padding: var(--space-sm) var(--space-md) var(--space-sm) var(--space-lg);
+  border: 1px solid var(--inverse-border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-inverse);
+  color: var(--on-inverse);
+  box-shadow: 0 6px 20px rgba(20, 20, 19, 0.16);
+  font-size: 14px;
+}
+
+.pickCount {
+  color: var(--on-inverse-soft);
+}
+
+.pickNumber {
+  color: var(--on-inverse);
+  font-weight: 500;
+}
+
+/* button-primary, on the dark bar. */
+.pickAction {
+  padding: 8px 18px;
+  border-radius: var(--radius-pill);
+  background: var(--primary);
+  color: var(--on-primary);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.pickAction:hover {
+  background: var(--primary-active);
+}
+
+.pickAction:active {
+  text-decoration: none;
 }

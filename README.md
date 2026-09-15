@@ -27,20 +27,27 @@ npm run dev              # http://localhost:3000
 npm run build && npm start
 ```
 
-Digite um ou mais tickers separados por espaço. Cada indicador vem com uma **régua de
-faixas**: as bandas da regra desenhadas, a banda em que o valor caiu acesa, e uma agulha na
-posição exata — dá para ver quanto falta até o próximo limite. Campo que nenhuma fonte
-publica aparece como régua tracejada e vazia, nunca estimado.
+O app tem quatro telas, na barra do topo:
 
-A análise é compartilhável por URL: `/?t=TAEE11%20ITSA4` (some `&ia=1` para pedir a leitura
-por IA).
+| Rota | O que é |
+|---|---|
+| `/` | A tese, a busca e as duas triagens. |
+| `/analise?t=TAEE11+ITSA4` | Os cartões dos tickers pedidos. Some `&ia=1` para a leitura por IA. |
+| `/fiis` | **Todos os FIIs da B3 acima de R$ 1 bi** pelos cinco filtros, preenchida conforme o servidor termina cada fundo — veja [Triagem de mercado](#triagem-de-mercado-todos-os-fiis-pelos-5-filtros). |
+| `/acoes` | **Toda ação que negocia acima de R$ 5 mi por dia**, uma classe por empresa — veja [Ações: os 5 filtros](#ações-os-5-filtros-e-o-desempate). |
+| `/carteira?papel=fiis&t=HGLG11,BTLG11` | Os papéis marcados numa triagem viram lista de compras. |
 
-O botão **triagem de FIIs · 5 filtros** (ou `/?fiis=1`) troca os cartões por uma tabela com
-**todos os FIIs da B3 acima de R$ 1 bi** passados pelos cinco filtros, preenchida conforme o
-servidor termina cada fundo. Clicar num ticker abre o cartão dele. Veja
-[Triagem de mercado](#triagem-de-mercado-todos-os-fiis-pelos-5-filtros). O botão **triagem
-de ações · 5 filtros** (ou `/?acoes=1`) faz o mesmo com **toda ação que negocia acima de
-R$ 5 mi por dia**, uma classe por empresa — veja [Ações: os 5 filtros](#ações-os-5-filtros-e-o-desempate).
+A busca fica no cabeçalho em todas as rotas: digite um ou mais tickers separados por espaço.
+Cada indicador vem com uma **régua de faixas**: as bandas da regra desenhadas, a banda em que
+o valor caiu acesa, e uma agulha na posição exata — dá para ver quanto falta até o próximo
+limite. Campo que nenhuma fonte publica aparece como régua tracejada e vazia, nunca estimado.
+
+Toda tela é um link compartilhável, e o botão voltar funciona. Os endereços antigos
+(`/?t=…`, `/?fiis=1`, `/?acoes=1`) redirecionam para as rotas novas.
+
+Nas duas triagens, a caixa de seleção de cada linha leva o papel para a carteira: a barra no
+rodapé mostra quantos estão marcados e abre `/carteira` com eles. Os aprovados já vêm
+marcados; os que faltam conferir à mão, não. Clicar num ticker abre a análise completa.
 
 ### CLI
 
@@ -94,7 +101,7 @@ Iguais nos dois servidores (Next.js e Hono):
 
 | Rota | Resposta |
 |---|---|
-| `GET /` | Interface. No Next.js, o app React; no Hono, uma página HTML mínima. |
+| `GET /` | Interface. No Next.js, o app React (com as rotas `/analise`, `/fiis`, `/acoes` e `/carteira`); no Hono, uma página HTML mínima. |
 | `GET /api/analise/:ticker` | JSON da análise. `?ia=1` acrescenta a leitura por IA. |
 | `GET /api/fiis` | Triagem de todos os FIIs acima de R$ 1 bi pelos 5 filtros. No Next.js, **NDJSON em streaming** (um evento por linha: `universe`, `fund`/`failure` por fundo, `done` com o relatório); no Hono, o relatório JSON de uma vez, quando termina. |
 | `GET /api/acoes` | Triagem de toda ação acima de R$ 5 mi/dia pelos 5 filtros de ação. Mesmo desenho: NDJSON no Next.js (`universe`, `stock`/`failure`, `done`), JSON de uma vez no Hono. |
@@ -491,18 +498,23 @@ impede uma conexão de minutos de parecer travada.
 
 ### Montar carteira
 
-Abaixo das tabelas, a página transforma a seleção numa lista de compras: um valor a
-investir e três formas de dividir. É conta pura sobre os números já na tela — nada novo é
-buscado, e funciona igual no instantâneo do GitHub Pages.
+A rota `/carteira` transforma a seleção de qualquer das duas triagens numa lista de compras:
+um valor a investir e três formas de dividir. É conta pura sobre os números que a triagem já
+buscou — nada novo é requisitado, e funciona igual no instantâneo do GitHub Pages.
 
 **Seleção.** Cada linha dos aprovados e dos *falta conferir* tem uma caixa. Aprovados entram
 marcados; os de conferência manual entram desmarcados e, quando marcados, aparecem na
 carteira com a etiqueta **conferir** — é o leitor assumindo a checagem que a fonte não fez.
 Reprovados não têm caixa. Cada um dos dois grupos tem *marcar todos* e *desmarcar todos* no
 cabeçalho. O estado guarda só os desvios do padrão (aprovado desmarcado, pendente marcado),
-o que mantém o padrão certo enquanto as linhas ainda chegam pelo stream.
+o que mantém o padrão certo enquanto as linhas ainda chegam pelo stream. A barra fixa no
+rodapé da triagem diz quantos estão marcados e leva para `/carteira?papel=…&t=…`, com os
+tickers no endereço: a carteira é tão compartilhável quanto uma análise.
 
-- **Divisão igual** — o mesmo valor em cada fundo aprovado.
+Os rótulos acompanham o papel — *fundo* e *cota* nos FIIs, *ação* nas ações — e o teto de
+concentração conta por **segmento** num caso e por **setor** no outro.
+
+- **Divisão igual** — o mesmo valor em cada papel selecionado.
 - **Peso pela qualidade** — proporcional a *desempates passados + 1*, para quem passou em
   0/3 ainda ter fatia: passou nos cinco filtros.
 - **Maximizar renda** — proporcional ao DY 12m, com **teto de 25% por fundo e 40% por

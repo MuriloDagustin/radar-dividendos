@@ -1,7 +1,7 @@
 'use client';
 
+import Link from 'next/link';
 import { useId, useMemo, useState } from 'react';
-import type { ScreenedFund } from '@/src/fund-market';
 import {
   MAX_PER_FUND,
   MAX_PER_SEGMENT,
@@ -10,9 +10,12 @@ import {
   projectGrowth,
   segmentShares,
   type AllocationMode,
+  type Holding,
 } from '@/src/portfolio';
 import { formatValue } from '@/app/format';
 import { AllocationDonut, GrowthChart } from './charts';
+import { TickerLink } from './screen-view';
+import type { Words } from './screen-spec';
 import screen from './screen.module.css';
 import styles from './portfolio.module.css';
 
@@ -40,21 +43,21 @@ function percent(value: number): string {
 
 /**
  * Turns the reader's selection into a shopping list: how many shares of each, for the amount
- * they have. Pure arithmetic on numbers already on the page — nothing new is fetched, so it
- * works on the static snapshot too.
+ * they have. Pure arithmetic on numbers the screen already fetched — nothing new is
+ * requested, so it works on the static snapshot too.
  */
 export function PortfolioBuilder({
-  funds,
-  onPick,
-  onReset,
-  onClear,
+  holdings,
+  pending,
+  words,
+  backHref,
 }: {
-  /** The funds the reader ticked, approved or pending. */
-  funds: ScreenedFund[];
-  onPick: (ticker: string) => void;
-  /** Back to the default selection: every approved fund. */
-  onReset: () => void;
-  onClear: () => void;
+  /** The papers the reader ticked on the screening table, approved or pending. */
+  holdings: Holding[];
+  /** Of those, the ones no filter rejected but whose data was incomplete. */
+  pending: ReadonlySet<string>;
+  words: Words;
+  backHref: string;
 }) {
   const [amountText, setAmountText] = useState(DEFAULT_AMOUNT);
   const [contributionText, setContributionText] = useState('');
@@ -65,32 +68,24 @@ export function PortfolioBuilder({
 
   const amount = parseAmount(amountText);
   const contribution = parseAmount(contributionText);
-  const portfolio = useMemo(() => buildPortfolio(funds, amount, mode), [funds, amount, mode]);
+  const portfolio = useMemo(() => buildPortfolio(holdings, amount, mode), [holdings, amount, mode]);
   const segments = useMemo(() => segmentShares(portfolio.positions), [portfolio]);
   const growth = useMemo(
     () => projectGrowth(portfolio, horizon, contribution),
     [portfolio, horizon, contribution],
   );
-  const pendingTickers = useMemo(
-    () => new Set(funds.filter((f) => f.outcome === 'pending').map((f) => f.ticker)),
-    [funds],
-  );
 
   return (
-    <section className={screen.group} aria-label="Montar carteira com os fundos selecionados">
+    <section className={screen.group} aria-label="Montar carteira com os papéis selecionados">
       <header className={screen.groupHead}>
         <span className={`${screen.dot} ${styles.dot}`} aria-hidden="true" />
-        <span className={screen.groupTitle}>Montar carteira</span>
-        <span className={`mono ${screen.groupCount}`}>{funds.length} selecionados</span>
+        <span className={screen.groupTitle}>Seleção</span>
+        <span className={`mono ${screen.groupCount}`}>{holdings.length}</span>
         <span className={screen.groupNote}>
-          marque os fundos nas tabelas acima; cota inteira, sem fração ·{' '}
-          <button type="button" className={styles.textButton} onClick={onReset}>
-            só os aprovados
-          </button>{' '}
-          ·{' '}
-          <button type="button" className={styles.textButton} onClick={onClear}>
-            nenhum
-          </button>
+          {words.share} inteira, sem fração ·{' '}
+          <Link className={styles.textButton} href={backHref}>
+            mudar a seleção na triagem
+          </Link>
         </span>
       </header>
 
@@ -145,7 +140,7 @@ export function PortfolioBuilder({
           <p className={styles.modeDetail}>
             {MODE_NAME[mode].detail}
             {mode === 'yield'
-              ? ` Tetos: ${percent(MAX_PER_FUND)} por fundo, ${percent(MAX_PER_SEGMENT)} por segmento.`
+              ? ` Tetos: ${percent(MAX_PER_FUND)} por ${words.item}, ${percent(MAX_PER_SEGMENT)} por ${words.group}.`
               : ''}
           </p>
         </div>
@@ -169,13 +164,12 @@ export function PortfolioBuilder({
         </div>
       </div>
 
-      {funds.length === 0 ? (
-        <p className={screen.empty}>nenhum fundo selecionado — marque nas tabelas acima</p>
-      ) : amount <= 0 ? (
+      {amount <= 0 ? (
         <p className={screen.empty}>informe um valor para ver a carteira</p>
       ) : portfolio.positions.length === 0 ? (
         <p className={screen.empty}>
-          {money(amount)} não compra uma cota de nenhum fundo selecionado com essa divisão
+          {money(amount)} não compra uma {words.share} de nenhum {words.item} selecionado com essa
+          divisão
         </p>
       ) : (
         <>
@@ -183,9 +177,9 @@ export function PortfolioBuilder({
             <table className={screen.table}>
               <thead>
                 <tr>
-                  <th>fundo</th>
-                  <th>segmento</th>
-                  <th className={screen.thNum}>cotas</th>
+                  <th>{words.item}</th>
+                  <th>{words.group}</th>
+                  <th className={screen.thNum}>{words.shares}</th>
                   <th className={screen.thNum}>cotação</th>
                   <th className={screen.thNum}>aplicado</th>
                   <th className={screen.thNum}>peso</th>
@@ -197,10 +191,8 @@ export function PortfolioBuilder({
                 {portfolio.positions.map((p) => (
                   <tr key={p.ticker} className={screen.row}>
                     <td className={styles.fundCell}>
-                      <button type="button" className={screen.ticker} onClick={() => onPick(p.ticker)}>
-                        {p.ticker}
-                      </button>
-                      {pendingTickers.has(p.ticker) ? (
+                      <TickerLink ticker={p.ticker} />
+                      {pending.has(p.ticker) ? (
                         <span className={styles.pendingTag} title="Nenhum filtro reprovou, mas faltou dado nas fontes">
                           conferir
                         </span>
@@ -250,9 +242,14 @@ export function PortfolioBuilder({
           </dl>
 
           <div className={styles.charts}>
-            <AllocationDonut positions={portfolio.positions} segments={segments} />
+            <AllocationDonut positions={portfolio.positions} segments={segments} words={words} />
             {growth ? (
-              <GrowthChart points={growth} invested={portfolio.invested} contribution={contribution} />
+              <GrowthChart
+                points={growth}
+                invested={portfolio.invested}
+                contribution={contribution}
+                words={words}
+              />
             ) : (
               <p className={screen.empty}>sem DY na carteira, não há o que projetar</p>
             )}
@@ -268,11 +265,11 @@ export function PortfolioBuilder({
       ) : null}
 
       <p className={styles.caveat}>
-        A renda é o DY dos últimos 12 meses aplicado ao valor comprado, dividido por 12 — o que o fundo pagou,
-        não o que vai pagar. A projeção congela cotação e DY nos valores de hoje e só mostra o efeito de reinvestir
-        ou não, e do aporte mensal: não prevê preço, inflação nem corte de rendimento. O aporte entra na
-        projeção, não na lista de compras acima. A cotação é a da última leitura das fontes, e o
-        preço de compra na bolsa será outro.
+        A renda é o DY dos últimos 12 meses aplicado ao valor comprado, dividido por 12 — o que o{' '}
+        {words.item} pagou, não o que vai pagar. A projeção congela cotação e DY nos valores de hoje e
+        só mostra o efeito de reinvestir ou não, e do aporte mensal: não prevê preço, inflação nem
+        corte de rendimento. O aporte entra na projeção, não na lista de compras acima. A cotação é a
+        da última leitura das fontes, e o preço de compra na bolsa será outro.
       </p>
     </section>
   );

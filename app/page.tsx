@@ -1,6 +1,11 @@
-import { Radar } from '@/app/components/radar';
+import { Suspense } from 'react';
+import { Home } from '@/app/components/home';
 
 export default function Page() {
   // The key never reaches the client: only whether it exists, so the checkbox knows.
-  return <Radar aiAvailable={Boolean(process.env.ANTHROPIC_API_KEY)} />;
+  return (
+    <Suspense>
+      <Home aiAvailable={Boolean(process.env.ANTHROPIC_API_KEY)} />
+    </Suspense>
+  );
 }

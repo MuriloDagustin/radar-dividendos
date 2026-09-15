@@ -1,0 +1,182 @@
+.container {
+  width: 100%;
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding-inline: var(--gutter);
+}
+
+/* hero-band: copy on the left, the ruler lesson on the right. */
+.hero {
+  padding-block: var(--space-xxl);
+}
+
+.heroGrid {
+  display: grid;
+  gap: var(--space-xxl);
+  align-items: start;
+}
+
+@media (min-width: 64rem) {
+  .heroGrid {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    column-gap: clamp(2rem, 5vw, 4rem);
+  }
+}
+
+.copy {
+  min-width: 0;
+}
+
+/* display-xl */
+.thesis {
+  font-size: clamp(2.25rem, 1.4rem + 3.6vw, 4rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  max-width: 18ch;
+  text-wrap: balance;
+}
+
+.thesis em {
+  font-style: italic;
+}
+
+.sub {
+  margin-top: var(--space-md);
+  max-width: 56ch;
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.command {
+  margin-top: var(--space-xl);
+  max-width: 34rem;
+}
+
+.staticNote {
+  margin-top: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  font-size: 14px;
+  color: var(--body);
+  max-width: 62ch;
+}
+
+.option {
+  margin-top: var(--space-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: 14px;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.option input {
+  accent-color: var(--primary);
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+
+.optionOff {
+  cursor: default;
+  color: var(--muted-soft);
+}
+
+.presets {
+  margin-top: var(--space-lg);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xxs);
+}
+
+.hint {
+  margin-right: var(--space-xs);
+}
+
+.preset {
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  text-decoration: none;
+}
+
+.preset:hover {
+  background: var(--surface-card);
+  color: var(--ink);
+}
+
+.preset:active {
+  text-decoration: none;
+}
+
+/* The two screens, as the destinations they are — not as chips in a row of suggestions. */
+.entries {
+  display: grid;
+  gap: var(--space-lg);
+  padding-bottom: var(--space-section);
+}
+
+@media (min-width: 52rem) {
+  .entries {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* feature-card */
+.entry {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-xs);
+  padding: var(--space-xl);
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  color: var(--body);
+  text-decoration: none;
+}
+
+.entry:hover {
+  box-shadow: var(--shadow-hover);
+}
+
+.entry:active {
+  text-decoration: none;
+}
+
+.entryTitle {
+  font-size: 28px;
+  line-height: 1.2;
+}
+
+.entryLede {
+  max-width: 44ch;
+  font-size: 15px;
+  color: var(--body);
+}
+
+.entryAction {
+  margin-top: var(--space-xs);
+  color: var(--link);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.entryNote {
+  font-size: 14px;
+  color: var(--muted);
+  max-width: 68ch;
+}
+
+@media (min-width: 52rem) {
+  .entryNote {
+    grid-column: 1 / -1;
+  }
+}

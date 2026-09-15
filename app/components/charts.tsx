@@ -4,6 +4,14 @@ import { useId, useState, type PointerEvent } from 'react';
 import type { GrowthPoint, Position, SegmentShare } from '@/src/portfolio';
 import styles from './charts.module.css';
 
+/** A fund holds cotas in segments, a company holds ações in sectors; the chart says which. */
+export interface ChartWords {
+  item: string;
+  items: string;
+  shares: string;
+  group: string;
+}
+
 /** Categorical slots are assigned to segments in a fixed order, largest segment first, never cycled. */
 const SERIES_SLOTS = 8;
 
@@ -58,9 +66,11 @@ interface Slice {
 export function AllocationDonut({
   positions,
   segments,
+  words,
 }: {
   positions: Position[];
   segments: SegmentShare[];
+  words: ChartWords;
 }) {
   const [hovered, setHovered] = useState<string | null>(null);
   const titleId = useId();
@@ -96,12 +106,14 @@ export function AllocationDonut({
     <figure className={styles.figure} aria-labelledby={titleId}>
       <figcaption id={titleId} className={styles.caption}>
         <span className="tag">distribuição</span>
-        <span className={styles.captionNote}>cor por segmento, fatia por fundo</span>
+        <span className={styles.captionNote}>
+          cor por {words.group}, fatia por {words.item}
+        </span>
       </figcaption>
 
       <div className={styles.donutRow}>
         <div className={styles.donutWrap}>
-          <svg viewBox={`0 0 ${size} ${size}`} className={styles.donut} role="img" aria-label="Distribuição da carteira por fundo">
+          <svg viewBox={`0 0 ${size} ${size}`} className={styles.donut} role="img" aria-label={`Distribuição da carteira por ${words.item}`}>
             {slices.map((s) => {
               const mid = (s.start + s.end) / 2;
               const wide = s.end - s.start > 0.25;
@@ -134,7 +146,7 @@ export function AllocationDonut({
               {active ? percent(active.position.weight) : `${positions.length}`}
             </text>
             <text x={cx} y={cy + 14} className={styles.centerLabel} textAnchor="middle">
-              {active ? active.position.ticker : positions.length === 1 ? 'fundo' : 'fundos'}
+              {active ? active.position.ticker : positions.length === 1 ? words.item : words.items}
             </text>
           </svg>
 
@@ -143,9 +155,10 @@ export function AllocationDonut({
               <strong className={styles.tooltipValue}>{money(active.position.invested)}</strong>
               <span className={styles.tooltipRow}>
                 <i className={styles.key} style={{ background: `var(--series-${active.slot + 1})` }} />
-                {active.position.ticker} · {active.position.shares} cotas · {percent(active.position.weight)}
+                {active.position.ticker} · {active.position.shares} {words.shares} ·{' '}
+                {percent(active.position.weight)}
               </span>
-              <span className={styles.tooltipMuted}>{active.position.segment ?? 'sem segmento'}</span>
+              <span className={styles.tooltipMuted}>{active.position.segment ?? `sem ${words.group}`}</span>
             </div>
           ) : null}
         </div>
@@ -185,10 +198,12 @@ export function GrowthChart({
   points,
   invested,
   contribution = 0,
+  words,
 }: {
   points: GrowthPoint[];
   invested: number;
   contribution?: number;
+  words: ChartWords;
 }) {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const titleId = useId();
@@ -308,12 +323,14 @@ export function GrowthChart({
         <li className={styles.legendItem}>
           <i className={`${styles.lineKey} ${styles.lineKeyMain}`} />
           <span className={styles.legendName}>reinvestindo os rendimentos</span>
-          <span className={styles.legendTickers}>cada pagamento compra mais cotas</span>
+          <span className={styles.legendTickers}>cada pagamento compra mais {words.shares}</span>
         </li>
         <li className={styles.legendItem}>
           <i className={`${styles.lineKey} ${styles.lineKeyContext}`} />
           <span className={styles.legendName}>sacando os rendimentos</span>
-          <span className={styles.legendTickers}>cotas paradas, rendimento acumulado em caixa</span>
+          <span className={styles.legendTickers}>
+            {words.shares} paradas, rendimento acumulado em caixa
+          </span>
         </li>
       </ul>
     </figure>
