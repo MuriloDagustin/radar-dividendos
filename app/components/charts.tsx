@@ -199,11 +199,14 @@ export function GrowthChart({
   invested,
   contribution = 0,
   words,
+  onHover,
 }: {
   points: GrowthPoint[];
   invested: number;
   contribution?: number;
   words: ChartWords;
+  /** The year under the cursor, so the totals above the chart can follow it. */
+  onHover?: (point: GrowthPoint | null) => void;
 }) {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const titleId = useId();
@@ -227,11 +230,16 @@ export function GrowthChart({
   const xStep = last.year <= 10 ? 1 : last.year <= 20 ? 2 : 5;
   const xTicks = points.filter((p) => p.year % xStep === 0).map((p) => p.year);
 
+  const moveTo = (index: number | null) => {
+    setHoverIndex(index);
+    onHover?.(index === null ? null : (points[index] ?? null));
+  };
+
   const onMove = (event: PointerEvent<SVGRectElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
     const px = ((event.clientX - rect.left) / rect.width) * plotW;
     const year = Math.round((px / plotW) * last.year);
-    setHoverIndex(Math.max(0, Math.min(points.length - 1, year)));
+    moveTo(Math.max(0, Math.min(points.length - 1, year)));
   };
 
   const active = hoverIndex === null ? null : (points[hoverIndex] ?? null);
@@ -292,7 +300,7 @@ export function GrowthChart({
             height={plotH}
             fill="transparent"
             onPointerMove={onMove}
-            onPointerLeave={() => setHoverIndex(null)}
+            onPointerLeave={() => moveTo(null)}
           />
         </svg>
 

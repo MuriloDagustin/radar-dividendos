@@ -119,6 +119,13 @@
   color: var(--warn);
 }
 
+/* Which of the two curves the projected total is reading. */
+.qualifier {
+  font-family: var(--font-text);
+  font-size: 12px;
+  color: var(--muted);
+}
+
 .excluded {
   font-size: 13px;
   color: var(--muted);

@@ -10,6 +10,7 @@ import {
   projectGrowth,
   segmentShares,
   type AllocationMode,
+  type GrowthPoint,
   type Holding,
 } from '@/src/portfolio';
 import { formatValue } from '@/app/format';
@@ -74,6 +75,12 @@ export function PortfolioBuilder({
     () => projectGrowth(portfolio, horizon, contribution),
     [portfolio, horizon, contribution],
   );
+
+  // Today's totals answer "what do I buy"; the curve answers "and then what". Reading the
+  // curve moves the two totals that grow with it, so the row is never a year behind the chart.
+  const [hovered, setHovered] = useState<GrowthPoint | null>(null);
+  const projected = hovered && growth?.includes(hovered) && hovered.year > 0 ? hovered : null;
+  const horizonLabel = projected ? `em ${projected.year} ano${projected.year > 1 ? 's' : ''}` : null;
 
   return (
     <section className={screen.group} aria-label="Montar carteira com os papéis selecionados">
@@ -219,18 +226,32 @@ export function PortfolioBuilder({
 
           <dl className={styles.totals}>
             <div className={styles.total}>
-              <dt className="tag">aplicado</dt>
-              <dd className={`mono ${styles.totalValue}`}>{money(portfolio.invested)}</dd>
+              <dt className="tag">{projected ? `patrimônio ${horizonLabel}` : 'aplicado'}</dt>
+              <dd className={`mono ${styles.totalValue}`}>
+                {money(projected ? projected.reinvested : portfolio.invested)}
+                {/* Both projected totals read the main curve; the other one is the cash kept. */}
+                {projected ? <span className={styles.qualifier}> reinvestindo</span> : null}
+              </dd>
             </div>
             <div className={styles.total}>
               <dt className="tag">troco</dt>
               <dd className={`mono ${styles.totalValue}`}>{money(portfolio.leftover)}</dd>
             </div>
             <div className={styles.total}>
-              <dt className="tag">renda estimada/mês</dt>
+              <dt className="tag">{projected ? `renda/mês ${horizonLabel}` : 'renda estimada/mês'}</dt>
               <dd className={`mono ${styles.totalValue} ${styles.totalIncome}`}>
-                {portfolio.monthlyIncome === null ? '—' : money(portfolio.monthlyIncome)}
-                {portfolio.incomeComplete ? '' : <span className={styles.partial}> parcial</span>}
+                {projected
+                  ? money(projected.monthlyIncome)
+                  : portfolio.monthlyIncome === null
+                    ? '—'
+                    : money(portfolio.monthlyIncome)}
+                {projected ? (
+                  <span className={styles.qualifier}> reinvestindo</span>
+                ) : portfolio.incomeComplete ? (
+                  ''
+                ) : (
+                  <span className={styles.partial}> parcial</span>
+                )}
               </dd>
             </div>
             <div className={styles.total}>
@@ -249,6 +270,7 @@ export function PortfolioBuilder({
                 invested={portfolio.invested}
                 contribution={contribution}
                 words={words}
+                onHover={setHovered}
               />
             ) : (
               <p className={screen.empty}>sem DY na carteira, não há o que projetar</p>
@@ -268,8 +290,9 @@ export function PortfolioBuilder({
         A renda é o DY dos últimos 12 meses aplicado ao valor comprado, dividido por 12 — o que o{' '}
         {words.item} pagou, não o que vai pagar. A projeção congela cotação e DY nos valores de hoje e
         só mostra o efeito de reinvestir ou não, e do aporte mensal: não prevê preço, inflação nem
-        corte de rendimento. O aporte entra na projeção, não na lista de compras acima. A cotação é a
-        da última leitura das fontes, e o preço de compra na bolsa será outro.
+        corte de rendimento. Passe o cursor pela curva para ler o patrimônio e a renda de cada ano.
+        O aporte entra na projeção, não na lista de compras acima. A cotação é a da última leitura
+        das fontes, e o preço de compra na bolsa será outro.
       </p>
     </section>
   );
