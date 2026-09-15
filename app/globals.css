@@ -1,7 +1,7 @@
 /*
- * Tokens from DESIGN.md. One light look only: the system has no dark mode, the cream canvas
- * is the brand. Coral is reserved for the primary action; dark surfaces carry product chrome
- * (the AI reading, the screen console, the footer).
+ * Tokens from DESIGN.md. The cream canvas is the brand; coral is reserved for the primary
+ * action; dark surfaces carry product chrome (the AI reading, the screen console, the footer).
+ * The dark theme is derived from the document's own dark-surface tokens, since it defines none.
  */
 
 :root {
@@ -80,10 +80,53 @@
   --measure: 75rem;
   --gutter: clamp(1rem, 4vw, 2rem);
 
+  /* Panels that are dark on cream. On a dark canvas they step up one tone and gain an edge. */
+  --surface-inverse: var(--surface-dark);
+  --surface-inverse-raised: var(--surface-dark-elevated);
+  --inverse-border: transparent;
+  --on-inverse: var(--on-dark);
+  --on-inverse-soft: var(--on-dark-soft);
+
   --shadow-hover: 0 1px 3px rgba(20, 20, 19, 0.08);
   --focus-ring: 0 0 0 3px color-mix(in srgb, var(--primary) 15%, transparent);
 
   color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --primary-disabled: #3a362f;
+
+    --ink: #faf9f5;
+    --body: #d9d5cc;
+    --body-strong: #ebe7df;
+    --muted: #a09d96;
+    --muted-soft: #7c7970;
+
+    --hairline: #2e2b27;
+    --hairline-soft: #26241f;
+
+    --canvas: #181715;
+    --surface-soft: #1f1e1b;
+    --surface-card: #252320;
+    --surface-cream-strong: #2e2b27;
+
+    --link: var(--primary);
+
+    /* On dark the fill tokens read as text; only the red needs lifting. */
+    --ok: var(--success);
+    --warn: var(--warning);
+    --bad: #de6b6b;
+    --unrel: var(--accent-teal);
+
+    --surface-inverse: #252320;
+    --surface-inverse-raised: #33302b;
+    --inverse-border: var(--hairline);
+
+    --shadow-hover: 0 1px 3px rgba(0, 0, 0, 0.4);
+
+    color-scheme: dark;
+  }
 }
 
 *,

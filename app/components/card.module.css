@@ -244,14 +244,15 @@
 .ai {
   padding: var(--space-lg);
   border-radius: var(--radius-lg);
-  background: var(--surface-dark);
-  color: var(--on-dark);
+  border: 1px solid var(--inverse-border);
+  background: var(--surface-inverse);
+  color: var(--on-inverse);
   display: grid;
   gap: var(--space-sm);
 }
 
 .aiTag {
-  color: var(--on-dark-soft);
+  color: var(--on-inverse-soft);
 }
 
 .aiText {
@@ -265,7 +266,7 @@
   display: grid;
   gap: var(--space-xxs);
   font-size: 14px;
-  color: var(--on-dark-soft);
+  color: var(--on-inverse-soft);
 }
 
 /*

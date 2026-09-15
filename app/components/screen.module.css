@@ -25,8 +25,9 @@
 .console {
   padding: var(--space-lg);
   border-radius: var(--radius-lg);
-  background: var(--surface-dark);
-  color: var(--on-dark-soft);
+  border: 1px solid var(--inverse-border);
+  background: var(--surface-inverse);
+  color: var(--on-inverse-soft);
   font-family: var(--font-mono);
   font-size: 14px;
   line-height: 1.6;
@@ -48,7 +49,7 @@
 .bar {
   height: 3px;
   border-radius: var(--radius-pill);
-  background: var(--surface-dark-elevated);
+  background: var(--surface-inverse-raised);
   overflow: hidden;
 }
 
