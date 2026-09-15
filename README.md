@@ -296,6 +296,11 @@ isso `na` (estrutural, esperado) e `unrel` (deveria ser legível e não é) são
 separados, e só o segundo pesa. Em troca, um banco com ROE ilegível vira `inconclusive` pela
 regra do indicador crítico — que a própria spec justifica ao chamar o ROE de central.
 
+**Vacância entra na conta.** Ela é o quinto indicador aplicável de um fundo de tijolo, então
+o mínimo para haver veredito sobe de 2 para 3 leituras (`max(2, ⌈aplicáveis/2⌉)`). Um fundo
+com só DY e P/VP lidos passa a sair como **sem veredito** em vez de sólido — o que é a
+resposta honesta para duas leituras em cinco. Fundo de papel não muda: a vacância dele é `na`.
+
 ### Aviso de classe mais líquida
 
 Ticker terminado em 3 ou 4 tem as classes irmãs consultadas na brapi; se outra tiver volume
@@ -341,6 +346,35 @@ mesmo tendo os mais específicos. Motivo concreto: para a Klabin o site publica 
 de **23,06% no subsetor e 34,25% no segmento** — agregados de duas ou três empresas viram
 ruído, não contexto. O setor diz 2,66%, que é crível. O rótulo sempre nomeia o escopo usado.
 
+### O cartão em camadas
+
+O cartão imprimia trinta blocos com o mesmo peso e ~2.500px: o veredito era uma pílula no meio
+do cabeçalho, e a justificativa das oito regras (cinco filtros e três desempates) era
+reimpressa a cada leitura, ~1.000 caracteres por cartão. Agora a ordem é a da pergunta:
+
+1. **Sempre visível** — ticker, preço, o veredito em corpo grande com a frase que o explica ao
+   lado, a procedência e o link do documento de resultado.
+2. **Aberto** — as cinco regras em uma linha cada (marca, nome, número) e as réguas que têm
+   dado.
+3. **Fechado** — o parágrafo que argumenta cada regra (`▸ por que este filtro`), o desempate
+   inteiro, e as ressalvas de fonte.
+
+Regra sem dado é exceção: aí o parágrafo *é* a resposta ("Nenhuma fonte informou a vacância"),
+e fica visível.
+
+**Indicador que não se aplica não é régua vazia.** As três réguas "não se aplica" de um FII
+viram uma linha — *Payout · Dívida líq./EBITDA · ROE — Não se aplica a fundo imobiliário* —
+agrupada por motivo, então um fundo de papel ganha a sua própria linha para a vacância e um
+banco, para a dívida. O diagnóstico continua produzindo os `na`: eles são o que o `coverage`
+conta para decidir se há veredito, e o CLI imprime a linha. O que mudou é o cartão.
+
+### Comparar dois papéis
+
+Dois ou mais tickers abrem numa tabela alinhada — indicador nas linhas, papel nas colunas,
+valor e nome da faixa em cada célula — em vez de cartões independentes cujas linhas não se
+correspondem. A régua fica no cartão; o que compara é o nome da faixa. O botão *cartões*
+volta ao cartão por papel.
+
 ### Painel de contexto
 
 ROIC, margens, liquidez corrente, dívida/patrimônio, CAGR de receita, posição na faixa de 52
@@ -358,8 +392,10 @@ e está em linha num fundo.
 | **DY 12m** | `< 6%` baixo p/ FII (warn) · `6–16%` faixa normal (ok) · `> 16%` muito acima do mercado — risco de crédito ou distribuição não recorrente (warn) |
 | **P/VP** | `< 0,85` descontada, investigar relatório gerencial (warn) · `0,85–1,05` em linha com patrimônio (ok) · `1,05–1,10` leve ágio (ok) · `> 1,10` ágio (warn) |
 | **Payout s/ FFO** | `< 0,85` retendo (ok) · `0,85–1,05` coberta (ok) · `1,05–1,50` acima do FFO (warn) · `> 1,50` muito acima, não sustentada pelo resultado recorrente (bad) |
+| **Vacância** | `< 5%` cheio (ok) · `5–10%` normal (ok) · `10–20%` alta (warn) · `> 20%` crítica (bad). Escala invertida: menos é melhor. O corte de 10% é o mesmo do filtro de vacância — a régua e o painel dos 5 filtros ficam no mesmo cartão e não podem discordar do mesmo fundo |
 | **DY − CDI** | informativo, sem faixa: o prêmio sobre a taxa livre de risco |
 | Payout, Dívida líq./EBITDA, ROE | `na` — não se aplicam |
+| **Vacância**, em fundo de papel | `na` — um fundo sem imóveis não tem área para ficar vazia |
 
 Um FII não reporta lucro contábil, então o payout dele é medido contra o **FFO**. A conta é
 `DY ÷ FFO Yield`, e ela é feita **dentro do parser do Fundamentus**, a única fonte que publica
@@ -718,6 +754,10 @@ cache.
 
 SQLite via `better-sqlite3`, TTL de **12h por ticker**. Registro expirado é apagado na
 leitura. `--no-cache` desliga leitura e gravação.
+
+O payload é gravado com um `SCHEMA_VERSION`. Quando a `Analysis` muda de forma — um indicador
+novo, um bloco novo — a constante sobe e as linhas antigas são descartadas na leitura, em vez
+de serem servidas com um pedaço faltando.
 
 ## Tratamento de erro
 

@@ -1,8 +1,9 @@
+import Database from 'better-sqlite3';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { TTL_MS, openCache, type Cache } from '../src/cache';
+import { SCHEMA_VERSION, TTL_MS, openCache, type Cache } from '../src/cache';
 import { diagnose } from '../src/diagnosis';
 import {
   DISCLAIMER,
@@ -45,11 +46,13 @@ function fakeAnalysis(ticker: string): Analysis {
 
 describe('SQLite cache', () => {
   let dir: string;
+  let path: string;
   let cache: Cache;
 
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), 'radar-cache-'));
-    cache = openCache({ enabled: true, path: join(dir, 'test.sqlite') });
+    path = join(dir, 'test.sqlite');
+    cache = openCache({ enabled: true, path });
   });
 
   afterEach(() => {
@@ -76,9 +79,27 @@ describe('SQLite cache', () => {
     expect(cache.read('MXRF11')?.kind).toBe('fii');
   });
 
-  it('drops a row written before the analysis carried the stock screen', () => {
-    const { stockScreen: _dropped, ...older } = fakeAnalysis('TAEE11');
-    cache.write('TAEE11', older as Analysis);
+  it('drops a row written by a build with an older payload shape', () => {
+    cache.write('TAEE11', fakeAnalysis('TAEE11'));
+    const db = new Database(path);
+    db.prepare('UPDATE analyses SET payload = ? WHERE ticker = ?').run(
+      JSON.stringify({ schema: SCHEMA_VERSION - 1, analysis: fakeAnalysis('TAEE11') }),
+      'TAEE11',
+    );
+    db.close();
+
+    expect(cache.read('TAEE11')).toBeNull();
+  });
+
+  it('drops a row from before the payload carried a version at all', () => {
+    cache.write('TAEE11', fakeAnalysis('TAEE11'));
+    const db = new Database(path);
+    db.prepare('UPDATE analyses SET payload = ? WHERE ticker = ?').run(
+      JSON.stringify(fakeAnalysis('TAEE11')),
+      'TAEE11',
+    );
+    db.close();
+
     expect(cache.read('TAEE11')).toBeNull();
   });
 

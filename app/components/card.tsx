@@ -1,4 +1,3 @@
-import type { CSSProperties } from 'react';
 import { describeScreen } from '@/src/fund-screen';
 import { provenanceLabel } from '@/src/provenance';
 import { primaryDocument } from '@/src/sources/documentos';
@@ -13,7 +12,7 @@ import {
   type Indicator,
   type Signal,
 } from '@/src/types';
-import { formatTimestamp, formatValue } from '@/app/format';
+import { VERDICT_EXPLANATION, formatTimestamp, formatValue } from '@/app/format';
 import { Ruler } from './ruler';
 import { Badge } from './badge';
 import styles from './card.module.css';
@@ -24,12 +23,6 @@ const NUMBER_CLASS: Record<Signal, string | undefined> = {
   bad: styles.numberBad,
   unrel: styles.numberUnrel,
   na: styles.numberNone,
-};
-
-/** The empty ruler explains why there is nothing to place on it. */
-const EMPTY_RULER_LABEL: Partial<Record<Signal, string>> = {
-  na: 'não se aplica',
-  unrel: 'número distorcido — sem leitura',
 };
 
 /**
@@ -46,15 +39,7 @@ function DocumentLink({ analysis }: { analysis: Analysis }) {
   );
 }
 
-function IndicatorRow({
-  indicator,
-  analysis,
-  order,
-}: {
-  indicator: Indicator;
-  analysis: Analysis;
-  order: number;
-}) {
+function IndicatorRow({ indicator, analysis }: { indicator: Indicator; analysis: Analysis }) {
   const value = formatValue(indicator.value, indicator.format);
   const provenance = provenanceLabel(analysis.provenance, indicator.key);
   const numberClass = indicator.signal ? NUMBER_CLASS[indicator.signal] : styles.numberNone;
@@ -70,7 +55,7 @@ function IndicatorRow({
   }
 
   return (
-    <div className={styles.indicator} style={{ '--row-order': order } as CSSProperties}>
+    <div className={styles.indicator}>
       <div className={styles.indicatorHead}>
         <span className={styles.name}>{indicator.label}</span>
         <span className={`${styles.number} ${numberClass}`}>{value}</span>
@@ -83,9 +68,7 @@ function IndicatorRow({
         format={indicator.format}
         signal={indicator.signal}
         {...(indicator.peers ? { peers: indicator.peers } : {})}
-        {...(indicator.signal && EMPTY_RULER_LABEL[indicator.signal]
-          ? { emptyLabel: EMPTY_RULER_LABEL[indicator.signal] as string }
-          : {})}
+        {...(indicator.signal === 'unrel' ? { emptyLabel: 'número distorcido — sem leitura' } : {})}
       />
 
       <div className={styles.indicatorFoot}>
@@ -101,6 +84,33 @@ function IndicatorRow({
         {provenance ? <span className={`tag ${styles.provenance}`}>{provenance}</span> : null}
       </div>
     </div>
+  );
+}
+
+/**
+ * An indicator that does not apply is not a reading with a hole in it — a FII has no ROE to
+ * miss. One line naming them beats three empty rulers, and the reason is what varies, so
+ * indicators that share a reason share a line.
+ */
+function InapplicableNote({ indicators }: { indicators: Indicator[] }) {
+  if (indicators.length === 0) return null;
+
+  const byReason = new Map<string, string[]>();
+  for (const indicator of indicators) {
+    byReason.set(indicator.message, [...(byReason.get(indicator.message) ?? []), indicator.label]);
+  }
+
+  return (
+    <>
+      {[...byReason].map(([reason, labels]) => (
+        <p key={reason} className={styles.inapplicable}>
+          <span className="tag">não se aplica</span>
+          <span>
+            <strong className={styles.inapplicableList}>{labels.join(' · ')}</strong> — {reason}
+          </span>
+        </p>
+      ))}
+    </>
   );
 }
 
@@ -132,6 +142,11 @@ const CRITERION_MARK: Record<CriterionStatus, { glyph: string; className: string
   unknown: { glyph: '?', className: styles.markUnknown, title: 'sem dado para julgar' },
 };
 
+/**
+ * The rule, its answer and the number behind it. The paragraph that argues the rule is the
+ * same on every card, so it waits behind a disclosure — except when no source answered, and
+ * then the paragraph *is* the answer.
+ */
 function CriterionRow({ criterion, index }: { criterion: Criterion; index?: number }) {
   const mark = CRITERION_MARK[criterion.status];
   return (
@@ -145,7 +160,14 @@ function CriterionRow({ criterion, index }: { criterion: Criterion; index?: numb
           <span className={styles.criterionLabel}>{criterion.label}</span>
           {criterion.value ? <span className={styles.criterionValue}>{criterion.value}</span> : null}
         </div>
-        <p className={styles.criterionDetail}>{criterion.detail}</p>
+        {criterion.status === 'unknown' ? (
+          <p className={styles.criterionDetail}>{criterion.detail}</p>
+        ) : (
+          <details className={styles.criterionWhy}>
+            <summary className={styles.criterionWhySummary}>por que este filtro</summary>
+            <p className={styles.criterionDetail}>{criterion.detail}</p>
+          </details>
+        )}
       </div>
     </li>
   );
@@ -157,6 +179,8 @@ function CriterionRow({ criterion, index }: { criterion: Criterion; index?: numb
  * candidate at all comes before how its numbers read.
  */
 function FundScreenPanel({ screen, paper }: { screen: FundScreen; paper: 'fundos' | 'ações' }) {
+  const passedTiebreakers = screen.tiebreakers.filter((c) => c.status === 'pass').length;
+
   return (
     <section
       className={styles.screen}
@@ -174,29 +198,35 @@ function FundScreenPanel({ screen, paper }: { screen: FundScreen; paper: 'fundos
         ))}
       </ol>
 
-      <div className={screen.passedAll ? styles.tiebreak : `${styles.tiebreak} ${styles.tiebreakLocked}`}>
-        <div className={styles.screenHead}>
+      <details className={screen.passedAll ? styles.tiebreak : `${styles.tiebreak} ${styles.tiebreakLocked}`}>
+        <summary className={styles.tiebreakSummary}>
           <span className="tag">desempate</span>
           <span className={styles.screenSummary}>
             {screen.passedAll
-              ? `Entre ${paper} que passaram nos 5 filtros`
+              ? `${passedTiebreakers}/${screen.tiebreakers.length} entre ${paper} que passaram nos 5 filtros`
               : 'Só vale depois de passar pelos 5 filtros'}
           </span>
-        </div>
+        </summary>
         <ul className={styles.criteria}>
           {screen.tiebreakers.map((c) => (
             <CriterionRow key={c.key} criterion={c} />
           ))}
         </ul>
-      </div>
+      </details>
     </section>
   );
 }
 
 export function Card({ analysis }: { analysis: Analysis }) {
   const price = analysis.diagnosis.indicators.find((i) => i.key === 'price');
-  const rest = analysis.diagnosis.indicators.filter(
+  const core = analysis.diagnosis.indicators.filter(
     (i) => i.key !== 'price' && i.group === 'core',
+  );
+  // A rule that does not apply says so once, at the end; an informational row with no number
+  // says nothing at all.
+  const inapplicable = core.filter((i) => i.signal === 'na');
+  const readable = core.filter(
+    (i) => i.signal !== 'na' && (i.bands !== null || i.value !== null),
   );
   const context = analysis.diagnosis.indicators.filter((i) => i.group === 'context');
   const notes = analysis.sources.filter((s) => s.detail);
@@ -210,15 +240,11 @@ export function Card({ analysis }: { analysis: Analysis }) {
           {price?.value !== null && price !== undefined ? (
             <span className={styles.price}>{formatValue(price.value, price.format)}</span>
           ) : null}
-        </div>
-        <div className={styles.meta}>
-          <Badge diagnosis={analysis.diagnosis} />
           <span className="tag" title={analysis.classification.rawSector ?? undefined}>
             {analysis.kind === 'fii' || analysis.classification.category === 'fii'
               ? ASSET_KIND_NAME.fii
               : `${ASSET_KIND_NAME.stock} · ${CATEGORY_NAME[analysis.classification.category]}`}
           </span>
-          <DocumentLink analysis={analysis} />
         </div>
         <span className={styles.origin}>
           {analysis.fromCache ? 'do cache' : 'consulta ao vivo'}
@@ -226,6 +252,18 @@ export function Card({ analysis }: { analysis: Analysis }) {
           {formatTimestamp(analysis.generatedAt)}
         </span>
       </header>
+
+      <div className={styles.verdict}>
+        <Badge diagnosis={analysis.diagnosis} size="lg" />
+        <p className={styles.why}>
+          {verdict === 'indeterminate'
+            ? `Sem veredito — ${coverage.present} de ${coverage.applicable} indicadores preenchidos, e o mínimo é ${coverage.minimumForVerdict}.`
+            : verdict === 'inconclusive'
+              ? `${coverage.unreliable} indicadores sem leitura — dados insuficientes ou distorcidos para diagnóstico automático.`
+              : VERDICT_EXPLANATION[verdict]}
+        </p>
+        <DocumentLink analysis={analysis} />
+      </div>
 
       {analysis.notes.length > 0 ? (
         <div className={styles.notes}>
@@ -241,10 +279,12 @@ export function Card({ analysis }: { analysis: Analysis }) {
       {analysis.stockScreen ? <FundScreenPanel screen={analysis.stockScreen} paper="ações" /> : null}
 
       <div className={styles.body}>
-        {rest.map((indicator, i) => (
-          <IndicatorRow key={indicator.key} indicator={indicator} analysis={analysis} order={i} />
+        {readable.map((indicator) => (
+          <IndicatorRow key={indicator.key} indicator={indicator} analysis={analysis} />
         ))}
       </div>
+
+      <InapplicableNote indicators={inapplicable} />
 
       <ContextPanel indicators={context} />
 
@@ -257,26 +297,19 @@ export function Card({ analysis }: { analysis: Analysis }) {
         </p>
       ) : null}
 
-      {verdict === 'indeterminate' ? (
-        <div className={styles.notices}>
-          <p className={`${styles.notice} ${styles.noticeFailure}`}>
-            Sem veredito — {coverage.present} de {coverage.applicable} indicadores preenchidos, e o
-            mínimo é {coverage.minimumForVerdict}.
-          </p>
-        </div>
-      ) : null}
-
       {verdict === 'inconclusive' ? (
         <div className={styles.notices}>
           <p className={`${styles.notice} ${styles.noticeUnrel}`}>
-            {coverage.unreliable} indicadores sem leitura — dados insuficientes ou distorcidos para
-            diagnóstico automático. Análise manual necessária. <DocumentLink analysis={analysis} />
+            Análise manual necessária. <DocumentLink analysis={analysis} />
           </p>
         </div>
       ) : null}
 
       {notes.length > 0 ? (
-        <div className={styles.notices}>
+        <details className={styles.notices}>
+          <summary className={styles.noticesSummary}>
+            {notes.length === 1 ? '1 ressalva de fonte' : `${notes.length} ressalvas de fonte`}
+          </summary>
           {notes.map((source) => (
             <p
               key={source.source}
@@ -290,7 +323,7 @@ export function Card({ analysis }: { analysis: Analysis }) {
               {source.status === 'failed' ? 'fora' : 'ressalva'} — {source.detail}
             </p>
           ))}
-        </div>
+        </details>
       ) : null}
 
       {analysis.interpretation ? (

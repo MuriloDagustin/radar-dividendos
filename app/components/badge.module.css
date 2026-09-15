@@ -41,3 +41,14 @@
   color: var(--unrel);
   background: var(--unrel-soft);
 }
+
+/* The verdict is the answer the card exists to give: on the card it is read, not glanced at. */
+.large {
+  padding: 6px 14px;
+  font-size: 16px;
+  border-radius: var(--radius-md);
+}
+
+.large .counts {
+  font-size: 14px;
+}

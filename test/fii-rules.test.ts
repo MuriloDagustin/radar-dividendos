@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   BANDS_DIVIDEND_YIELD,
   BANDS_PAYOUT_FFO,
+  BANDS_VACANCY,
   BANDS_DIVIDEND_YIELD_FII,
   BANDS_PRICE_TO_BOOK,
   BANDS_PRICE_TO_BOOK_FII,
@@ -15,6 +16,7 @@ import {
   positionIn52Weeks,
   priceToBookBands,
 } from '../src/diagnosis';
+import { VACANCY_CEILING } from '../src/fund-screen';
 import { classify } from '../src/classification';
 import { cdiFromEnv, fetchCdi } from '../src/sources/bcb';
 import { emptyFundamentals, type Fundamentals, type Indicator } from '../src/types';
@@ -280,7 +282,7 @@ describe('CPTS11 regression', () => {
     expect(classify('CPTS11', FUND_SECTOR)).toMatchObject({ category: 'fii', uncertain: false });
   });
 
-  const diagnosis = diagnose(CPTS, { category: 'fii', cdiAnnual: 0.139 });
+  const diagnosis = diagnose(CPTS, { category: 'fii', cdiAnnual: 0.139, paperFund: true });
 
   it('a 14.8% yield is normal for a fund, not "too high"', () => {
     const dy = pick(diagnosis.indicators, 'dividendYield12m');
@@ -322,7 +324,9 @@ describe('CPTS11 regression', () => {
   });
 
   it('the verdict rests on the two indicators that apply', () => {
-    expect(diagnosis.coverage).toMatchObject({ applicable: 4, present: 2, notApplicable: 3 });
+    // Four not applicable: payout, leverage and ROE as in any fund, plus the vacancy a
+    // fund of paper does not have.
+    expect(diagnosis.coverage).toMatchObject({ applicable: 4, present: 2, notApplicable: 4 });
     // One warning out of two readings is not two warnings, so it is not "attention".
     expect(diagnosis.verdict).toBe('solid');
   });
@@ -426,14 +430,24 @@ describe('payoutOverFfo', () => {
 });
 
 describe('supporting rows', () => {
-  it('a fund gets vacancy and FFO yield in the context panel', () => {
+  it('a fund reads vacancy on a ruler and keeps FFO yield as context', () => {
     const d = diagnose(
       { ...emptyFundamentals(), dividendYield12m: 0.12, vacancy: 0, ffoYield: 0.113 },
       { category: 'fii' },
     );
-    const context = d.indicators.filter((i) => i.group === 'context').map((i) => i.key);
-    expect(context).toContain('vacancy');
-    expect(context).toContain('ffoYield');
+    expect(pick(d.indicators, 'vacancy')).toMatchObject({
+      group: 'core',
+      signal: 'ok',
+      label: 'Vacância',
+    });
+    expect(d.indicators.filter((i) => i.group === 'context').map((i) => i.key)).toContain('ffoYield');
+  });
+
+  it('the vacancy ruler turns at the same point the five-filter screen does', () => {
+    const passing = bandFor(BANDS_VACANCY, VACANCY_CEILING - 0.001);
+    const failing = bandFor(BANDS_VACANCY, VACANCY_CEILING);
+    expect(passing?.signal).toBe('ok');
+    expect(failing?.signal).toBe('warn');
   });
 
   it('a company does not get the fund-only rows', () => {

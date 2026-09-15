@@ -115,6 +115,36 @@ export const BANDS_PROFIT_CAGR: readonly Band[] = [
   { from: 0, to: null, signal: 'ok', label: 'crescendo', message: 'Lucro crescendo em 5 anos' },
 ];
 
+/**
+ * Empty area, so the scale runs backwards: less is better. The 10% bound is the screen's
+ * vacancy ceiling — the ruler and the five-filter panel sit on the same card and cannot
+ * disagree about the same fund.
+ */
+export const BANDS_VACANCY: readonly Band[] = [
+  { from: null, to: 0.05, signal: 'ok', label: 'cheio', message: 'Quase toda a área alugada' },
+  {
+    from: 0.05,
+    to: 0.1,
+    signal: 'ok',
+    label: 'normal',
+    message: 'Vacância dentro do usual para imóvel de renda',
+  },
+  {
+    from: 0.1,
+    to: 0.2,
+    signal: 'warn',
+    label: 'alta',
+    message: 'Área demais sem inquilino — aluguel que não entra e condomínio que o fundo paga sozinho',
+  },
+  {
+    from: 0.2,
+    to: null,
+    signal: 'bad',
+    label: 'crítica',
+    message: 'Um quinto do fundo vazio: a renda de hoje depende de reocupar, não do contrato que já existe',
+  },
+];
+
 /** A fund's real payout, measured against FFO because it reports no accounting profit. */
 export const BANDS_PAYOUT_FFO: readonly Band[] = [
   { from: null, to: 0.85, signal: 'ok', label: 'retendo', message: 'Paga menos do que arrecada e guarda a diferença' },
@@ -221,6 +251,7 @@ export const MESSAGES = {
   noData: 'Sem dado na fonte',
   informational: 'Informativo — não entra no veredito',
   notApplicableFii: 'Não se aplica a fundo imobiliário',
+  notApplicablePaperFund: 'Não se aplica: o fundo não tem imóveis para ficarem vazios',
   notApplicableFinancial:
     'Banco e seguradora vivem de captar e emprestar dinheiro, então dívida grande é o normal do negócio — quem controla esse limite é o Banco Central, não este indicador',
   unreliableCyclicalPayout:
@@ -430,6 +461,8 @@ export interface DiagnoseOptions {
   dividends?: DividendRecord | null;
   /** Sector medians per indicator key. */
   peers?: PeerMap;
+  /** A fund of paper holds no buildings, so it has no vacancy to read. */
+  paperFund?: boolean;
 }
 
 /**
@@ -482,6 +515,7 @@ export function diagnose(f: Fundamentals, options: DiagnoseOptions = {}): Diagno
 
   const naFii: Assessment = { signal: 'na', message: MESSAGES.notApplicableFii };
   const naFinancial: Assessment = { signal: 'na', message: MESSAGES.notApplicableFinancial };
+  const naPaperFund: Assessment = { signal: 'na', message: MESSAGES.notApplicablePaperFund };
 
   function overrideFor(key: string): Assessment | undefined {
     if (isFund && NOT_APPLICABLE_TO_FII.has(key)) return naFii;
@@ -600,6 +634,14 @@ export function diagnose(f: Fundamentals, options: DiagnoseOptions = {}): Diagno
         format: 'percent',
         bands: BANDS_PAYOUT_FFO,
       }),
+      buildIndicator({
+        key: 'vacancy',
+        label: 'Vacância',
+        value: f.vacancy,
+        format: 'percent',
+        bands: BANDS_VACANCY,
+        ...(options.paperFund ? { override: naPaperFund } : {}),
+      }),
     );
   } else {
     indicators.push(
@@ -697,13 +739,6 @@ export function diagnose(f: Fundamentals, options: DiagnoseOptions = {}): Diagno
 
   if (isFund) {
     indicators.push(
-      contextRow(
-        'vacancy',
-        'Vacância',
-        f.vacancy,
-        'percent',
-        'Quanto da área do fundo está sem inquilino',
-      ),
       contextRow(
         'ffoYield',
         'Arrecadação do fundo',

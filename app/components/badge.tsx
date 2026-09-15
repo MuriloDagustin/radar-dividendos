@@ -10,7 +10,7 @@ const CLASS = {
   inconclusive: styles.inconclusive,
 } as const;
 
-export function Badge({ diagnosis }: { diagnosis: Diagnosis }) {
+export function Badge({ diagnosis, size }: { diagnosis: Diagnosis; size?: 'lg' }) {
   const { verdict, counts, coverage } = diagnosis;
 
   /** The badge shows where the verdict came from, not just its name. */
@@ -25,7 +25,10 @@ export function Badge({ diagnosis }: { diagnosis: Diagnosis }) {
           ].filter((p): p is string => p !== null);
 
   return (
-    <span className={`${styles.badge} ${CLASS[verdict]}`} title={VERDICT_EXPLANATION[verdict]}>
+    <span
+      className={`${styles.badge} ${CLASS[verdict]}${size === 'lg' ? ` ${styles.large}` : ''}`}
+      title={VERDICT_EXPLANATION[verdict]}
+    >
       {VERDICT_LABEL[verdict]}
       {parts.length > 0 ? <span className={styles.counts}>{parts.join(' · ')}</span> : null}
     </span>

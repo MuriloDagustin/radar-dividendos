@@ -372,15 +372,33 @@ describe('diagnose for a FII', () => {
     });
   });
 
-  it('counts coverage over the two indicators that apply', () => {
+  it('counts coverage over every indicator that applies to a fund', () => {
     const d = diagnose(withFundamentals(FUND), { kind: 'fii' });
     expect(d.coverage).toEqual({
-      applicable: 4,
+      applicable: 5,
       present: 2,
       notApplicable: 3,
       unreliable: 0,
-      minimumForVerdict: 2,
+      minimumForVerdict: 3,
     });
+    // Yield and P/B alone are two readings out of five: not enough to headline a fund.
+    expect(d.verdict).toBe('indeterminate');
+  });
+
+  it('a fund with its vacancy read has enough to judge', () => {
+    const d = diagnose(withFundamentals({ ...FUND, vacancy: 0.03 }), { kind: 'fii' });
+    expect(d.coverage).toMatchObject({ applicable: 5, present: 3, minimumForVerdict: 3 });
+    expect(d.verdict).toBe('solid');
+  });
+
+  it('a fund of paper has no vacancy to read, and is not judged on it', () => {
+    const d = diagnose(withFundamentals(FUND), { kind: 'fii', paperFund: true });
+    expect(d.indicators.find((i) => i.key === 'vacancy')).toMatchObject({
+      signal: 'na',
+      value: null,
+      message: MESSAGES.notApplicablePaperFund,
+    });
+    expect(d.coverage).toMatchObject({ applicable: 4, minimumForVerdict: 2 });
     expect(d.verdict).toBe('solid');
   });
 
@@ -392,7 +410,7 @@ describe('diagnose for a FII', () => {
 
   it('a fund with only one reading is indeterminate', () => {
     const d = diagnose(withFundamentals({ dividendYield12m: 0.1292 }), { kind: 'fii' });
-    expect(d.coverage).toMatchObject({ applicable: 4, present: 1 });
+    expect(d.coverage).toMatchObject({ applicable: 5, present: 1 });
     expect(d.verdict).toBe('indeterminate');
   });
 

@@ -8,6 +8,7 @@ import type { Analysis } from '@/src/types';
 import { STATIC_ONLY_SCREEN, STATIC_SITE, analysisUrl } from '@/app/mode';
 import { analysisHref, splitTickers } from '@/app/tickers';
 import { Card } from './card';
+import { Compare } from './compare';
 import { Legend } from './legend';
 import styles from './analysis.module.css';
 
@@ -57,6 +58,8 @@ export function AnalysisView({ aiAvailable }: { aiAvailable: boolean }) {
 
   const [results, setResults] = useState<Result[]>([]);
   const [loading, setLoading] = useState(tickers.length > 0);
+  /** Null until the reader chooses: more than one paper opens compared, one opens as a card. */
+  const [chosenMode, setChosenMode] = useState<'compare' | 'cards' | null>(null);
 
   useEffect(() => {
     if (tickers.length === 0) {
@@ -79,6 +82,10 @@ export function AnalysisView({ aiAvailable }: { aiAvailable: boolean }) {
     };
     // `key` is the ticker list; `tickers` is a fresh array on every render.
   }, [key, ai]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const analyses = results.flatMap((r) => (r.kind === 'analysis' ? [r.analysis] : []));
+  const failures = results.flatMap((r) => (r.kind === 'failure' ? [r.failure] : []));
+  const mode = chosenMode ?? (analyses.length > 1 ? 'compare' : 'cards');
 
   // One fund per segment is the tiebreaker that only a set of funds can answer.
   const overlaps = segmentOverlaps(
@@ -118,6 +125,26 @@ export function AnalysisView({ aiAvailable }: { aiAvailable: boolean }) {
           <span className={styles.count}>
             {tickers.length} {tickers.length === 1 ? 'papel' : 'papéis'}
           </span>
+          {analyses.length > 1 ? (
+            <div className={styles.modes} role="group" aria-label="Como mostrar">
+              <button
+                type="button"
+                className={mode === 'compare' ? `${styles.mode} ${styles.modeActive}` : styles.mode}
+                aria-pressed={mode === 'compare'}
+                onClick={() => setChosenMode('compare')}
+              >
+                comparar
+              </button>
+              <button
+                type="button"
+                className={mode === 'cards' ? `${styles.mode} ${styles.modeActive}` : styles.mode}
+                aria-pressed={mode === 'cards'}
+                onClick={() => setChosenMode('cards')}
+              >
+                cartões
+              </button>
+            </div>
+          ) : null}
           {STATIC_SITE ? null : (
             <label className={aiAvailable ? styles.option : `${styles.option} ${styles.optionOff}`}>
               <input
@@ -146,17 +173,22 @@ export function AnalysisView({ aiAvailable }: { aiAvailable: boolean }) {
               <span className="tag">desempate</span> {overlap}
             </p>
           ))}
-          {results.map((result, i) =>
-            result.kind === 'analysis' ? (
-              <div key={result.analysis.ticker} style={{ '--card-order': i } as CSSProperties}>
-                <Card analysis={result.analysis} />
+          {failures.map((failure) => (
+            <p key={failure.ticker} className={styles.error} role="alert">
+              <span className={styles.errorTicker}>{failure.ticker}</span>
+              {failure.message}
+            </p>
+          ))}
+          {mode === 'compare' ? (
+            <div className={styles.compare}>
+              <Compare analyses={analyses} />
+            </div>
+          ) : (
+            analyses.map((analysis, i) => (
+              <div key={analysis.ticker} style={{ '--card-order': i } as CSSProperties}>
+                <Card analysis={analysis} />
               </div>
-            ) : (
-              <p key={result.failure.ticker} className={styles.error} role="alert">
-                <span className={styles.errorTicker}>{result.failure.ticker}</span>
-                {result.failure.message}
-              </p>
-            ),
+            ))
           )}
         </div>
       )}

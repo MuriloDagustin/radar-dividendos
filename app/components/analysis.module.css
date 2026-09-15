@@ -158,3 +158,29 @@
     opacity: 0.3;
   }
 }
+
+/* The comparison is one wide thing, not a card in the grid. */
+.compare {
+  grid-column: 1 / -1;
+}
+
+.modes {
+  display: inline-flex;
+  gap: var(--space-xxs);
+}
+
+.mode {
+  padding: 4px 12px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.modeActive {
+  background: var(--surface-card);
+  color: var(--ink);
+}

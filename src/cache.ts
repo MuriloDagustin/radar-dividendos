@@ -3,6 +3,17 @@ import type { Analysis } from './types';
 
 export const TTL_MS = 12 * 60 * 60 * 1000;
 
+/**
+ * Bump whenever the stored `Analysis` changes shape — a new indicator, a new block. Rows
+ * written by an older build are dropped instead of being served with a piece missing.
+ */
+export const SCHEMA_VERSION = 2;
+
+interface Envelope {
+  schema: number;
+  analysis: Analysis;
+}
+
 const DEFAULT_PATH = 'radar-dividendos.sqlite';
 
 export interface Cache {
@@ -40,10 +51,11 @@ class SqliteCache implements Cache {
     }
 
     try {
-      const parsed = JSON.parse(row.payload) as Partial<Analysis>;
-      // A row written before the stock screen existed would read as "not a company".
-      if (!('stockScreen' in parsed)) throw new Error('payload de formato anterior');
-      return { ...(parsed as Analysis), fromCache: true };
+      const parsed = JSON.parse(row.payload) as Partial<Envelope>;
+      if (parsed.schema !== SCHEMA_VERSION || !parsed.analysis) {
+        throw new Error('payload de formato anterior');
+      }
+      return { ...parsed.analysis, fromCache: true };
     } catch {
       // Payload from an older shape of the format: drop it and fetch again.
       this.db.prepare('DELETE FROM analyses WHERE ticker = ?').run(ticker);
@@ -57,7 +69,11 @@ class SqliteCache implements Cache {
         `INSERT INTO analyses (ticker, written_at, payload) VALUES (?, ?, ?)
          ON CONFLICT(ticker) DO UPDATE SET written_at = excluded.written_at, payload = excluded.payload`,
       )
-      .run(ticker, Date.now(), JSON.stringify({ ...analysis, fromCache: false }));
+      .run(
+        ticker,
+        Date.now(),
+        JSON.stringify({ schema: SCHEMA_VERSION, analysis: { ...analysis, fromCache: false } }),
+      );
   }
 
   close(): void {

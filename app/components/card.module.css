@@ -426,3 +426,79 @@
 .documentLink:hover {
   text-decoration: underline;
 }
+
+/* The verdict and the sentence behind it: the answer, before anything that argues it. */
+.verdict {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-xs) var(--space-md);
+}
+
+.why {
+  flex: 1 1 20rem;
+  max-width: 58ch;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--body);
+}
+
+/* The argument for a rule is the same on every card, so it waits to be asked for. */
+.criterionWhy {
+  margin-top: var(--space-xxs);
+}
+
+.criterionWhySummary {
+  display: inline-block;
+  font-size: 13px;
+  color: var(--muted-soft);
+  cursor: pointer;
+  list-style: none;
+}
+
+.criterionWhySummary::-webkit-details-marker {
+  display: none;
+}
+
+.criterionWhySummary::before {
+  content: '▸ ';
+}
+
+.criterionWhy[open] .criterionWhySummary::before {
+  content: '▾ ';
+}
+
+.tiebreakSummary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-sm);
+  cursor: pointer;
+  list-style: none;
+}
+
+.tiebreakSummary::-webkit-details-marker {
+  display: none;
+}
+
+/* An indicator that does not apply is a fact about the paper, not a hole in the reading. */
+.inapplicable {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-xs) var(--space-sm);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.inapplicableList {
+  font-weight: 500;
+  color: var(--body);
+}
+
+.noticesSummary {
+  font-size: 14px;
+  color: var(--muted);
+  cursor: pointer;
+}

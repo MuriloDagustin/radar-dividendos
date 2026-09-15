@@ -1,0 +1,93 @@
+.scroll {
+  overflow-x: auto;
+  border-radius: var(--radius-lg);
+  background: var(--surface-soft);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.corner {
+  width: 14rem;
+}
+
+.head {
+  padding: var(--space-md);
+  text-align: left;
+  vertical-align: bottom;
+  border-bottom: 1px solid var(--hairline);
+}
+
+/* display-sm, smaller: the column is the paper. */
+.ticker {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--ink);
+  font-variant-numeric: lining-nums;
+}
+
+.price {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.row:nth-child(even) {
+  background: color-mix(in srgb, var(--surface-card) 50%, transparent);
+}
+
+.label {
+  padding: var(--space-sm) var(--space-md);
+  text-align: left;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--body);
+  white-space: nowrap;
+}
+
+.cell {
+  padding: var(--space-sm) var(--space-md);
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+
+.value {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--body-strong);
+}
+
+/* The band name is what makes two numbers comparable without a ruler in every cell. */
+.band {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.ok {
+  color: var(--ok);
+}
+.warn {
+  color: var(--warn);
+}
+.bad {
+  color: var(--bad);
+}
+.unrel {
+  color: var(--unrel);
+}
+.none {
+  color: var(--muted-soft);
+  font-family: var(--font-text);
+  font-size: 14px;
+  font-weight: 400;
+}

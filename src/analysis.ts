@@ -9,7 +9,7 @@ import {
   errorMessage,
 } from './errors';
 import { interpret } from './ai';
-import { listInPortuguese, mergeFundProfiles, screenFund } from './fund-screen';
+import { isPaperFund, listInPortuguese, mergeFundProfiles, screenFund } from './fund-screen';
 import { screenStock } from './stock-screen';
 import { mergeReadings } from './merge';
 import { looksLikeTicker, normalizeTicker } from './numbers';
@@ -201,6 +201,7 @@ export async function analyze(rawTicker: string, options: AnalyzeOptions = {}): 
       dividends,
       ...(leverageHistory ? { leverageHistory } : {}),
       ...(cdi ? { cdiAnnual: cdi.annual } : {}),
+      ...(fund && isPaperFund(fund) ? { paperFund: true } : {}),
     });
 
     const notes = [
