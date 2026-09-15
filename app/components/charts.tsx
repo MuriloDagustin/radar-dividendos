@@ -274,8 +274,10 @@ export function GrowthChart({
       <figcaption id={titleId} className={styles.caption}>
         <span className="tag">crescimento projetado</span>
         <span className={styles.captionNote}>
-          {money(invested)} hoje{contribution > 0 ? ` + ${money(contribution)} por mês` : ''}, cotação e DY
-          congelados nos valores atuais
+          {invested > 0
+            ? `${money(invested)} hoje${contribution > 0 ? ` + ${money(contribution)} por mês` : ''}`
+            : `${money(contribution)} por mês, começando do zero`}
+          , cotação e DY congelados nos valores atuais
         </span>
       </figcaption>
 

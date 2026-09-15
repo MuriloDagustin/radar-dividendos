@@ -238,6 +238,40 @@ describe('projectGrowth', () => {
     expect(projectGrowth(buildPortfolio([fund('A', { dividendYield12m: null })], 1000, 'equal'), 10)).toBeNull();
     expect(projectGrowth(buildPortfolio([], 1000, 'equal'), 10)).toBeNull();
     expect(projectGrowth(portfolio, 0)).toBeNull();
+    // Nothing today and nothing per month is not a plan, it is an empty form.
+    expect(projectGrowth(buildPortfolio([fund('A')], 0, 'equal'), 10)).toBeNull();
+  });
+
+  it('projects a portfolio that starts empty and grows on the contribution alone', () => {
+    const fromZero = buildPortfolio([fund('A', { dividendYield12m: 0.12 })], 0, 'equal');
+    const points = projectGrowth(fromZero, 1, 100);
+
+    expect(points?.[0]).toMatchObject({ year: 0, reinvested: 0, withdrawn: 0, contributed: 0 });
+    let expected = 0;
+    for (let m = 0; m < 12; m += 1) expected = expected * 1.01 + 100;
+    expect(points?.[1]?.reinvested).toBeCloseTo(expected);
+    expect(points?.[1]?.contributed).toBeCloseTo(1200);
+    // Withdrawing, each contribution still buys shares that start paying: 1200 put in, plus
+    // 1% a month on whatever was already bought (66).
+    expect(points?.[1]?.withdrawn).toBeCloseTo(1266);
+  });
+});
+
+describe('buildPortfolio with no money yet', () => {
+  it('buys nothing but still reports the yield the split would have', () => {
+    const p = buildPortfolio(
+      [fund('A', { dividendYield12m: 0.12 }), fund('B', { dividendYield12m: 0.08 })],
+      0,
+      'equal',
+    );
+    expect(p.positions).toEqual([]);
+    expect(p.yieldOnCost).toBeNull();
+    expect(p.plannedYield).toBeCloseTo(0.1);
+  });
+
+  it('has no planned yield when no paper in the split publishes one', () => {
+    expect(buildPortfolio([fund('A', { dividendYield12m: null })], 0, 'equal').plannedYield).toBeNull();
+    expect(buildPortfolio([], 0, 'equal').plannedYield).toBeNull();
   });
 });
 

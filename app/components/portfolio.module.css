@@ -174,3 +174,9 @@
   padding-top: var(--space-md);
   border-top: 1px solid var(--hairline);
 }
+
+/* Alone — a portfolio with nothing bought has no donut — the curve would stretch to the full
+   measure and blow its type up with it. */
+.charts > :only-child {
+  max-width: 44rem;
+}

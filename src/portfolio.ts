@@ -62,6 +62,12 @@ export interface Portfolio {
   incomeComplete: boolean;
   /** Weighted twelve-month yield of the positions with a known yield. */
   yieldOnCost: number | null;
+  /**
+   * The yield the intended split would have, before rounding to whole shares — and the only
+   * yield there is when nothing was bought, which is what a portfolio started from zero and
+   * fed by monthly contributions has.
+   */
+  plannedYield: number | null;
 }
 
 export interface Weighted {
@@ -162,6 +168,19 @@ function effectiveCaps(items: Weighted[], mode: AllocationMode): { perFund: numb
   };
 }
 
+/** The yield of the target split itself: what the contributions will buy into. */
+function plannedYieldOf(items: Weighted[], weights: number[]): number | null {
+  let weighted = 0;
+  let total = 0;
+  items.forEach((item, i) => {
+    const dy = item.holding.dividendYield12m;
+    if (dy === null) return;
+    weighted += (weights[i] as number) * dy;
+    total += weights[i] as number;
+  });
+  return total > 0 ? weighted / total : null;
+}
+
 /**
  * Whole shares only — a paper trades in units of one — so each target is rounded down and
  * the change is then spent one share at a time on whichever paper is furthest below its
@@ -188,7 +207,7 @@ export function buildPortfolio(
     items.push({ holding, price: holding.price, score });
   }
 
-  const empty: Portfolio = {
+  const empty = (plannedYield: number | null): Portfolio => ({
     mode,
     amount,
     positions: [],
@@ -198,10 +217,14 @@ export function buildPortfolio(
     monthlyIncome: null,
     incomeComplete: true,
     yieldOnCost: null,
-  };
-  if (items.length === 0 || !(amount > 0)) return empty;
+    plannedYield,
+  });
+  if (items.length === 0) return empty(null);
 
   const weights = capWeights(items, effectiveCaps(items, mode));
+  const plannedYield = plannedYieldOf(items, weights);
+  // No money today is still a plan: the split and its yield are what the contributions buy into.
+  if (!(amount > 0)) return empty(plannedYield);
   const shares = items.map((item, i) => Math.floor(((weights[i] as number) * amount) / item.price));
   let leftover = amount - items.reduce((sum, item, i) => sum + (shares[i] as number) * item.price, 0);
 
@@ -258,6 +281,7 @@ export function buildPortfolio(
     monthlyIncome: withYield.length > 0 ? annualIncome / 12 : null,
     incomeComplete: withYield.length === positions.length,
     yieldOnCost: investedWithYield > 0 ? annualIncome / investedWithYield : null,
+    plannedYield,
   };
 }
 
@@ -276,19 +300,21 @@ export interface GrowthPoint {
 /**
  * A projection, not a forecast: it holds price and yield frozen at today's values and asks
  * only what compounding and a monthly contribution do to them. Month by month because a
- * fund pays monthly and the contribution lands monthly. Null when the portfolio has no
- * yield to compound.
+ * fund pays monthly and the contribution lands monthly. A portfolio that starts empty
+ * projects on the split's own yield — starting from zero is a plan, not an error. Null when
+ * there is no yield to compound, or nothing to compound it on.
  */
 export function projectGrowth(
   portfolio: Portfolio,
   years: number,
   monthlyContribution = 0,
 ): GrowthPoint[] | null {
-  const rate = portfolio.yieldOnCost;
-  if (rate === null || portfolio.invested <= 0 || years <= 0) return null;
+  const rate = portfolio.yieldOnCost ?? portfolio.plannedYield;
+  const contribution = Math.max(0, monthlyContribution);
+  if (rate === null || years <= 0) return null;
+  if (portfolio.invested <= 0 && contribution <= 0) return null;
 
   const monthly = rate / 12;
-  const contribution = Math.max(0, monthlyContribution);
   let reinvested = portfolio.invested;
   let principal = portfolio.invested;
   let cash = 0;

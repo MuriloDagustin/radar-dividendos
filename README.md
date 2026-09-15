@@ -560,6 +560,12 @@ concentração conta por **segmento** num caso e por **setor** no outro.
   entre os outros; com poucos fundos ou poucos segmentos o teto relaxa até a fatia igual, já
   que três fundos não cabem em 25% cada. Fundo sem DY não tem como ser pesado e fica de fora.
 
+**Começar do zero.** Sem valor a investir, mas com aporte mensal, não há lista de compras —
+não há o que comprar hoje — e a carteira mostra só a projeção, sobre o **DY previsto**: o
+rendimento que a divisão escolhida teria, calculado antes do arredondamento em cotas. É o caso
+de quem ainda não tem patrimônio e quer saber onde dez anos de R$ 500 por mês chegam. Sem valor
+e sem aporte, a página pede um dos dois.
+
 **Cota inteira.** FII não tem fração. Cada alvo é arredondado para baixo, e o troco é gasto
 uma cota por vez no fundo mais abaixo do alvo, até nenhum caber. O que sobra aparece como
 troco. Fundo cuja fatia não compra uma cota (R$ 1.000 em doze fundos a R$ 100+) é listado
