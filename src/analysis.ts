@@ -10,11 +10,13 @@ import {
 } from './errors';
 import { interpret } from './ai';
 import { listInPortuguese, mergeFundProfiles, screenFund } from './fund-screen';
+import { screenStock } from './stock-screen';
 import { mergeReadings } from './merge';
 import { looksLikeTicker, normalizeTicker } from './numbers';
 import { summarizeDividends } from './dividends';
 import { fetchCdi } from './sources/bcb';
 import { fetchProventos } from './sources/proventos';
+import { fetchDocumentos } from './sources/documentos';
 import {
   fetchBrapi,
   fetchLeverageHistory,
@@ -174,12 +176,13 @@ export async function analyze(rawTicker: string, options: AnalyzeOptions = {}): 
     const isFund = kind === 'fii' || classification.category === 'fii';
 
     // Each extra lookup serves one purpose and none of them can gate the analysis.
-    const [leverageHistory, cdi, dividendHistory] = await Promise.all([
+    const [leverageHistory, cdi, dividendHistory, filings] = await Promise.all([
       classification.category === 'cyclical'
         ? fetchLeverageHistory(ticker, token).catch(() => null)
         : Promise.resolve(null),
       isFund ? fetchCdi().catch(() => null) : Promise.resolve(null),
       fetchProventos(ticker, kind).catch(() => null),
+      fetchDocumentos(ticker, kind).catch(() => null),
     ]);
 
     const dividends = dividendHistory ? summarizeDividends(dividendHistory) : null;
@@ -188,11 +191,13 @@ export async function analyze(rawTicker: string, options: AnalyzeOptions = {}): 
     // fund's numbers, the screen decides whether the fund is even a candidate.
     const fund = isFund ? mergeFundProfiles(readings) : null;
     const fundScreen = isFund ? screenFund({ profile: fund, fundamentals, dividends }) : null;
+    const peers = resolvePeers(readings);
+    const stockScreen = isFund ? null : screenStock({ fundamentals, category: classification.category, peers });
 
     const diagnosis = diagnose(fundamentals, {
       kind,
       category: classification.category,
-      peers: resolvePeers(readings),
+      peers,
       dividends,
       ...(leverageHistory ? { leverageHistory } : {}),
       ...(cdi ? { cdiAnnual: cdi.annual } : {}),
@@ -222,8 +227,10 @@ export async function analyze(rawTicker: string, options: AnalyzeOptions = {}): 
       classification,
       dividends,
       dividendHistory,
+      filings,
       fund,
       fundScreen,
+      stockScreen,
       notes,
       generatedAt: new Date().toISOString(),
       fundamentals,

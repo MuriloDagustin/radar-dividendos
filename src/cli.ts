@@ -6,9 +6,9 @@ loadEnv();
 import { analyze } from './analysis';
 import { openCache } from './cache';
 import { RadarError, errorMessage } from './errors';
-import { screenMarket } from './screen-market';
+import { screenMarket, screenStocks } from './screen-market';
 import { segmentOverlaps } from './fund-screen';
-import { renderAnalysis, renderFooter, renderMarketScreen } from './report';
+import { renderAnalysis, renderFooter, renderMarketScreen, renderStockScreen } from './report';
 import { startServer } from './server';
 import { DISCLAIMER } from './types';
 
@@ -17,6 +17,7 @@ ${pc.bold('radar-dividendos')} — fundamentos da B3 com diagnóstico determiní
 
   npx tsx src/cli.ts TAEE11 ITSA4        analisa um ou mais tickers
   npx tsx src/cli.ts --fiis              lista os FIIs da B3 que passam nos 5 filtros
+  npx tsx src/cli.ts --acoes             lista as ações da B3 que passam nos 5 filtros
   npx tsx src/cli.ts --serve             sobe a API + página HTML
 
 Flags
@@ -24,6 +25,7 @@ Flags
   --ai            acrescenta interpretação da IA (exige ANTHROPIC_API_KEY)
   --no-cache      ignora e não grava o cache SQLite (TTL padrão: 12h)
   --fiis          triagem de mercado: todos os FIIs acima de R$ 1 bi, pelos 5 filtros
+  --acoes         triagem de mercado: toda ação acima de R$ 5 mi/dia, pelos 5 filtros
   --serve         modo servidor
   --porta <n>     porta do modo servidor (padrão: 3000)
   -h, --help      esta ajuda
@@ -43,6 +45,7 @@ interface Options {
   cache: boolean;
   serve: boolean;
   funds: boolean;
+  stocks: boolean;
   port: number;
   help: boolean;
 }
@@ -55,6 +58,7 @@ export function parseArgs(argv: string[]): Options {
     cache: true,
     serve: false,
     funds: false,
+    stocks: false,
     port: 3000,
     help: false,
   };
@@ -76,6 +80,9 @@ export function parseArgs(argv: string[]): Options {
         break;
       case '--fiis':
         options.funds = true;
+        break;
+      case '--acoes':
+        options.stocks = true;
         break;
       case '--porta': {
         const raw = argv[i + 1];
@@ -183,6 +190,34 @@ async function runMarketScreen(options: Options): Promise<number> {
   return 0;
 }
 
+async function runStockScreen(options: Options): Promise<number> {
+  const progress = (text: string) => {
+    if (process.stderr.isTTY) process.stderr.write(`\r\x1b[2K  ${pc.dim(text)}`);
+  };
+
+  const report = await screenStocks({
+    cache: options.cache,
+    onEvent: (event) => {
+      if (event.type === 'universe') {
+        progress(`${event.universe} ações na lista · analisando ${event.candidates} acima de R$ 5 mi/dia…`);
+      } else if (event.type === 'stock' || event.type === 'failure') {
+        const ticker = event.type === 'stock' ? event.stock.ticker : event.failure.ticker;
+        progress(`${event.done}/${event.total} · ${ticker}`);
+      } else {
+        progress('');
+      }
+    },
+  });
+
+  if (options.json) {
+    console.log(JSON.stringify(report, null, 2));
+  } else {
+    console.log(renderStockScreen(report));
+    console.log(renderFooter());
+  }
+  return 0;
+}
+
 async function main(): Promise<void> {
   let options: Options;
   try {
@@ -204,9 +239,9 @@ async function main(): Promise<void> {
     return;
   }
 
-  if (options.funds) {
+  if (options.funds || options.stocks) {
     try {
-      process.exitCode = await runMarketScreen(options);
+      process.exitCode = options.funds ? await runMarketScreen(options) : await runStockScreen(options);
     } catch (error) {
       console.error(pc.red(errorMessage(error)));
       process.exitCode = 1;

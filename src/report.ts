@@ -2,8 +2,10 @@ import pc from 'picocolors';
 import { formatCurrency, formatMultiple, formatPercent } from './numbers';
 import { MESSAGES } from './diagnosis';
 import type { MarketScreen, ScreenedFund } from './fund-market';
+import type { ScreenedStock, StockMarketScreen } from './stock-market';
 import { describeScreen } from './fund-screen';
 import { provenanceLabel } from './provenance';
+import { primaryDocument } from './sources/documentos';
 import {
   ASSET_KIND_NAME,
   CATEGORY_NAME,
@@ -106,14 +108,14 @@ function criterionLine(criterion: Criterion, index?: number): string {
 }
 
 /** Filters first, tiebreakers after — dimmed until every filter has passed. */
-export function renderScreen(screen: FundScreen): string[] {
+export function renderScreen(screen: FundScreen, paper: 'fundos' | 'ações' = 'fundos'): string[] {
   const lines = [
     '',
     `  ${pc.bold('5 filtros')}  ${screen.passedAll ? pc.green(describeScreen(screen)) : pc.dim(describeScreen(screen))}`,
     ...screen.filters.map((c, i) => criterionLine(c, i + 1)),
     '',
     `  ${pc.bold('Desempate')}  ${pc.dim(
-      screen.passedAll ? 'entre fundos que passaram nos 5 filtros' : 'só vale depois de passar pelos 5 filtros',
+      screen.passedAll ? `entre ${paper} que passaram nos 5 filtros` : 'só vale depois de passar pelos 5 filtros',
     )}`,
     ...screen.tiebreakers.map((c) => criterionLine(c)),
   ];
@@ -141,7 +143,13 @@ export function renderAnalysis(analysis: Analysis): string {
     lines.push(pc.dim(`  ${note}`));
   }
 
-  if (analysis.fundScreen) lines.push(...renderScreen(analysis.fundScreen), '');
+  if (analysis.filings) {
+    const document = primaryDocument(analysis.filings, analysis.kind);
+    lines.push(pc.dim(`  ${document.label}: ${pc.underline(document.url)}`));
+  }
+
+  const screen = analysis.fundScreen ?? analysis.stockScreen;
+  if (screen) lines.push(...renderScreen(screen, analysis.fundScreen ? 'fundos' : 'ações'), '');
 
   const core = analysis.diagnosis.indicators.filter((i) => i.group === 'core');
   const context = analysis.diagnosis.indicators.filter(
@@ -288,6 +296,74 @@ export function renderMarketScreen(report: MarketScreen): string {
   for (const fund of report.rejected) {
     const reason = fund.failedOn ? shortCriterion(fund.failedOn) : 'reprovado';
     lines.push(pc.dim(`    ${pad(fund.ticker, 7)} ${pad(fund.segment ?? '—', 34)} ${reason}`));
+  }
+
+  if (report.failed.length > 0) {
+    lines.push('', `  ${pc.magenta(pc.bold('Sem análise'))}  ${pc.dim(`${report.failed.length}`)}`);
+    for (const failure of report.failed) {
+      lines.push(pc.dim(`    ${pad(failure.ticker, 7)} ${failure.message.split('\n')[0]}`));
+    }
+  }
+
+  lines.push(pc.dim(`\n  gerado em ${new Date(report.generatedAt).toLocaleString('pt-BR')}`));
+  return lines.join('\n');
+}
+
+/** One line per company: the five numbers the filters read, then what the screen still owes. */
+function stockLine(stock: ScreenedStock, index: number): string {
+  const numbers = [
+    stock.roe !== null ? `ROE ${formatPercent(stock.roe)}` : null,
+    stock.netDebtToEbitda !== null ? `dív/EBITDA ${formatMultiple(stock.netDebtToEbitda)}` : null,
+    stock.netMargin !== null ? `margem ${formatPercent(stock.netMargin)}` : null,
+    stock.revenueCagr5y !== null ? `receita ${formatPercent(stock.revenueCagr5y)}/ano` : null,
+    stock.liquidity !== null ? `${formatCurrency(stock.liquidity)}/dia` : null,
+    stock.dividendYield12m !== null ? `DY ${formatPercent(stock.dividendYield12m)}` : null,
+  ].filter((n): n is string => n !== null);
+
+  const label = stock.sector ?? stock.name ?? '—';
+  const head = `  ${pad(`${index}.`, 3)} ${pc.bold(pc.cyan(pad(stock.ticker, 7)))} ${pad(label.slice(0, 34), 34)}`;
+  const tiebreak = pc.dim(`desempate ${stock.tiebreakersPassed}/${stock.screen.tiebreakers.length}`);
+  const lines = [`${head} ${tiebreak}`, pc.dim(`       ${numbers.join(' · ')}`)];
+
+  const missing = stock.screen.filters.filter((c) => c.status === 'unknown');
+  if (missing.length > 0) {
+    lines.push(pc.yellow(`       sem dado: ${missing.map(shortCriterion).join('; ')}`));
+  }
+  const tiebreakFails = stock.screen.tiebreakers.filter((c) => c.status === 'fail');
+  if (stock.outcome === 'approved' && tiebreakFails.length > 0) {
+    lines.push(pc.dim(`       não passa: ${tiebreakFails.map(shortCriterion).join('; ')}`));
+  }
+  return lines.join('\n');
+}
+
+export function renderStockScreen(report: StockMarketScreen): string {
+  const lines: string[] = [''];
+
+  lines.push(
+    `${pc.bold('Triagem de ações')}  ${pc.dim(
+      `${report.universe} ações listadas · ${report.candidates} acima de R$ 5 mi/dia analisadas · ${report.skipped} fora por liquidez ou classe repetida`,
+    )}`,
+  );
+
+  lines.push('', `  ${pc.green(pc.bold('Passaram nos 5 filtros'))}  ${pc.dim(`${report.approved.length}`)}`);
+  if (report.approved.length === 0) lines.push(pc.dim('    nenhuma ação passou em todos os filtros hoje'));
+  report.approved.forEach((stock, i) => lines.push(stockLine(stock, i + 1)));
+  lines.push(
+    pc.dim('\n  Indicador é filtro, não decisão: o que sobrou aqui é onde começa a leitura do release.'),
+  );
+
+  lines.push(
+    '',
+    `  ${pc.yellow(pc.bold('Falta conferir à mão'))}  ${pc.dim(
+      `${report.pending.length} · nenhum filtro reprovou, mas faltou dado ou o filtro não se aplica`,
+    )}`,
+  );
+  report.pending.forEach((stock, i) => lines.push(stockLine(stock, i + 1)));
+
+  lines.push('', `  ${pc.red(pc.bold('Reprovados'))}  ${pc.dim(`${report.rejected.length}`)}`);
+  for (const stock of report.rejected) {
+    const reason = stock.failedOn ? shortCriterion(stock.failedOn) : 'reprovado';
+    lines.push(pc.dim(`    ${pad(stock.ticker, 7)} ${pad((stock.sector ?? stock.name ?? '—').slice(0, 34), 34)} ${reason}`));
   }
 
   if (report.failed.length > 0) {

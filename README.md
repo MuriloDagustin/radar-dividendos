@@ -38,7 +38,9 @@ por IA).
 O botão **triagem de FIIs · 5 filtros** (ou `/?fiis=1`) troca os cartões por uma tabela com
 **todos os FIIs da B3 acima de R$ 1 bi** passados pelos cinco filtros, preenchida conforme o
 servidor termina cada fundo. Clicar num ticker abre o cartão dele. Veja
-[Triagem de mercado](#triagem-de-mercado-todos-os-fiis-pelos-5-filtros).
+[Triagem de mercado](#triagem-de-mercado-todos-os-fiis-pelos-5-filtros). O botão **triagem
+de ações · 5 filtros** (ou `/?acoes=1`) faz o mesmo com **toda ação que negocia acima de
+R$ 5 mi por dia**, uma classe por empresa — veja [Ações: os 5 filtros](#ações-os-5-filtros-e-o-desempate).
 
 ### CLI
 
@@ -51,6 +53,8 @@ npx tsx src/cli.ts TAEE11 --ai         # + interpretação da IA
 npx tsx src/cli.ts TAEE11 --no-cache   # ignora e não grava o cache
 npx tsx src/cli.ts --fiis              # todos os FIIs acima de R$ 1 bi pelos 5 filtros
 npx tsx src/cli.ts --fiis --json       # a mesma triagem em JSON
+npx tsx src/cli.ts --acoes             # toda ação acima de R$ 5 mi/dia pelos 5 filtros
+npx tsx src/cli.ts --acoes --json
 npx tsx src/cli.ts --serve             # API + página em http://localhost:3000
 npx tsx src/cli.ts --serve --porta 8080
 npx tsx src/cli.ts --help
@@ -93,6 +97,7 @@ Iguais nos dois servidores (Next.js e Hono):
 | `GET /` | Interface. No Next.js, o app React; no Hono, uma página HTML mínima. |
 | `GET /api/analise/:ticker` | JSON da análise. `?ia=1` acrescenta a leitura por IA. |
 | `GET /api/fiis` | Triagem de todos os FIIs acima de R$ 1 bi pelos 5 filtros. No Next.js, **NDJSON em streaming** (um evento por linha: `universe`, `fund`/`failure` por fundo, `done` com o relatório); no Hono, o relatório JSON de uma vez, quando termina. |
+| `GET /api/acoes` | Triagem de toda ação acima de R$ 5 mi/dia pelos 5 filtros de ação. Mesmo desenho: NDJSON no Next.js (`universe`, `stock`/`failure`, `done`), JSON de uma vez no Hono. |
 
 Status de erro: `400` ticker fora do padrão da B3, `404` ticker inexistente, `502` todas as
 fontes indisponíveis ou com formato inesperado.
@@ -106,9 +111,9 @@ existe em nenhuma fonte volta `null`** — nada é estimado.
 | # | Fonte | O que contribui |
 |---|---|---|
 | 1 | **brapi.dev** (API) | Preço. É intradiário, mais fresco que o das outras. No plano Gratuito é só isso — veja abaixo. |
-| 2 | **Investidor10** (scraping) | DY, P/L, P/VP, ROE, **Payout**, **Dív.Líq/EBITDA**. Fonte mais completa, e a única com payout. |
+| 2 | **Investidor10** (scraping) | DY, P/L, P/VP, ROE, **Payout**, **Dív.Líq/EBITDA**, liquidez média diária. Fonte mais completa, e a única com payout. |
 | 3 | **StatusInvest** (scraping) | DY, P/L, P/VP, ROE, Dív.Líq/EBITDA. Sem payout — o do site está marcado como BETA. |
-| 4 | **Fundamentus** (scraping) | DY, P/L, P/VP, ROE, Dív. Líquida, EBITDA. Último recurso. |
+| 4 | **Fundamentus** (scraping) | DY, P/L, P/VP, ROE, Dív. Líquida, EBITDA, volume médio de 2 meses. Último recurso. |
 
 ### O plano Gratuito da brapi: o que dá e o que não dá
 
@@ -253,6 +258,23 @@ Nenhum dos dois conta no veredito.
 classificação setorial falha. Dispara com P/L > 40, ou dividendo pago sem lucro positivo, ou
 ROE < 3% junto com DY > 5%. Quando dispara, payout e ROE viram `unrel`.
 
+### Link para o documento de resultado
+
+Todo card traz no cabeçalho o documento de resultado mais recente — **"ver release de
+resultados do 2T26"** —, e a mensagem do `unrel`, que manda o leitor conferir o relatório da
+empresa, repete o link ao lado dela e no aviso de inconclusivo. Vem de `resultados_trimestrais.php` (ação: release e demonstrações
+financeiras, por trimestre) e `fii_relatorios.php` (FII: relatório gerencial, por mês) do
+Fundamentus — mesma fonte, mesma latin-1, e os links apontam para os documentos oficiais
+(`rad.cvm.gov.br` para empresa, FNET da B3 para fundo). Só o período mais recente entra na
+análise; a página inteira fica como link de fallback quando ele não tem documento.
+
+O portal de dados abertos da CVM (`dados.cvm.gov.br`) foi avaliado como fonte direta e
+**descartado para consulta ao vivo**: o cadastro de documentos (IPE) é um CSV anual de
+~14 MB com o mercado inteiro, indexado por CNPJ e código CVM — que nenhuma das fontes atuais
+entrega para o ticker —, e não cobre o relatório gerencial de FII. Serviu para conferir que o
+link do Fundamentus é o mesmo protocolo que a CVM lista para "Release de Resultados 2T26" da
+Klabin. Falha nessa busca nunca derruba a análise; o card só fica sem o link.
+
 ### Veredito
 
 `fragile` (1+ `bad`) · `attention` (2+ `warn`) · `inconclusive` · `solid` · `indeterminate`.
@@ -314,8 +336,8 @@ ruído, não contexto. O setor diz 2,66%, que é crível. O rótulo sempre nomei
 
 ### Painel de contexto
 
-ROIC, margens, liquidez corrente, dívida/patrimônio, CAGR de receita e posição na faixa de 52
-semanas entram num grid compacto **sem régua e sem peso no veredito**. Dar a eles o mesmo
+ROIC, margens, liquidez corrente, dívida/patrimônio, CAGR de receita, posição na faixa de 52
+semanas e liquidez média diária entram num grid compacto **sem régua e sem peso no veredito**. Dar a eles o mesmo
 espaço visual dos indicadores com faixa afogaria o veredito.
 
 ## FIIs: régua própria
@@ -467,6 +489,53 @@ página, a rota responde em **streaming NDJSON**: cada fundo chega quando termin
 reordenada no cliente com a mesma função `rank` do servidor, e a barra de progresso é o que
 impede uma conexão de minutos de parecer travada.
 
+### Montar carteira
+
+Abaixo das tabelas, a página transforma a seleção numa lista de compras: um valor a
+investir e três formas de dividir. É conta pura sobre os números já na tela — nada novo é
+buscado, e funciona igual no instantâneo do GitHub Pages.
+
+**Seleção.** Cada linha dos aprovados e dos *falta conferir* tem uma caixa. Aprovados entram
+marcados; os de conferência manual entram desmarcados e, quando marcados, aparecem na
+carteira com a etiqueta **conferir** — é o leitor assumindo a checagem que a fonte não fez.
+Reprovados não têm caixa. Cada um dos dois grupos tem *marcar todos* e *desmarcar todos* no
+cabeçalho. O estado guarda só os desvios do padrão (aprovado desmarcado, pendente marcado),
+o que mantém o padrão certo enquanto as linhas ainda chegam pelo stream.
+
+- **Divisão igual** — o mesmo valor em cada fundo aprovado.
+- **Peso pela qualidade** — proporcional a *desempates passados + 1*, para quem passou em
+  0/3 ainda ter fatia: passou nos cinco filtros.
+- **Maximizar renda** — proporcional ao DY 12m, com **teto de 25% por fundo e 40% por
+  segmento**. Sem teto, o modo concentra tudo no maior DY, que costuma ser o fundo que pagou
+  algo não recorrente ou o mais arriscado. O excesso de quem bate no teto é redistribuído
+  entre os outros; com poucos fundos ou poucos segmentos o teto relaxa até a fatia igual, já
+  que três fundos não cabem em 25% cada. Fundo sem DY não tem como ser pesado e fica de fora.
+
+**Cota inteira.** FII não tem fração. Cada alvo é arredondado para baixo, e o troco é gasto
+uma cota por vez no fundo mais abaixo do alvo, até nenhum caber. O que sobra aparece como
+troco. Fundo cuja fatia não compra uma cota (R$ 1.000 em doze fundos a R$ 100+) é listado
+como fora, com o motivo.
+
+**Renda estimada.** DY 12m × valor aplicado ÷ 12, por fundo e no total, com a ressalva
+explícita de que é o que o fundo pagou, não o que vai pagar. Fundo sem DY entra na carteira
+mas não na renda, e o total é marcado como *parcial*.
+
+**Dois gráficos, SVG na mão, sem biblioteca.** A **rosca de distribuição** tem uma fatia por
+fundo e a **cor por segmento** — a pergunta que o desempate faz é "quanto está em
+logística?", e a cor responde de longe enquanto o rótulo e o tooltip respondem o fundo. As
+cores são a paleta categórica de referência da skill de dataviz, validada pelo script dela
+contra as duas superfícies do app (claro `#faf9f5`, escuro `#181715`): passa em separação
+para daltonismo e em contraste no escuro; no claro três tons ficam abaixo de 3:1 e a
+mitigação é a tabela ao lado, que sempre existe. A **curva de crescimento** projeta o
+patrimônio a 5, 10, 20 ou 30 anos, com um **aporte mensal** opcional, em dois traços:
+reinvestindo os rendimentos (cada mês o saldo rende e recebe o aporte, na cor da série) e
+sacando (o aporte compra cotas, o rendimento do principal acumula em caixa, em cinza
+tracejado, como contexto). O aporte entra só na projeção, não na lista de compras — a lista é
+o que comprar hoje.
+Crosshair que gruda no ano mais próximo, tooltip com as duas linhas e a renda mensal que a
+posição reinvestida pagaria até lá. É projeção, não previsão: congela cotação e DY nos
+valores de hoje e mostra só o efeito de reinvestir ou não — o texto ao lado diz isso.
+
 ### O que a triagem achou (14/09/2026)
 
 553 fundos na lista, 84 acima de R$ 1 bi, 469 pequenos demais. **12 passaram** nos cinco
@@ -492,23 +561,116 @@ entrou, e BTLG11, XPML11 e VILG11 passaram. E "Híbrido" reprovava 19 fundos de 
 mesmo motivo que um fundo de terras — KNRI11, HGRU11 e TRXF11 entre eles; agora sai como
 `sem dado`, e quem decide a mistura é o relatório gerencial.
 
+## Ações: os 5 filtros e o desempate
+
+Indicador é filtro, não decisão. Ele elimina porcaria rápido; não acha empresa boa sozinho —
+e o que é "bom" muda por setor: o mesmo P/VP de 2,2× significa coisas opostas na Klabin e no
+Itaú. A régua de indicadores diz se os números de uma empresa estão saudáveis; o bloco de
+filtros, **acima dos indicadores** no cartão de toda ação, diz se ela sobrevive ao corte
+inicial. O que sobra é onde começa o trabalho de verdade, que é ler o release — e o cartão
+já traz o link dele.
+
+| # | Filtro | Passa quando | Fonte |
+|---|---|---|---|
+| 1 | **ROE acima de 15%** | ROE ≥ 15%, o custo de capital no Brasil hoje. Com lucro distorcido (ver o detector), sai como `sem dado` com o número à vista — o 233% da Klabin não sustenta leitura. | Investidor10, StatusInvest, Fundamentus, brapi |
+| 2 | **Dívida líq./EBITDA abaixo de 2,5×** | Razão < 2,5×; caixa líquido passa. **Banco e seguradora saem como `sem dado`**: alavancagem é a natureza do negócio, e o que vale lá é Basileia e inadimplência, que nenhuma fonte gratuita publica. A razão publicada vence a derivada, como no resto do radar. | Investidor10, StatusInvest, Fundamentus (derivada) |
+| 3 | **Margem líquida acima de 5%** | Margem ≥ 5%. Também vira `sem dado` com lucro distorcido — margem líquida divide pelo mesmo lucro. | Investidor10, StatusInvest, Fundamentus |
+| 4 | **Receita crescendo** | CAGR de receita em 5 anos > 0. A regra original pedia *três anos seguidos* crescendo; nenhuma fonte gratuita publica a série ano a ano (é carregada por JS nos scrapers e paga na brapi), então o que dá para checar é a média composta, e a linha diz isso. Se cresceu com caixa próprio ou com dívida e emissão, só a DFP mostra. | Investidor10, StatusInvest, Fundamentus |
+| 5 | **Liquidez diária acima de R$ 5 mi** | Volume médio diário ≥ R$ 5 mi. | Investidor10 (`Liquidez Média Diária`), Fundamentus (`Vol $ méd (2m)`) |
+
+Cada critério sai como `passou`, `não passou` ou `sem dado`, com o valor e uma linha em
+português dizendo o que ele implica — inclusive a armadilha: ROE alto com dívida alta é
+alavancagem, não qualidade, e a linha do ROE manda olhar o ROIC.
+
+**Desempate — só depois de passar pelos 5 filtros.** Três critérios, calculados sempre e
+esmaecidos até o papel passar:
+
+- **ROIC acima do custo de capital**: ≥ 15%. Retorno sobre todo o capital, dívida incluída —
+  não se deixa enganar por alavancagem.
+- **Payout entre 30% e 60%**: paga e ainda reinveste. Acima de 100% é empresa sem onde
+  investir ou mascarando problema; 60–100% reprova com a ressalva de que é normal em
+  transmissão de energia; abaixo de 30% paga pouco para uma carteira de renda.
+- **P/L abaixo da mediana do setor**: valuation só depois de tudo acima, e sempre contra
+  pares — a mediana é a do setor amplo que o Investidor10 publica, pelo mesmo motivo da régua.
+  Múltiplo baixo isolado não diz nada, e a linha diz que costuma haver um motivo.
+
+O detector de lucro distorcido roda dentro do próprio filtro, independente do veredito, então
+uma cíclica em ano de lucro contábil quebrado cai em *falta conferir*, não em *reprovada*.
+
+## Triagem de mercado: ações pelos 5 filtros
+
+1. **Universo.** A lista "todas as ações" do Fundamentus (`resultado.php`): ~1.000 papéis
+   com cotação, P/L, P/VP, DY, margens, ROIC, ROE, liquidez de 2 meses, patrimônio e
+   crescimento de receita, numa requisição só. Colunas achadas pelo cabeçalho, como na lista
+   de FIIs.
+2. **Pré-seleção pela liquidez.** É o único filtro que a lista responde, e o que mais corta:
+   de ~1.000 papéis para ~155 com volume ≥ R$ 4,75 mi/dia (a margem de 5% cobre a janela
+   diferente entre lista e ficha; quem decide é a ficha, no filtro 5). Depois, **uma classe
+   por emissor** — PETR3 e PETR4 são a mesma empresa, e a mais negociada fica. Sobram ~145
+   empresas.
+3. **Análise completa de cada candidata.** O mesmo `analyze` de um ticker digitado, quatro por
+   vez, compartilhando o cache. A primeira rodada leva uns 8–10 minutos; as próximas, segundos.
+4. **Três grupos.** *Passaram nos 5 filtros* ordenadas pelo desempate e depois pelo ROIC —
+   qualidade antes de preço. *Falta conferir à mão* quando nenhum filtro reprovou mas algum
+   ficou `sem dado`: é onde caem os bancos, pela dívida, e as cíclicas com lucro distorcido.
+   *Reprovadas* com o primeiro filtro que reprovou. A tabela mostra os cinco números que os
+   filtros leram, o DY e o veredito da régua, lado a lado — um papel pode passar nos cinco
+   filtros e estar em ATENÇÃO nos indicadores, e as duas coisas ficam visíveis.
+
+Uma linha do cache anterior a esta versão não tem o bloco de filtros de ação, então o cache
+descarta e busca de novo qualquer análise gravada sem ele — em vez de listar a empresa como
+"não reconhecida como ação".
+
+### O que a triagem achou (15/09/2026)
+
+987 ações na lista, 144 empresas analisadas (155 papéis acima de R$ 5 mi/dia, menos a classe
+repetida de 11 emissores). **37 passaram** nos cinco filtros; **8 em *falta conferir***; **97
+reprovadas** — 77 no ROE, 13 na dívida, 6 na margem, 1 no crescimento. O corte fez o que
+filtro faz: de 987 para 37 em dez minutos, sem ler um release.
+
+O desempate separa as 37. Só a **CPFE3** passa nos três (ROIC 17,4%, payout na faixa, P/L
+abaixo do setor). Sete passam em dois, todas reprovando no valuation contra pares — LEVE3
+(ROE 72%, ROIC 28%), CMIN3, PLPL3, MILS3, MULT3 e PETR4 —, o que é o esperado: empresa boa
+raramente está mais barata que a mediana do setor. O grupo de um só desempate concentra quem
+distribui acima de 60% (TGMA3, DIRR3, ITSA4, CMIG4) e quem tem ROE alto com ROIC abaixo do
+custo de capital — POMO4, PSSA3, CMIG4, INTB3 —, a armadilha que o filtro 1 avisa. E dez
+passam nos cinco filtros com **zero** desempates: SBSP3 com ROIC de 7,9%, TOTS3 com 9,8%,
+GRND3 com 8,2%; passar nos filtros não é o mesmo que ser candidata, e a tabela mostra as duas
+coisas.
+
+O veredito da régua vai junto na tabela, e discorda várias vezes: CURY3, RIAA3, TIMS3, ALPA4,
+VTRU3 e outras dez passam nos cinco filtros e saem **FRÁGIL** nos indicadores — quase sempre
+pelo payout acima de 100% ou pelo DY alto demais (RIAA3 46%, GRND3 40%, VULC3 25%), que é o
+"dividendo grande ou preço despencando?" do filtro 7. É por isso que os dois blocos ficam lado
+a lado.
+
+Nos *falta conferir*: PINE4 e BPAC11 pela dívida, que não se aplica a banco; AURA33, BRAV3,
+TFCO4, DESK3, MGLU3 e SAUD3 pelo lucro distorcido, que esvazia ROE e margem — a cíclica em
+ano ruim cai aqui, não em reprovada. A ITSA4 passou como holding, com "margem líquida" de
+214%, um número que para holding não significa nada e que o filtro 3 aceita: o setor muda o
+que é bom, e essa adaptação por setor é o que ainda não está escrito em regra.
+
+Dois papéis saíram como *sem análise* nessa rodada — ITUB4 e TAEE11 — por estarem no cache
+com o formato anterior, sem o bloco de filtros. Daí a regra de descartar linha gravada sem
+ele; na rodada seguinte os dois entram normalmente.
+
 ## Publicação no GitHub Pages
 
 O GitHub Pages só serve arquivo estático, e o app precisa de servidor: o scraping não roda no
 navegador (CORS) e o cache é SQLite. O que fica publicado é um **instantâneo diário**, com a
 mesma interface:
 
-1. `npm run snapshot` (`scripts/snapshot.ts`) roda a triagem de mercado ao vivo e grava
-   `public/data/fiis.json` mais `public/data/analise/<TICKER>.json` para cada um dos ~85 fundos
-   analisados — tudo lido do cache que a própria triagem acabou de preencher, nada é buscado
-   duas vezes.
+1. `npm run snapshot` (`scripts/snapshot.ts`) roda as duas triagens de mercado ao vivo e
+   grava `public/data/fiis.json`, `public/data/acoes.json` e `public/data/analise/<TICKER>.json`
+   para cada um dos ~85 fundos e ~145 empresas analisados — tudo lido do cache que as próprias
+   triagens acabaram de preencher, nada é buscado duas vezes.
 2. `RADAR_STATIC=1 next build` (`npm run build:static`) faz o export estático em `out/`, com
    `basePath` no nome do repositório. As rotas de API são removidas antes do build, porque
    export estático não as carrega e o snapshot as substitui.
 3. A página lê `data/…` em vez de `api/…` (`app/mode.ts`; caminhos relativos, então o mesmo
-   código serve na raiz e no sub-path). Abre direto na triagem, mostra a data do instantâneo e
-   avisa que só os fundos da triagem têm análise pronta — ticker fora dela cai numa mensagem,
-   não num erro de rede.
+   código serve na raiz e no sub-path). Abre direto na triagem de FIIs, mostra a data do
+   instantâneo e avisa que só os papéis das triagens têm análise pronta — ticker fora delas
+   cai numa mensagem, não num erro de rede.
 
 O workflow `.github/workflows/pages.yml` faz os três passos a cada push em `main`, todo dia
 útil às 08:00 de Brasília, e sob demanda (*Run workflow*). `BRAPI_TOKEN` é opcional, como
@@ -586,7 +748,7 @@ consequência dita na mesma linha: *"já sai com 15% de imposto retido"*.
 npm test
 ```
 
-663 testes. Cobrem todas as faixas do motor de diagnóstico **e cada limite exato**
+696 testes. Cobrem todas as faixas do motor de diagnóstico **e cada limite exato**
 (`0.13`, `0.06`, `0.03`, `1.0`, `0.40`, `0.25`, `0`, `1.5`, `2.5`, `3.5`, `0.8`, `0.15`,
 `0.08`), os campos `null`, as invariantes da tabela de faixas (contígua, sem lacuna, cada
 limite numa faixa só), a matemática da agulha da régua, o parser do Fundamentus contra HTML

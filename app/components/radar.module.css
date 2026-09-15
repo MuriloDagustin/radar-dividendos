@@ -257,20 +257,16 @@
   padding-bottom: var(--space-section);
 }
 
-/* Cards 2-up when there is room; a lone card does not stretch across the whole measure. */
+/* Cards 2-up when there is room; auto-fit collapses the empty track so a lone card takes the whole measure. */
 .results {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 34rem), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 34rem), 1fr));
   gap: var(--space-lg);
   align-items: start;
 }
 
 .results > * {
   min-width: 0;
-}
-
-.results:has(> :only-child) {
-  max-width: 52rem;
 }
 
 .error {

@@ -144,6 +144,26 @@ export function extractQuote(html: string): number | null {
 }
 
 /**
+ * The company sheet's information table publishes the average daily traded value as a
+ * scaled amount ("R$ 87,80 Milhões"), outside the indicator cards. The table's id differs
+ * between the company and the fund sheet.
+ */
+export function extractLiquidity(html: string): number | null {
+  const $ = cheerio.load(html);
+  let liquidity: number | null = null;
+
+  $('#table-indicators-company .cell, #table-indicators .cell').each((_, el) => {
+    if (liquidity !== null) return;
+    const node = $(el);
+    const key = labelKey(node.find('.title, .name').first().text());
+    if (key !== 'liquidezmediadiaria') return;
+    liquidity = parseScaledAmount(node.find('.value').first().text().replace(/\s+/g, ' ').trim());
+  });
+
+  return liquidity;
+}
+
+/**
  * The fund sheet does not use `indicator-card`: a fund's few indicators live in the header
  * cards, whose heading is prefixed with the ticker ("MXRF11 DY (12M)").
  */
@@ -306,6 +326,7 @@ export function parseInvestidor10(
 
   const fundamentals = emptyFundamentals();
   fundamentals.price = extractQuote(html);
+  fundamentals.avgDailyLiquidity = extractLiquidity(html);
 
   for (const { field, labels, unit } of STOCK_MAPPING) {
     for (const label of labels) {

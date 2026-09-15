@@ -137,13 +137,18 @@ function provenanceOf(analysis, key) {
 }
 
 function render(analysis) {
+  const latest = analysis.filings?.latest;
+  const documentLink = latest
+    ? \` <a href="\${esc(latest.reportUrl ?? latest.statementsUrl ?? analysis.filings.indexUrl)}" target="_blank" rel="noopener noreferrer">ver documentos de resultado (\${esc(latest.period)})</a>\`
+    : '';
+
   const rows = analysis.diagnosis.indicators.filter((i) => i.group !== 'context').map((i) => {
     const cls = i.signal ?? 'none';
     const prov = provenanceOf(analysis, i.key);
     return \`<tr>
       <td class="label">\${esc(i.label)}</td>
       <td class="value \${cls}">\${esc(formatValue(i.value, i.format))}</td>
-      <td class="msg \${cls}">\${esc(i.message)}\${prov ? \` <span class="meta">[\${esc(prov)}]</span>\` : ''}</td>
+      <td class="msg \${cls}">\${esc(i.message)}\${i.signal === 'unrel' ? documentLink : ''}\${prov ? \` <span class="meta">[\${esc(prov)}]</span>\` : ''}</td>
     </tr>\`;
   }).join('');
 
@@ -170,14 +175,15 @@ function render(analysis) {
       <strong>\${i !== undefined ? i + 1 + '. ' : ''}\${esc(c.label)}</strong>
       \${c.value ? \`<span class="value">\${esc(c.value)}</span>\` : ''}
       <span class="detail">\${esc(c.detail)}</span></li>\`;
-  const s = analysis.fundScreen;
+  const s = analysis.fundScreen ?? analysis.stockScreen;
+  const paper = analysis.fundScreen ? 'fundos' : 'ações';
   const screen = s ? \`<div class="screen">
       <h3>5 filtros <span class="\${s.passedAll ? 'pass' : ''}">\${s.passedAll
         ? 'Passou nos ' + s.filters.length + ' filtros'
         : 'Passou em ' + s.passed + ' de ' + s.filters.length + ' filtros' + (s.unknown ? ' · ' + s.unknown + ' sem dado' : '')}</span></h3>
       <ol>\${s.filters.map(criterion).join('')}</ol>
       <div class="\${s.passedAll ? '' : 'locked'}">
-        <h3 style="margin-top:.6rem">Desempate <span>\${s.passedAll ? 'entre fundos que passaram nos 5 filtros' : 'só vale depois de passar pelos 5 filtros'}</span></h3>
+        <h3 style="margin-top:.6rem">Desempate <span>\${s.passedAll ? 'entre ' + paper + ' que passaram nos 5 filtros' : 'só vale depois de passar pelos 5 filtros'}</span></h3>
         <ul>\${s.tiebreakers.map((c) => criterion(c)).join('')}</ul>
       </div>
     </div>\` : '';
@@ -192,7 +198,7 @@ function render(analysis) {
     <div class="header">
       <strong>\${esc(analysis.ticker)}</strong>
       <span class="badge \${esc(v)}">\${esc(VERDICT_LABEL[v] ?? v)}</span>
-      <span class="meta">\${esc(kindLabel)}</span>
+      <span class="meta">\${esc(kindLabel)}</span>\${documentLink}
       <span class="meta">\${analysis.fromCache ? 'do cache' : 'consulta ao vivo'} ·
         \${esc(new Date(analysis.generatedAt).toLocaleString('pt-BR'))}</span>
     </div>

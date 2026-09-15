@@ -77,7 +77,8 @@
   --space-xxl: 48px;
   --space-section: clamp(3rem, 7vw, 6rem);
 
-  --measure: 75rem;
+  /* ~80% of the viewport on a desktop, never narrower than the old 75rem, so a phone still gets the full width. */
+  --measure: max(80vw, 75rem);
   --gutter: clamp(1rem, 4vw, 2rem);
 
   /* Panels that are dark on cream. On a dark canvas they step up one tone and gain an edge. */

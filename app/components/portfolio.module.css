@@ -1,0 +1,169 @@
+.dot {
+  background: var(--primary);
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-lg) var(--space-xl);
+  align-items: flex-start;
+}
+
+.amount {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+/* text-input in the mono register of the search field; the prefix is fixed so the number stays a number. */
+.amountField {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  background: var(--canvas);
+}
+
+.amountField:focus-within {
+  border-color: var(--primary);
+  box-shadow: var(--focus-ring);
+}
+
+.currency {
+  padding-left: 14px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.input {
+  width: 9rem;
+  height: 100%;
+  padding: 10px 14px 10px 8px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  outline: none;
+}
+
+.modes {
+  display: grid;
+  gap: var(--space-xs);
+  flex: 1 1 20rem;
+}
+
+/* category-tab row, as the hero's shortcuts. */
+.modeRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xxs);
+}
+
+.mode {
+  padding: 8px 14px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.modeActive {
+  background: var(--surface-card);
+  color: var(--ink);
+}
+
+.modeDetail {
+  max-width: 60ch;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.shares {
+  font-weight: 500;
+}
+
+.totals {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md) var(--space-xl);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--hairline);
+}
+
+.total {
+  display: grid;
+  gap: var(--space-xxs);
+}
+
+.totalValue {
+  margin: 0;
+  font-size: 20px;
+  color: var(--ink);
+}
+
+.totalIncome {
+  color: var(--ok);
+}
+
+.partial {
+  font-family: var(--font-text);
+  font-size: 12px;
+  color: var(--warn);
+}
+
+.excluded {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.caveat {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted-soft);
+  max-width: 72ch;
+}
+
+.textButton {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-weight: 500;
+  color: var(--link);
+  cursor: pointer;
+}
+
+.textButton:active {
+  text-decoration: underline;
+}
+
+.fundCell {
+  white-space: nowrap;
+}
+
+.pendingTag {
+  margin-left: var(--space-xs);
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  background: var(--warn-soft);
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--warn);
+}
+
+.charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 28rem), 1fr));
+  gap: var(--space-xl);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--hairline);
+}

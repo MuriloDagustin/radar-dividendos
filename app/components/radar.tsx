@@ -16,6 +16,7 @@ import { Card } from './card';
 import { Legend } from './legend';
 import { Mark } from './mark';
 import { MarketScreenView } from './screen';
+import { StockScreenView } from './stocks';
 import styles from './radar.module.css';
 
 const PRESETS: { label: string; tickers: string }[] = [
@@ -31,8 +32,8 @@ interface Failure {
 
 type Result = { kind: 'analysis'; analysis: Analysis } | { kind: 'failure'; failure: Failure };
 
-/** Cards for the tickers typed, or the market-wide fund screen — never both at once. */
-type View = 'cards' | 'screen';
+/** Cards for the tickers typed, or one of the market-wide screens — never two at once. */
+type View = 'cards' | 'screen' | 'stocks';
 
 function splitTickers(raw: string): string[] {
   const seen = new Set<string>();
@@ -98,11 +99,16 @@ export function Radar({ aiAvailable }: { aiAvailable: boolean }) {
     [aiAvailable],
   );
 
-  // `?t=TAEE11+ITSA4` makes an analysis shareable and reloadable; `?fiis=1` opens the screen.
+  // `?t=TAEE11+ITSA4` makes an analysis shareable and reloadable; `?fiis=1` and `?acoes=1`
+  // open the screens.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('fiis') === '1') {
       setView('screen');
+      return;
+    }
+    if (params.get('acoes') === '1') {
+      setView('stocks');
       return;
     }
     const tickers = params.get('t');
@@ -127,10 +133,10 @@ export function Radar({ aiAvailable }: { aiAvailable: boolean }) {
     void run(raw, ai);
   }
 
-  function openScreen() {
+  function openScreen(which: 'screen' | 'stocks') {
     setResults([]);
-    setView('screen');
-    window.history.replaceState(null, '', '?fiis=1');
+    setView(which);
+    window.history.replaceState(null, '', which === 'screen' ? '?fiis=1' : '?acoes=1');
   }
 
   /** A ticker picked off the screen table opens its card, as if it had been typed. */
@@ -205,8 +211,8 @@ export function Radar({ aiAvailable }: { aiAvailable: boolean }) {
               {STATIC_SITE ? (
                 <p className={styles.staticNote}>
                   <span className="tag">instantâneo</span> Versão publicada no GitHub Pages: os
-                  dados são um retrato diário gerado por uma GitHub Action, e só os fundos da
-                  triagem têm análise pronta. Para consultar qualquer ticker ao vivo, rode o
+                  dados são um retrato diário gerado por uma GitHub Action, e só os papéis das
+                  triagens têm análise pronta. Para consultar qualquer ticker ao vivo, rode o
                   projeto localmente.
                 </p>
               ) : null}
@@ -249,10 +255,20 @@ export function Radar({ aiAvailable }: { aiAvailable: boolean }) {
                   className={
                     view === 'screen' ? `${styles.shortcut} ${styles.shortcutActive}` : styles.shortcut
                   }
-                  onClick={openScreen}
+                  onClick={() => openScreen('screen')}
                   aria-pressed={view === 'screen'}
                 >
                   triagem de FIIs · 5 filtros
+                </button>
+                <button
+                  type="button"
+                  className={
+                    view === 'stocks' ? `${styles.shortcut} ${styles.shortcutActive}` : styles.shortcut
+                  }
+                  onClick={() => openScreen('stocks')}
+                  aria-pressed={view === 'stocks'}
+                >
+                  triagem de ações · 5 filtros
                 </button>
               </div>
             </div>
@@ -264,6 +280,12 @@ export function Radar({ aiAvailable }: { aiAvailable: boolean }) {
         {view === 'screen' ? (
           <section className={`${styles.container} ${styles.band}`}>
             <MarketScreenView onPick={pickFromScreen} />
+          </section>
+        ) : null}
+
+        {view === 'stocks' ? (
+          <section className={`${styles.container} ${styles.band}`}>
+            <StockScreenView onPick={pickFromScreen} />
           </section>
         ) : null}
 

@@ -48,6 +48,10 @@ describe('parseFundamentus', () => {
     expect(fundamentals.roe).toBeCloseTo(0.201, 10);
   });
 
+  it('reads the two-month average daily volume in BRL', () => {
+    expect(parseFundamentus(TAEE11_HTML, 'TAEE11').fundamentals.avgDailyLiquidity).toBe(77_893_500);
+  });
+
   it('leaves payout null because the sheet does not publish it', () => {
     expect(parseFundamentus(TAEE11_HTML, 'TAEE11').fundamentals.payout).toBeNull();
   });

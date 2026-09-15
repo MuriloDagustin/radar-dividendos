@@ -1,0 +1,695 @@
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html lang="pt-br">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+	<title>FUNDAMENTUS - Invista consciente - Relatórios Gerenciais - HGLG11</title>
+	
+	<link rel="stylesheet" href="css/estilo.css" type="text/css" media="screen, projection">
+	<link rel="stylesheet" href="css/print.css" type="text/css" media="print">
+	<link rel="shortcut icon" href="img/fundamentus.ico" type="image/x-icon">
+	<!--[if lte IE 6]>
+		<link rel="stylesheet" type="text/css" href="css/menu_ie6.css">
+		<script type="text/javascript" src="script/ADxMenu.js"></script>
+	<![endif]-->
+	<!-- <script src="script/mootools.svn.js" type="text/javascript"></script>  -->
+<script src="//ajax.googleapis.com/ajax/libs/mootools/1.11/mootools-yui-compressed.js" type="text/javascript"></script>
+
+<!-- Facebook Pixel Code -->
+<script>
+  !function(f,b,e,v,n,t,s)
+  {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+  n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+  if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+  n.queue=[];t=b.createElement(e);t.async=!0;
+  t.src=v;s=b.getElementsByTagName(e)[0];
+  s.parentNode.insertBefore(t,s)}(window, document,'script',
+  'https://connect.facebook.net/en_US/fbevents.js');
+  fbq('init', '180895865796070');
+  fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+  src="https://www.facebook.com/tr?id=180895865796070&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Facebook Pixel Code -->	<script type="text/javascript" src="script/Observer.js"></script>
+	<script type="text/javascript" src="script/Autocompleter.js"></script>
+	<script src="script/cmplte.php" type="text/javascript" language="JavaScript"></script>
+	<script src="script/tip.js" type="text/javascript" language="JavaScript"></script>
+  <style>
+
+  table.resultado tr td {
+        text-align: center;
+    }
+
+    table.resultado tr td.dth-entrega {
+        width: 99px;
+        padding-left: 10px;
+    }
+    table.resultado tr td.descricao {
+        width: 760px;
+        padding-left: 10px;
+    }
+    #googleAdsenseDiv {
+      width: fit-content;
+      /*padding-left: 10%;*/
+      padding-right: 10%;
+      margin-bottom: 15px;
+    }
+    #priAcIntroDiv {
+      margin-bottom: 12px;
+      margin-top: 19px;
+      background-color: #dcecf2b8;
+      margin-right: 11px;
+      padding-top: 2px;
+      padding-bottom: 3px;
+    }
+  </style>
+</head>
+
+<body class="fii-relatorios-gerenciais">
+		<div class="center">
+		<?php#  echo $trace_txt;?>	<script>		function validateForm() {			let form = document.createElement('form');			form.action = 'detalhes.php';			form.method = 'GET';			form.innerHTML = '<input name="papel" type="hidden" value="'+document.forms[0]["papel"].value.toUpperCase()+'">';			document.body.append(form);			form.submit();			return false;		}	</script>		
+<style>
+  #menu.institucional li a.fundamentus-mobile { 
+    background-image: url(img/bt_fundamentus_mobile2.png); 
+    width: 97px; 
+  }
+  #menu.institucional li a.fundamentus-mobile:active { 
+    background-position: 0 0 !important;
+  }  
+
+</style>
+<div class="topo">
+   <a href="index.php"><img class="logo" src="img/logo.gif" alt="FUNDAMENTUS - Invista consciente"></a>			
+   <div class="avancada"><span>Busca por <a href="buscaavancada.php">empresa</a> / <a href="fii_buscaavancada.php">fii</a></span></div>
+   <form class="busca" method="get" action="detalhes.php" onsubmit="return validateForm() ">
+      <fieldset>
+         <legend>Procurar por ação/empresa/fii</legend>
+         <input class="texto" autocomplete="off" id="completar" name="papel" type="text" spellcheck="false"><input type="image" src="img/bt_exibir.jpg" class="botao" value="Exibir"><br>				
+      </fieldset>
+   </form>
+   <div class="atual"><p>Você está vendo<strong>HGLG11</strong></p></div>			
+   <div id="containerMenu">
+      <ul id="menu" class="institucional adxm menu">
+         <li><a class="home" href="index.php">Página inicial</a></li>
+         <!--- <li><a class="conheca" href="conheca.php">Conheça o sistema</a></li> --->					
+         <li><a class="consciente" href="consciente.php">Investimento consciente</a></li>
+         <li>
+            <a class="mais-opcoes" onClick="poApple()">Mais Opções</a>
+            <ul>
+               <li><a href="fr.php">Fatos Relevantes</a></li>
+               <li><a href="ultimos-resultados.php">Últimos Resultados</a></li>
+               <li><a href="fii_imoveis.php">FII - Pesquisar Imóveis</a></li>
+            </ul>
+         </li>
+         <li><a class="contato" href="contato.php">Entre em contato</a></li>
+         <li><a class="fundamentus-mobile" href="?papel=HGLG11&interface=mobile">Fundamentus Mobile</a></li>
+      </ul>
+              <ul id="menu" class="software adxm menu">
+           <li><a class="detalhes" href="detalhes.php?papel=HGLG11">Detalhes</a></li>
+           <li>
+              <a class="graficos" onClick="poApple()" >Gráficos</a>						
+              <ul>
+                 <li><a href="fii_graficos.php?papel=HGLG11&tipo=1">Rendimentos</a></li>
+                 <li><a href="fii_graficos.php?papel=HGLG11&tipo=2">Demonstração Resultados</a></li>
+                 <li><a href="fii_graficos.php?papel=HGLG11&tipo=3">Valuation</a></li>
+              </ul>
+           </li>
+           <li>
+              <a class="historicos" onClick="poApple()">Dados Históricos</a>						
+              <ul class="provetos">
+                 <li><a class="dh" href="fii_imoveis_detalhes.php?papel=HGLG11">Imóveis</a></li>
+                 <li><a class="dh" href="fii_relatorios.php?papel=HGLG11">Relatórios Gerenciais</a></li>
+                 <li><a class="dh" href="fii_fatos_relevantes.php?papel=HGLG11">Fatos Relevantes</a></li>
+                 <li><a class="dh" href="fii_proventos.php?papel=HGLG11&tipo=2">Rendimentos</a></li>
+                 <li><a class="dh" href="fii_administrador.php?papel=HGLG11">Administrador</a></li>
+              </ul>
+           </li>
+           <li><a class="cotacoes" href="cotacoes.php?papel=HGLG11&tela=3">Histórico de cotações</a></li>
+           </li>				
+        </ul>
+         </div>
+</div>		<div class="conteudo clearfix">
+      <div id="googleAdsenseDiv">
+          <div style="height:90px">
+      <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3119085269630402"
+         crossorigin="anonymous"></script>
+    <!-- anuncioTopoGrafico -->
+    <ins class="adsbygoogle"
+         style="display:inline-block;width:728px;height:90px"
+         data-ad-client="ca-pub-3119085269630402"
+         data-ad-slot="8726397494"></ins>
+    <script>
+         (adsbygoogle = window.adsbygoogle || []).push({});
+    </script>
+    </div>
+      </div>
+      <div style="float:left; margin-right: 17px;">
+        <h1>Relatórios Gerenciais</h1>
+        <table class="resultado fato-relevante rowstyle-par colstyle-col no-arrow" border="0" cellpadding="0" cellspacing="0">
+          <thead>
+            <tr>
+              <th style="-moz-user-select: none;" class="fd-column-0 sortable-keep"><a href="#">Data Referência</a></th>
+              <th style="-moz-user-select: none;" class="fd-column-2"><a href="#">Relatório Gerencial</a></th>
+            </tr>
+          </thead>
+          <tbody>
+                      <tr class="">
+              <td class="dth-entrega"><span>08/2026</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=1316897&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>07/2026</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=1287334&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>06/2026</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=1246174&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>05/2026</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=1218334&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>04/2026</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=1189517&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>03/2026</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=1178010&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>02/2026</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=1143507&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>01/2026</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=1124782&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>12/2025</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=1124796&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>11/2025</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=1124799&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>10/2025</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=1040223&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>09/2025</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=1012187&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>08/2025</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=988905&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>07/2025</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=968545&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>06/2025</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=944891&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>05/2025</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=937929&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>04/2025</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=932689&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>03/2025</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=876011&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>02/2025</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=857752&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>01/2025</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=836186&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>12/2024</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=823928&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>11/2024</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=796730&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>10/2024</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=776145&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>09/2024</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=754971&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>08/2024</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=736669&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>07/2024</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=715848&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>06/2024</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=695656&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>05/2024</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=678427&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>04/2024</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=656711&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>03/2024</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=637576&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>02/2024</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=618108&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>01/2024</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=599998&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>12/2023</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=582451&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>11/2023</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=568603&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>10/2023</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=549032&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>09/2023</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=534421&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>08/2023</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=519772&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>07/2023</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=504064&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>06/2023</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=489203&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>05/2023</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=477003&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>04/2023</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=459981&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>03/2023</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=444285&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>02/2023</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=427096&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>01/2023</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=413779&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>12/2022</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=399854&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>11/2022</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=387247&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>10/2022</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=374568&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>09/2022</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=362708&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>09/2022</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=349885&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>07/2022</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=335540&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>06/2022</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=324541&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>05/2022</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=313140&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>04/2022</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=300326&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>03/2022</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=287481&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>02/2022</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=275237&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>01/2022</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=264038&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>12/2021</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=254941&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>11/2021</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=244034&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>10/2021</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=232692&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>09/2021</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=222980&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>08/2021</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=212592&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>07/2021</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=201537&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>06/2021</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=192370&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>05/2021</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=183583&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>04/2021</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=174229&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>03/2021</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=162809&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>02/2021</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=153791&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>01/2021</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=145056&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>12/2020</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=142967&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>11/2020</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=133417&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>10/2020</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=125400&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>09/2020</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=120539&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>08/2020</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=115624&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>07/2020</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=110695&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>06/2020</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=105485&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>05/2020</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=99649&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>04/2020</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=94713&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>03/2020</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=90051&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>02/2020</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=84939&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>01/2020</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=80051&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>12/2019</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=75643&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>11/2019</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=70508&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>10/2019</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=65649&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>09/2019</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=61178&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>08/2019</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=58555&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>07/2019</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=55666&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>06/2019</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=53183&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>05/2019</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=50900&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>04/2019</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=48006&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>03/2019</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=45778&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>02/2019</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=43405&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>02/2019</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=40930&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>12/2018</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=38820&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>11/2018</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=36905&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>10/2018</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=35078&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>09/2018</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=33423&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>08/2018</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=31961&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>07/2018</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=30202&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>06/2018</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=28970&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>05/2018</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=27819&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>04/2018</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=26356&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>03/2018</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=25006&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>02/2018</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=23366&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>01/2018</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=22226&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>12/2017</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=21076&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>12/2017</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=20043&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>10/2017</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=18890&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>09/2017</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=17646&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>08/2017</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=16634&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>07/2017</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=15506&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>06/2017</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=14692&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>05/2017</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=13863&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>04/2017</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=12684&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>03/2017</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=11527&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>02/2017</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=9989&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>01/2017</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=9011&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>12/2016</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=8037&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>11/2016</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=7232&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>10/2016</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=6366&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>09/2016</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=5378&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>08/2016</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=3966&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>07/2016</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=2784&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="">
+              <td class="dth-entrega"><span>06/2016</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=1759&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                      <tr class="par">
+              <td class="dth-entrega"><span>05/2016</span></td>
+              <td class="download"><a href="https://fnet.bmfbovespa.com.br/fnet/publico/downloadDocumento?id=1041&CodigoTipoInstituicao=1" target="_blank">Download</td>
+            </tr>
+                    </tbody>
+        </table>
+      </div>
+		</div>
+	</div>
+		<div class="rodape">
+		<div class="center">
+			<ul>
+				<li><strong>Menu institucional:</strong></li>
+				<li><a class="home" href="index.php">Página inicial</a>|</li>
+				<li><a class="consciente" href="consciente.php">Investimento Consciente</a>|</li>
+				<li><a class="contato" href="contato.php">Entre em contato</a>|</li>
+				<li><a class="ultimos-resultados" href="ultimos-resultados.php">Últimos Resultados</a></li>
+			</ul>
+			<ul>
+				<li><strong>Menu software: </strong></li>
+				<li><a class="graficos" href="graficos.php?tipo=1">Gráficos</a>|</li>
+				<li><a class="detalhes" href="detalhes.php">Detalhes</a>|</li>
+				<li><a class="cotacoes" href="cotacoes.php">Histórico de cotações</a>|</li>
+				<li><a class="acionistas" href="acionistas.php">Acionistas</a>|</li>
+				<li><a class="principais-acionistas" href="principais_acionistas.php">Principais Acionistas</a>|</li>
+				<li><a class="administracao" href="administradores.php">Administração</a>|</li>
+				<li><a class="fatos-relevantes" href="fatos_relevantes.php">Fatos Relevantes</a>|</li>
+				<li><a class="apresentacoes" href="apresentacoes.php">Apresentações</a>|</li>
+				<li><a class="proventos" href="proventos.php">Proventos</a>|</li>
+				<li><a class="historicos" href="balancos.php">Balanços Históricos</a></li>
+			</ul>
+		</div>
+	</div>
+	<!-- Google tag (gtag.js) -->
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-MBRGJ9JF74"></script>
+	<script>
+	  window.dataLayer = window.dataLayer || [];
+	  function gtag(){dataLayer.push(arguments);}
+	  gtag('js', new Date());
+
+	  gtag('config', 'G-MBRGJ9JF74');
+	</script>	
+	
+	<script  type="text/javascript" src="script/pvt.php" language="JavaScript" async></script>
+<script src="script/tablesort.js" type="text/javascript"></script>
+</body>
+</html>

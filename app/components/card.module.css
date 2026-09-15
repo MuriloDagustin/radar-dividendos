@@ -415,3 +415,14 @@
     flex-basis: 100%;
   }
 }
+
+/* text-link: the one inline link on the card, kept in the link colour so it reads as an exit. */
+.documentLink {
+  color: var(--link);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.documentLink:hover {
+  text-decoration: underline;
+}

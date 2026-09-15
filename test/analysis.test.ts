@@ -18,6 +18,7 @@ function gzFixtureBytes(nome: string): Uint8Array<ArrayBuffer> {
 
 const FUNDAMENTUS_BYTES = fixtureBytes('fundamentus-taee11.html');
 const UNKNOWN_BYTES = fixtureBytes('fundamentus-inexistente.html');
+const DOCUMENTOS_BYTES = fixtureBytes('documentos-klbn3.html');
 const INVESTIDOR10_BYTES = gzFixtureBytes('investidor10-taee11.html.gz');
 const STATUSINVEST_BYTES = gzFixtureBytes('statusinvest-taee11.html.gz');
 
@@ -45,7 +46,10 @@ type Resposta =
   | { erro: string };
 
 type Routes = Partial<
-  Record<'brapi' | 'investidor10' | 'statusinvest' | 'fundamentus' | 'proventos', Resposta>
+  Record<
+    'brapi' | 'investidor10' | 'statusinvest' | 'fundamentus' | 'proventos' | 'documentos',
+    Resposta
+  >
 >;
 
 const OFFLINE: Resposta = { erro: 'ECONNREFUSED' };
@@ -56,7 +60,7 @@ function route(rotas: Routes): void {
     'fetch',
     vi.fn(async (entrada: URL | string) => {
       const url = String(entrada);
-      // The dividend history is a separate Fundamentus page, so it gets its own route.
+      // Dividend history and results documents are separate Fundamentus pages, so each gets its own route.
       const chave = url.includes('brapi.dev')
         ? 'brapi'
         : url.includes('investidor10')
@@ -65,7 +69,9 @@ function route(rotas: Routes): void {
             ? 'statusinvest'
             : url.includes('proventos.php')
               ? 'proventos'
-              : 'fundamentus';
+              : /resultados_trimestrais|fii_relatorios/.test(url)
+                ? 'documentos'
+                : 'fundamentus';
 
       const alvo = rotas[chave] ?? OFFLINE;
       if ('erro' in alvo) throw new Error(alvo.erro);
@@ -113,12 +119,28 @@ describe('analyze', () => {
     expect((await analyze('  taee11 ', NO_CACHE)).ticker).toBe('TAEE11');
   });
 
+  it('screens a company through the five stock filters, and never through the fund ones', async () => {
+    route(allUp());
+    const analysis = await analyze('TAEE11', NO_CACHE);
+
+    expect(analysis.fundScreen).toBeNull();
+    expect(analysis.stockScreen?.filters.map((c) => `${c.key}:${c.status}`)).toEqual([
+      'roe:pass',
+      'leverage:fail',
+      'margin:pass',
+      'growth:pass',
+      'liquidity:pass',
+    ]);
+    // The valuation tiebreaker reads the sector median Investidor10 publishes beside P/L.
+    expect(analysis.stockScreen?.tiebreakers.find((c) => c.key === 'valuation')?.status).toBe('pass');
+  });
+
   it('queries all four sources in parallel', async () => {
     route(allUp());
     const analysis = await analyze('TAEE11', NO_CACHE);
 
-    // Four sources plus the optional dividend history page.
-    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(5);
+    // Four sources plus the optional dividend history and results documents pages.
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(6);
     expect(analysis.sources.map((f) => f.source)).toEqual([
       'brapi',
       'investidor10',
@@ -236,6 +258,16 @@ describe('analyze', () => {
     expect(analysis.disclaimer).toMatch(/Não é recomendação de investimento/);
     expect(Number.isNaN(Date.parse(analysis.generatedAt))).toBe(false);
     expect(analysis.fromCache).toBe(false);
+  });
+
+  it('carries the latest results documents when the page answers, and null when it does not', async () => {
+    route({ ...allUp(), documentos: { html: DOCUMENTOS_BYTES } });
+    const withDocuments = await analyze('TAEE11', NO_CACHE);
+    expect(withDocuments.filings?.latest.period).toBe('30/06/2026');
+    expect(withDocuments.filings?.latest.reportUrl).toContain('numProtocolo=1552243');
+
+    route(allUp());
+    expect((await analyze('TAEE11', NO_CACHE)).filings).toBeNull();
   });
 
   it('does not call the AI without the flag', async () => {

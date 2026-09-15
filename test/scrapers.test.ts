@@ -77,6 +77,10 @@ describe('Investidor10', () => {
     expect(fundamentals.priceToBook).toBe(1.59);
   });
 
+  it('reads the average daily liquidity off the information table, scaled by its word', () => {
+    expect(parseInvestidor10(INVESTIDOR10_HTML, 'TAEE11').fundamentals.avgDailyLiquidity).toBe(87_800_000);
+  });
+
   it('reads the quote from the header card', () => {
     expect(parseInvestidor10(INVESTIDOR10_HTML, 'TAEE11').fundamentals.price).toBe(37.33);
   });

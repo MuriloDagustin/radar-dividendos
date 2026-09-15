@@ -27,8 +27,10 @@ function fakeAnalysis(ticker: string): Analysis {
     classification: { category: 'evergreen', rawSector: 'Energia Elétrica', uncertain: false },
     dividends: null,
     dividendHistory: null,
+    filings: null,
     fund: null,
     fundScreen: null,
+    stockScreen: null,
     notes: [],
     generatedAt: '2026-08-20T14:00:00.000Z',
     fundamentals,
@@ -72,6 +74,12 @@ describe('SQLite cache', () => {
   it('round-trips the asset kind', () => {
     cache.write('MXRF11', { ...fakeAnalysis('MXRF11'), kind: 'fii' });
     expect(cache.read('MXRF11')?.kind).toBe('fii');
+  });
+
+  it('drops a row written before the analysis carried the stock screen', () => {
+    const { stockScreen: _dropped, ...older } = fakeAnalysis('TAEE11');
+    cache.write('TAEE11', older as Analysis);
+    expect(cache.read('TAEE11')).toBeNull();
   });
 
   it('rewriting the same ticker replaces the row', () => {

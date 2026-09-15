@@ -14,5 +14,9 @@ export function screenUrl(): string {
   return STATIC_SITE ? 'data/fiis.json' : 'api/fiis';
 }
 
+export function stockScreenUrl(): string {
+  return STATIC_SITE ? 'data/acoes.json' : 'api/acoes';
+}
+
 export const STATIC_ONLY_SCREEN =
-  'Na versão publicada só os fundos que passaram pela triagem têm análise pronta. Para consultar qualquer ticker, rode o projeto localmente.';
+  'Na versão publicada só os papéis que passaram pelas triagens têm análise pronta. Para consultar qualquer ticker, rode o projeto localmente.';

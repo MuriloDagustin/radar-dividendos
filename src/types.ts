@@ -15,6 +15,8 @@ export const FUNDAMENTAL_FIELDS = [
   'netMargin',
   'revenueCagr5y',
   'profitCagr5y',
+  /** Average daily traded value in BRL over the source's window (two months on Fundamentus). */
+  'avgDailyLiquidity',
   'low52w',
   'high52w',
   'payout',
@@ -122,8 +124,9 @@ export interface Criterion {
 }
 
 /**
- * The five-filter screen for real estate funds. Filters are eliminatory; tiebreakers only
- * rank funds that passed every filter, which is why `passedAll` gates them.
+ * A five-filter screen — one set for real estate funds, another for companies. Filters are
+ * eliminatory; tiebreakers only rank papers that passed every filter, which is why
+ * `passedAll` gates them.
  */
 export interface FundScreen {
   filters: Criterion[];
@@ -199,6 +202,23 @@ export interface DividendRecord {
   nextPayment: DividendEvent | null;
   /** Share of the last twelve months paid as interest on capital, which is taxed. */
   interestOnCapitalShare: number | null;
+}
+
+/** One period's results documents. Companies file both; a fund publishes one report. */
+export interface Filing {
+  /** Period covered, as published: "30/06/2026" for a company, "08/2026" for a fund. */
+  period: string;
+  /** Results release (company) or management report (fund). */
+  reportUrl: string | null;
+  /** Full financial statements on the CVM system. Always null for a fund. */
+  statementsUrl: string | null;
+}
+
+export interface FilingIndex {
+  source: Source;
+  /** The page listing every period, for whoever needs more than the latest. */
+  indexUrl: string;
+  latest: Filing;
 }
 
 /** Sector medians a source publishes next to an indicator, for context on the ruler. */
@@ -286,10 +306,14 @@ export interface Analysis {
   classification: Classification;
   dividends: DividendRecord | null;
   dividendHistory: DividendHistory | null;
+  /** Where to read the latest results documents. Null when the lookup failed. */
+  filings: FilingIndex | null;
   /** Fund sheet facts, merged across sources. Null for a company. */
   fund: FundProfile | null;
-  /** The five-filter screen. Null for a company. */
+  /** The five-filter screen for a fund. Null for a company. */
   fundScreen: FundScreen | null;
+  /** The five-filter screen for a company. Null for a fund. */
+  stockScreen: FundScreen | null;
   /** Structural remarks about the company that are not tied to one indicator. */
   notes: string[];
   generatedAt: string;

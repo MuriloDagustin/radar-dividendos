@@ -109,6 +109,7 @@ export function parseFundamentus(html: string, ticker: string): SourceReading {
   fundamentals.currentRatio = asNumber('Liquidez Corr');
   fundamentals.netDebtToEquity = asNumber('Dív Líq / Patrim');
   fundamentals.revenueCagr5y = asFraction('Cres. Rec (5a)');
+  fundamentals.avgDailyLiquidity = asNumber('Vol $ méd (2m)');
   fundamentals.low52w = asNumber('Min 52 sem');
   fundamentals.high52w = asNumber('Max 52 sem');
 

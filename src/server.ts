@@ -3,7 +3,7 @@ import { Hono } from 'hono';
 import { analyze } from './analysis';
 import { openCache } from './cache';
 import { RadarError, errorMessage } from './errors';
-import { screenMarket } from './screen-market';
+import { screenMarket, screenStocks } from './screen-market';
 import { PAGE_HTML } from './page';
 import { DISCLAIMER } from './types';
 
@@ -61,6 +61,18 @@ export function createApp(options: Pick<ServerOptions, 'ai' | 'cache'>): Hono {
     }
   });
 
+  app.get('/api/acoes', async (c) => {
+    try {
+      return c.json(await screenStocks({ cache: options.cache, sharedCache: cache }));
+    } catch (error) {
+      const code = error instanceof RadarError ? error.code : 'ERRO_INTERNO';
+      return c.json(
+        { erro: errorMessage(error), codigo: code, aviso: DISCLAIMER },
+        STATUS_BY_CODE[code] ?? 500,
+      );
+    }
+  });
+
   app.notFound((c) => c.json({ erro: 'Rota não encontrada.', aviso: DISCLAIMER }, 404));
 
   return app;
@@ -73,6 +85,7 @@ export function startServer(options: ServerOptions): void {
     console.log(`  GET /                     página HTML`);
     console.log(`  GET /api/analise/:ticker  JSON`);
     console.log(`  GET /api/fiis             triagem de FIIs pelos 5 filtros (JSON)`);
+    console.log(`  GET /api/acoes            triagem de ações pelos 5 filtros (JSON)`);
     console.log(
       `  cache: ${options.cache ? 'ligado (TTL 12h)' : 'desligado'} · IA: ${options.ai ? 'ligada' : 'desligada'}`,
     );

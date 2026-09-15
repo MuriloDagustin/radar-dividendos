@@ -686,6 +686,13 @@ export function diagnose(f: Fundamentals, options: DiagnoseOptions = {}): Diagno
       'Quanto a receita cresceu por ano, na média dos últimos cinco anos',
     ),
     contextRow('range52w', 'Posição na faixa 52s', positionIn52Weeks(f), 'percent', MESSAGES.rangePosition),
+    contextRow(
+      'avgDailyLiquidity',
+      'Liquidez média diária',
+      f.avgDailyLiquidity,
+      'currency',
+      'Quanto o papel negocia por dia, em média — o que dá para comprar ou vender sem mover o preço',
+    ),
   );
 
   if (isFund) {

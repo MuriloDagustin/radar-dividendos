@@ -142,7 +142,7 @@ export function screenedFrom(analysis: Analysis, listing: FundListing): Screened
   };
 }
 
-function byTicker(a: ScreenedFund, b: ScreenedFund): number {
+function byTicker(a: { ticker: string }, b: { ticker: string }): number {
   return a.ticker.localeCompare(b.ticker);
 }
 
@@ -154,18 +154,27 @@ function byPriceToBook(a: ScreenedFund, b: ScreenedFund): number {
   return a.priceToBook - b.priceToBook;
 }
 
+/** What the ranking reads off a screened paper, whatever else it carries. */
+export interface Rankable {
+  ticker: string;
+  outcome: ScreenOutcome;
+  screen: FundScreen;
+  tiebreakersPassed: number;
+}
+
 /**
- * Approved funds rank by how many tiebreakers they pass, then by discount. Pending funds
- * rank by how little is missing. Rejected funds rank by how close they got.
+ * Approved papers rank by how many tiebreakers they pass, then by `approvedTie` (the
+ * screen's own idea of "better among equals"), then by ticker. Pending papers rank by how
+ * little is missing. Rejected papers rank by how close they got.
  */
-export function rank(funds: ScreenedFund[]): Pick<MarketScreen, 'approved' | 'pending' | 'rejected'> {
-  const approved = funds
+export function rankScreened<T extends Rankable>(
+  items: T[],
+  approvedTie: (a: T, b: T) => number,
+): { approved: T[]; pending: T[]; rejected: T[] } {
+  const approved = items
     .filter((f) => f.outcome === 'approved')
-    .sort(
-      (a, b) =>
-        b.tiebreakersPassed - a.tiebreakersPassed || byPriceToBook(a, b) || byTicker(a, b),
-    );
-  const pending = funds
+    .sort((a, b) => b.tiebreakersPassed - a.tiebreakersPassed || approvedTie(a, b) || byTicker(a, b));
+  const pending = items
     .filter((f) => f.outcome === 'pending')
     .sort(
       (a, b) =>
@@ -173,9 +182,14 @@ export function rank(funds: ScreenedFund[]): Pick<MarketScreen, 'approved' | 'pe
         b.tiebreakersPassed - a.tiebreakersPassed ||
         byTicker(a, b),
     );
-  const rejected = funds
+  const rejected = items
     .filter((f) => f.outcome === 'rejected')
     .sort((a, b) => b.screen.passed - a.screen.passed || byTicker(a, b));
 
   return { approved, pending, rejected };
+}
+
+/** Funds: among equals, the deeper discount to book value comes first. */
+export function rank(funds: ScreenedFund[]): Pick<MarketScreen, 'approved' | 'pending' | 'rejected'> {
+  return rankScreened(funds, byPriceToBook);
 }

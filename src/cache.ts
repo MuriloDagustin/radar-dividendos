@@ -40,7 +40,10 @@ class SqliteCache implements Cache {
     }
 
     try {
-      return { ...(JSON.parse(row.payload) as Analysis), fromCache: true };
+      const parsed = JSON.parse(row.payload) as Partial<Analysis>;
+      // A row written before the stock screen existed would read as "not a company".
+      if (!('stockScreen' in parsed)) throw new Error('payload de formato anterior');
+      return { ...(parsed as Analysis), fromCache: true };
     } catch {
       // Payload from an older shape of the format: drop it and fetch again.
       this.db.prepare('DELETE FROM analyses WHERE ticker = ?').run(ticker);

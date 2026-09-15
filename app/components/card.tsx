@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import { describeScreen } from '@/src/fund-screen';
 import { provenanceLabel } from '@/src/provenance';
+import { primaryDocument } from '@/src/sources/documentos';
 import {
   ASSET_KIND_NAME,
   CATEGORY_NAME,
@@ -30,6 +31,20 @@ const EMPTY_RULER_LABEL: Partial<Record<Signal, string>> = {
   na: 'não se aplica',
   unrel: 'número distorcido — sem leitura',
 };
+
+/**
+ * The latest results document, shown on every card and repeated next to a distorted number,
+ * whose message sends the reader to exactly this report. Old cache payloads predate the field.
+ */
+function DocumentLink({ analysis }: { analysis: Analysis }) {
+  if (!analysis.filings) return null;
+  const document = primaryDocument(analysis.filings, analysis.kind);
+  return (
+    <a className={styles.documentLink} href={document.url} target="_blank" rel="noopener noreferrer">
+      ver {document.label}
+    </a>
+  );
+}
 
 function IndicatorRow({
   indicator,
@@ -74,7 +89,15 @@ function IndicatorRow({
       />
 
       <div className={styles.indicatorFoot}>
-        <span className={styles.message}>{indicator.message}</span>
+        <span className={styles.message}>
+          {indicator.message}
+          {indicator.signal === 'unrel' ? (
+            <>
+              {'. '}
+              <DocumentLink analysis={analysis} />
+            </>
+          ) : null}
+        </span>
         {provenance ? <span className={`tag ${styles.provenance}`}>{provenance}</span> : null}
       </div>
     </div>
@@ -133,9 +156,12 @@ function CriterionRow({ criterion, index }: { criterion: Criterion; index?: numb
  * every filter passed. Shown above the indicators because, for a fund, whether it is a
  * candidate at all comes before how its numbers read.
  */
-function FundScreenPanel({ screen }: { screen: FundScreen }) {
+function FundScreenPanel({ screen, paper }: { screen: FundScreen; paper: 'fundos' | 'ações' }) {
   return (
-    <section className={styles.screen} aria-label="Cinco filtros para fundo imobiliário">
+    <section
+      className={styles.screen}
+      aria-label={paper === 'fundos' ? 'Cinco filtros para fundo imobiliário' : 'Cinco filtros para ação'}
+    >
       <div className={styles.screenHead}>
         <span className="tag">5 filtros</span>
         <span className={screen.passedAll ? styles.screenSummaryPass : styles.screenSummary}>
@@ -153,7 +179,7 @@ function FundScreenPanel({ screen }: { screen: FundScreen }) {
           <span className="tag">desempate</span>
           <span className={styles.screenSummary}>
             {screen.passedAll
-              ? 'Entre fundos que passaram nos 5 filtros'
+              ? `Entre ${paper} que passaram nos 5 filtros`
               : 'Só vale depois de passar pelos 5 filtros'}
           </span>
         </div>
@@ -192,6 +218,7 @@ export function Card({ analysis }: { analysis: Analysis }) {
               ? ASSET_KIND_NAME.fii
               : `${ASSET_KIND_NAME.stock} · ${CATEGORY_NAME[analysis.classification.category]}`}
           </span>
+          <DocumentLink analysis={analysis} />
         </div>
         <span className={styles.origin}>
           {analysis.fromCache ? 'do cache' : 'consulta ao vivo'}
@@ -210,7 +237,8 @@ export function Card({ analysis }: { analysis: Analysis }) {
         </div>
       ) : null}
 
-      {analysis.fundScreen ? <FundScreenPanel screen={analysis.fundScreen} /> : null}
+      {analysis.fundScreen ? <FundScreenPanel screen={analysis.fundScreen} paper="fundos" /> : null}
+      {analysis.stockScreen ? <FundScreenPanel screen={analysis.stockScreen} paper="ações" /> : null}
 
       <div className={styles.body}>
         {rest.map((indicator, i) => (
@@ -242,7 +270,7 @@ export function Card({ analysis }: { analysis: Analysis }) {
         <div className={styles.notices}>
           <p className={`${styles.notice} ${styles.noticeUnrel}`}>
             {coverage.unreliable} indicadores sem leitura — dados insuficientes ou distorcidos para
-            diagnóstico automático. Análise manual necessária.
+            diagnóstico automático. Análise manual necessária. <DocumentLink analysis={analysis} />
           </p>
         </div>
       ) : null}
