@@ -193,6 +193,17 @@
   stroke-dasharray: 2 3;
 }
 
+/* A pinned year is solid: it says the reading stays put until you tap again. */
+.crosshairPinned {
+  stroke: var(--body);
+  stroke-dasharray: none;
+}
+
+.hitArea {
+  cursor: pointer;
+  touch-action: none;
+}
+
 .dotMain,
 .dotContext {
   stroke: var(--canvas);

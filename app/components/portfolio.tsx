@@ -290,7 +290,7 @@ export function PortfolioBuilder({
         A renda é o DY dos últimos 12 meses aplicado ao valor comprado, dividido por 12 — o que o{' '}
         {words.item} pagou, não o que vai pagar. A projeção congela cotação e DY nos valores de hoje e
         só mostra o efeito de reinvestir ou não, e do aporte mensal: não prevê preço, inflação nem
-        corte de rendimento. Passe o cursor pela curva para ler o patrimônio e a renda de cada ano.
+        corte de rendimento. Passe o cursor pela curva — ou toque nela — para ler o patrimônio e a renda de cada ano.
         O aporte entra na projeção, não na lista de compras acima. A cotação é a da última leitura
         das fontes, e o preço de compra na bolsa será outro.
       </p>

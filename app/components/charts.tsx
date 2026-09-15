@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState, type PointerEvent } from 'react';
+import { useEffect, useId, useState, type PointerEvent } from 'react';
 import type { GrowthPoint, Position, SegmentShare } from '@/src/portfolio';
 import styles from './charts.module.css';
 
@@ -209,7 +209,22 @@ export function GrowthChart({
   onHover?: (point: GrowthPoint | null) => void;
 }) {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  // A finger has no hover: a tap pins the year so the reading survives lifting it.
+  const [pinnedIndex, setPinnedIndex] = useState<number | null>(null);
   const titleId = useId();
+
+  const activeIndex = pinnedIndex ?? hoverIndex;
+  const active = activeIndex === null ? null : (points[activeIndex] ?? null);
+
+  useEffect(() => {
+    onHover?.(active);
+  }, [active, onHover]);
+
+  // A new horizon or a new split is a new curve, and a pin on the old one means nothing.
+  useEffect(() => {
+    setPinnedIndex(null);
+    setHoverIndex(null);
+  }, [points]);
 
   const width = 640;
   const height = 300;
@@ -230,19 +245,24 @@ export function GrowthChart({
   const xStep = last.year <= 10 ? 1 : last.year <= 20 ? 2 : 5;
   const xTicks = points.filter((p) => p.year % xStep === 0).map((p) => p.year);
 
-  const moveTo = (index: number | null) => {
-    setHoverIndex(index);
-    onHover?.(index === null ? null : (points[index] ?? null));
-  };
-
-  const onMove = (event: PointerEvent<SVGRectElement>) => {
+  const indexAt = (event: PointerEvent<SVGRectElement>): number => {
     const rect = event.currentTarget.getBoundingClientRect();
     const px = ((event.clientX - rect.left) / rect.width) * plotW;
     const year = Math.round((px / plotW) * last.year);
-    moveTo(Math.max(0, Math.min(points.length - 1, year)));
+    return Math.max(0, Math.min(points.length - 1, year));
   };
 
-  const active = hoverIndex === null ? null : (points[hoverIndex] ?? null);
+  const onMove = (event: PointerEvent<SVGRectElement>) => {
+    if (pinnedIndex !== null) return;
+    setHoverIndex(indexAt(event));
+  };
+
+  /** Tap or click pins the year under the pointer; the same one again lets it go. */
+  const onDown = (event: PointerEvent<SVGRectElement>) => {
+    const index = indexAt(event);
+    setPinnedIndex(index === pinnedIndex ? null : index);
+    setHoverIndex(index);
+  };
 
   // End labels sit beside their line ends; if the two would overlap, the lower one is pushed down.
   const endReinvested = y(last.reinvested);
@@ -287,7 +307,13 @@ export function GrowthChart({
 
           {active ? (
             <g>
-              <line x1={x(active.year)} x2={x(active.year)} y1={margin.top} y2={margin.top + plotH} className={styles.crosshair} />
+              <line
+                x1={x(active.year)}
+                x2={x(active.year)}
+                y1={margin.top}
+                y2={margin.top + plotH}
+                className={pinnedIndex === null ? styles.crosshair : `${styles.crosshair} ${styles.crosshairPinned}`}
+              />
               <circle cx={x(active.year)} cy={y(active.reinvested)} r={5} className={styles.dotMain} />
               <circle cx={x(active.year)} cy={y(active.withdrawn)} r={5} className={styles.dotContext} />
             </g>
@@ -299,8 +325,12 @@ export function GrowthChart({
             width={plotW}
             height={plotH}
             fill="transparent"
+            className={styles.hitArea}
             onPointerMove={onMove}
-            onPointerLeave={() => moveTo(null)}
+            onPointerDown={onDown}
+            onPointerLeave={() => {
+              if (pinnedIndex === null) setHoverIndex(null);
+            }}
           />
         </svg>
 
