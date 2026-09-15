@@ -87,6 +87,69 @@ export function PortfolioBuilder({
   const horizonLabel = timeline ? `em ${timeline.year} ano${timeline.year > 1 ? 's' : ''}` : null;
   const yieldShown = portfolio.yieldOnCost ?? portfolio.plannedYield;
 
+  const totals =
+    bought || growth ? (
+      <dl className={styles.totals}>
+        <div className={styles.total}>
+          <dt className="tag">{timeline ? `patrimônio ${horizonLabel}` : 'aplicado'}</dt>
+          <dd className={`mono ${styles.totalValue}`}>
+            {money(timeline ? timeline.reinvested : portfolio.invested)}
+            {/* Both projected totals read the main curve; the other one is the cash kept. */}
+            {timeline ? <span className={styles.qualifier}> reinvestindo</span> : null}
+          </dd>
+        </div>
+        {bought ? (
+          <div className={styles.total}>
+            <dt className="tag">troco</dt>
+            <dd className={`mono ${styles.totalValue}`}>{money(portfolio.leftover)}</dd>
+          </div>
+        ) : null}
+        <div className={styles.total}>
+          <dt className="tag">{timeline ? `renda/mês ${horizonLabel}` : 'renda estimada/mês'}</dt>
+          <dd className={`mono ${styles.totalValue} ${styles.totalIncome}`}>
+            {timeline
+              ? money(timeline.monthlyIncome)
+              : portfolio.monthlyIncome === null
+                ? '—'
+                : money(portfolio.monthlyIncome)}
+            {timeline ? (
+              <span className={styles.qualifier}> reinvestindo</span>
+            ) : portfolio.incomeComplete ? (
+              ''
+            ) : (
+              <span className={styles.partial}> parcial</span>
+            )}
+          </dd>
+        </div>
+        <div className={styles.total}>
+          <dt className="tag">{bought ? 'DY da carteira' : 'DY previsto'}</dt>
+          <dd className={`mono ${styles.totalValue}`}>
+            {yieldShown === null ? '—' : percent(yieldShown)}
+          </dd>
+        </div>
+      </dl>
+    ) : null;
+
+  const charts =
+    bought || growth ? (
+      <div className={styles.charts}>
+        {bought ? (
+          <AllocationDonut positions={portfolio.positions} segments={segments} words={words} />
+        ) : null}
+        {growth ? (
+          <GrowthChart
+            points={growth}
+            invested={portfolio.invested}
+            contribution={contribution}
+            words={words}
+            onHover={setHovered}
+          />
+        ) : (
+          <p className={screen.empty}>sem DY na carteira, não há o que projetar</p>
+        )}
+      </div>
+    ) : null;
+
   return (
     <section className={screen.group} aria-label="Montar carteira com os papéis selecionados">
       <header className={screen.groupHead}>
@@ -241,64 +304,17 @@ export function PortfolioBuilder({
         </>
       ) : null}
 
-      {bought || growth ? (
-        <dl className={styles.totals}>
-          <div className={styles.total}>
-            <dt className="tag">{timeline ? `patrimônio ${horizonLabel}` : 'aplicado'}</dt>
-            <dd className={`mono ${styles.totalValue}`}>
-              {money(timeline ? timeline.reinvested : portfolio.invested)}
-              {/* Both projected totals read the main curve; the other one is the cash kept. */}
-              {timeline ? <span className={styles.qualifier}> reinvestindo</span> : null}
-            </dd>
-          </div>
-          {bought ? (
-            <div className={styles.total}>
-              <dt className="tag">troco</dt>
-              <dd className={`mono ${styles.totalValue}`}>{money(portfolio.leftover)}</dd>
-            </div>
-          ) : null}
-          <div className={styles.total}>
-            <dt className="tag">{timeline ? `renda/mês ${horizonLabel}` : 'renda estimada/mês'}</dt>
-            <dd className={`mono ${styles.totalValue} ${styles.totalIncome}`}>
-              {timeline
-                ? money(timeline.monthlyIncome)
-                : portfolio.monthlyIncome === null
-                  ? '—'
-                  : money(portfolio.monthlyIncome)}
-              {timeline ? (
-                <span className={styles.qualifier}> reinvestindo</span>
-              ) : portfolio.incomeComplete ? (
-                ''
-              ) : (
-                <span className={styles.partial}> parcial</span>
-              )}
-            </dd>
-          </div>
-          <div className={styles.total}>
-            <dt className="tag">{bought ? 'DY da carteira' : 'DY previsto'}</dt>
-            <dd className={`mono ${styles.totalValue}`}>
-              {yieldShown === null ? '—' : percent(yieldShown)}
-            </dd>
-          </div>
-        </dl>
-      ) : null}
-
-      {bought || growth ? (
-        <div className={styles.charts}>
-          {bought ? (
-            <AllocationDonut positions={portfolio.positions} segments={segments} words={words} />
-          ) : null}
-          {growth ? (
-            <GrowthChart
-              points={growth}
-              invested={portfolio.invested}
-              contribution={contribution}
-              words={words}
-              onHover={setHovered}
-            />
-          ) : (
-            <p className={screen.empty}>sem DY na carteira, não há o que projetar</p>
-          )}
+      {/* Bought, the totals are a row under the list. Not bought, they are a column beside the
+          curve — the only thing left on the page — instead of a strip in a half-empty band. */}
+      {bought ? (
+        <>
+          {totals}
+          {charts}
+        </>
+      ) : growth ? (
+        <div className={styles.projection}>
+          {totals}
+          {charts}
         </div>
       ) : null}
 
