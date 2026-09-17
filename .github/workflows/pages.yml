@@ -28,6 +28,9 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Configurar URL pública do Pages
+        id: pages
+        uses: actions/configure-pages@v5
       - name: Triagem ao vivo e snapshot em public/data
         run: npm run snapshot
         env:
@@ -38,7 +41,8 @@ jobs:
           rm -rf app/api
           npm run build:static
         env:
-          RADAR_BASE_PATH: /${{ github.event.repository.name }}
+          RADAR_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+          RADAR_SITE_URL: ${{ steps.pages.outputs.base_url }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: out

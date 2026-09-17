@@ -1,8 +1,8 @@
-import type { Metadata } from 'next';
+import { pageMetadata } from '@/app/seo';
 import { Suspense } from 'react';
 import { PortfolioPage } from '@/app/components/portfolio-view';
 
-export const metadata: Metadata = { title: 'Carteira — Radar de Dividendos' };
+export const metadata = pageMetadata('/carteira');
 
 export default function Page() {
   return (

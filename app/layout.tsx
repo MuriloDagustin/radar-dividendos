@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Cormorant_Garamond, Inter, JetBrains_Mono } from 'next/font/google';
-import { DISCLAIMER } from '@/src/types';
+import { SITE_NAME, siteUrl } from '@/app/seo';
 import { Shell } from '@/app/components/shell';
 import './globals.css';
 
@@ -26,8 +26,9 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Radar de Dividendos — fundamentos da B3',
-  description: DISCLAIMER,
+  metadataBase: siteUrl(),
+  applicationName: SITE_NAME,
+  title: { default: SITE_NAME, template: `%s — ${SITE_NAME}` },
 };
 
 export const viewport: Viewport = {

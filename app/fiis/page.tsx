@@ -1,7 +1,7 @@
-import type { Metadata } from 'next';
+import { pageMetadata } from '@/app/seo';
 import { ScreenPage } from '@/app/components/screen-view';
 
-export const metadata: Metadata = { title: 'Triagem de FIIs — Radar de Dividendos' };
+export const metadata = pageMetadata('/fiis');
 
 export default function Page() {
   return <ScreenPage kind="fiis" />;

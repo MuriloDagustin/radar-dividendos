@@ -88,6 +88,27 @@ O rótulo entre colchetes é a procedência do número: qual fonte o entregou, e
 
 ## Variáveis de ambiente
 
+### SEO e indexação
+
+Cada rota tem título, descrição e metadados Open Graph/Twitter. A home mantém seu
+conteúdo no HTML inicial, mesmo na exportação estática. Há dados estruturados `WebSite`,
+`sitemap.xml` e `robots.txt` gerados no build.
+
+Defina `RADAR_SITE_URL` com a URL pública completa (incluindo o subdiretório, se houver)
+antes de executar o build. O workflow do GitHub Pages obtém essa URL automaticamente
+da configuração do Pages. Sem a variável, canonical e URLs do sitemap são omitidos
+para não publicar endereços fictícios ou de localhost.
+
+O sitemap inclui a home e as duas triagens. Análise e carteira usam `noindex, follow`,
+pois dependem de seleções nos parâmetros da URL e carregam os resultados no cliente.
+As tabelas das triagens também continuam carregando os dados no cliente; seus títulos
+e textos introdutórios ficam no HTML inicial.
+
+Em hospedagem por subdiretório, como `usuario.github.io/repositorio`, o `robots.txt`
+exportado fica nesse subdiretório; rastreadores consultam apenas o arquivo na raiz do
+domínio. Nesse caso, envie a URL completa de `sitemap.xml` ao Google Search Console.
+O `noindex` das páginas funciona independentemente do arquivo robots.
+
 | Variável | Obrigatória | Para quê |
 |---|---|---|
 | `BRAPI_TOKEN` | opcional | Token da brapi.dev, usado só para o preço intradiário. Sem ele o radar segue com as outras três fontes. Crie em <https://brapi.dev/dashboard>. |

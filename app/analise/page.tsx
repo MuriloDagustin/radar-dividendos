@@ -1,8 +1,8 @@
-import type { Metadata } from 'next';
+import { pageMetadata } from '@/app/seo';
 import { Suspense } from 'react';
 import { AnalysisView } from '@/app/components/analysis';
 
-export const metadata: Metadata = { title: 'Análise — Radar de Dividendos' };
+export const metadata = pageMetadata('/analise');
 
 export default function Page() {
   // The key never reaches the client: only whether it exists, so the checkbox knows.

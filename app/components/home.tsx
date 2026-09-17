@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useId, useState } from 'react';
+import { Suspense, useEffect, useId, useState } from 'react';
 import { STATIC_SITE } from '@/app/mode';
 import { analysisHref, splitTickers } from '@/app/tickers';
 import { Legend } from './legend';
@@ -30,9 +30,7 @@ const ENTRIES = [
   },
 ];
 
-export function Home({ aiAvailable }: { aiAvailable: boolean }) {
-  const [ai, setAi] = useState(false);
-  const aiId = useId();
+function LegacyRedirect() {
   const params = useSearchParams();
   const router = useRouter();
 
@@ -46,8 +44,16 @@ export function Home({ aiAvailable }: { aiAvailable: boolean }) {
     }
   }, [params, router]);
 
+  return null;
+}
+
+export function Home({ aiAvailable }: { aiAvailable: boolean }) {
+  const [ai, setAi] = useState(false);
+  const aiId = useId();
+
   return (
     <>
+      <Suspense fallback={null}><LegacyRedirect /></Suspense>
       <section className={styles.hero}>
         <div className={`${styles.container} ${styles.heroGrid}`}>
           <div className={styles.copy}>
