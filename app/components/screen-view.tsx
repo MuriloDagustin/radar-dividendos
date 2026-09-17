@@ -1,7 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import personal from './personal.module.css';
+import { updateLocal } from './local-store';
 import type { Criterion } from '@/src/types';
 import { formatTimestamp } from '@/app/format';
 import { STATIC_SITE } from '@/app/mode';
@@ -254,9 +256,26 @@ export function Failures({ failed, note }: { failed: FeedFailure[]; note: string
  */
 function Screen<T extends ScreenedItem>({ spec }: { spec: ScreenSpec<T> }) {
   const state = useScreenFeed(spec);
-  const { approved, pending, rejected } = useMemo(() => spec.rank(state.items), [spec, state.items]);
+  useEffect(() => {
+    if (!state.report || state.running) return;
+    const catalog = state.items.map(item => ({ ticker: item.ticker, name: 'name' in item && typeof item.name === 'string' ? item.name : null }));
+    updateLocal(d => ({ ...d, catalog: [...d.catalog.filter(c => !catalog.some(v => v.ticker === c.ticker)), ...catalog] }));
+  }, [state.report, state.running, state.items]);
+  const [query, setQuery] = useState('');
+  const [segment, setSegment] = useState('');
+  const [sort, setSort] = useState('rank');
+  const [minimum, setMinimum] = useState(0);
+  const all = useMemo(() => spec.rank(state.items), [spec, state.items]);
+  const segments = [...new Set(state.items.map(item => spec.holding(item).segment).filter((s): s is string => !!s))].sort();
+  const filter = (items: T[]) => items.filter(item => `${item.ticker} ${'name' in item ? item.name : ''}`.toUpperCase().includes(query.toUpperCase().trim()) && (!segment || spec.holding(item).segment === segment) && item.screen.passed >= minimum).sort((a, b) => {
+    if (sort === 'ticker') return a.ticker.localeCompare(b.ticker);
+    if (sort === 'yield') return (spec.holding(b).dividendYield12m ?? -Infinity) - (spec.holding(a).dividendYield12m ?? -Infinity);
+    if (sort === 'price') return (spec.holding(a).price ?? Infinity) - (spec.holding(b).price ?? Infinity);
+    return 0;
+  });
+  const approved = filter(all.approved), pending = filter(all.pending), rejected = filter(all.rejected);
   const { selection, ...picks } = useSelection(spec.key);
-  const selected = selectedFrom(selection, approved, pending);
+  const selected = selectedFrom(selection, all.approved, all.pending);
   const notes = useMemo(() => spec.notes?.(approved) ?? [], [spec, approved]);
   const { words } = spec;
 
@@ -282,13 +301,21 @@ function Screen<T extends ScreenedItem>({ spec }: { spec: ScreenSpec<T> }) {
         </p>
       ) : null}
 
+      <div className={personal.toolbar}>
+        <label>Buscar ticker ou nome<input value={query} onChange={e => setQuery(e.target.value)} placeholder="Ex.: HGLG11" /></label>
+        <label>Setor / segmento<select value={segment} onChange={e => setSegment(e.target.value)}><option value="">Todos</option>{segments.map(s => <option key={s}>{s}</option>)}</select></label>
+        <label>Critérios atendidos<select value={minimum} onChange={e => setMinimum(Number(e.target.value))}>{[0, 1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n === 0 ? 'Todos' : `Pelo menos ${n}`}</option>)}</select></label>
+        <label>Ordenar por<select value={sort} onChange={e => setSort(e.target.value)}><option value="rank">Classificação original</option><option value="ticker">Ticker</option><option value="yield">Maior DY</option><option value="price">Menor preço</option></select></label>
+        <button onClick={() => { setQuery(''); setSegment(''); setMinimum(0); setSort('rank'); }}>Limpar filtros</button>
+      </div>
+      <p className={personal.muted}>{approved.length + pending.length + rejected.length} de {state.items.length} ativos exibidos. A seleção permanece ao filtrar.</p>
       <Group
         title="Passaram nos 5 filtros"
         tone="ok"
         count={approved.length}
         note={words.approvedNote}
         selection={{
-          selectAll: picks.allApproved,
+          selectAll: () => picks.allApproved(approved.map(item => item.ticker)),
           clearAll: () => picks.noApproved(approved.map((item) => item.ticker)),
         }}
       >
@@ -318,7 +345,7 @@ function Screen<T extends ScreenedItem>({ spec }: { spec: ScreenSpec<T> }) {
         note={words.pendingNote}
         selection={{
           selectAll: () => picks.allPending(pending.map((item) => item.ticker)),
-          clearAll: picks.noPending,
+          clearAll: () => picks.noPending(pending.map(item => item.ticker)),
         }}
       >
         {pending.length > 0 ? (

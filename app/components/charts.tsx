@@ -277,7 +277,7 @@ export function GrowthChart({
           {invested > 0
             ? `${money(invested)} hoje${contribution > 0 ? ` + ${money(contribution)} por mês` : ''}`
             : `${money(contribution)} por mês, começando do zero`}
-          , cotação e DY congelados nos valores atuais
+          , cotação e DY constantes nos parâmetros do cenário
         </span>
       </figcaption>
 

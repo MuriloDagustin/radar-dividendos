@@ -27,7 +27,7 @@ npm run dev              # http://localhost:3000
 npm run build && npm start
 ```
 
-O app tem quatro telas, na barra do topo:
+O app tem as seguintes telas, na barra do topo:
 
 | Rota | O que é |
 |---|---|
@@ -35,7 +35,8 @@ O app tem quatro telas, na barra do topo:
 | `/analise?t=TAEE11+ITSA4` | Os cartões dos tickers pedidos. Some `&ia=1` para a leitura por IA. |
 | `/fiis` | **Todos os FIIs da B3 acima de R$ 1 bi** pelos cinco filtros, preenchida conforme o servidor termina cada fundo — veja [Triagem de mercado](#triagem-de-mercado-todos-os-fiis-pelos-5-filtros). |
 | `/acoes` | **Toda ação que negocia acima de R$ 5 mi por dia**, uma classe por empresa — veja [Ações: os 5 filtros](#ações-os-5-filtros-e-o-desempate). |
-| `/carteira?papel=fiis&t=HGLG11,BTLG11` | Os papéis marcados numa triagem viram lista de compras. |
+| `/carteira?papel=fiis&t=HGLG11,BTLG11` | Simulador com cenários salvos e meta de renda. |
+| `/meu-radar` | Favoritos, mudanças, carteira pessoal, calendário e revisões locais. |
 
 A busca fica no cabeçalho em todas as rotas: digite um ou mais tickers separados por espaço.
 Cada indicador vem com uma **régua de faixas**: as bandas da regra desenhadas, a banda em que
@@ -46,8 +47,29 @@ Toda tela é um link compartilhável, e o botão voltar funciona. Os endereços 
 (`/?t=…`, `/?fiis=1`, `/?acoes=1`) redirecionam para as rotas novas.
 
 Nas duas triagens, a caixa de seleção de cada linha leva o papel para a carteira: a barra no
-rodapé mostra quantos estão marcados e abre `/carteira` com eles. Os aprovados já vêm
-marcados; os que faltam conferir à mão, não. Clicar num ticker abre a análise completa.
+rodapé mostra quantos estão marcados e abre `/carteira` com eles. A seleção é explícita, começa vazia e fica salva neste navegador. Clicar num ticker abre a análise completa.
+
+
+### Dados pessoais locais
+
+Sem backend de contas: favoritos, posições, anotações, até 20 observações por ticker e
+cenários usam `localStorage` (`radar-personal-v1`), com validação de formato. As seleções
+usam chaves `radar-selection-fiis` e `radar-selection-acoes`. Não há sincronização entre
+navegadores. Meu radar permite exportar/importar JSON; a importação preserva registros
+locais quando as identidades coincidem.
+
+- **Busca:** sugestões iniciais por nome/ticker, ampliadas pelas ações carregadas nas triagens.
+- **Triagens:** filtros por ticker/nome, segmento, critérios atendidos e ordenação por DY/preço.
+- **Análise:** resultados progressivos, nova tentativa individual, resumo por regras, favoritos e notas.
+- **Simulador:** rascunho automático, cenários nomeados, meta de renda, multiplicador hipotético de
+  dividendos e inflação aplicada à meta. Os preços são os da consulta, não ficam congelados ao salvar.
+- **Meu radar:** carteira real independente da aprovação na triagem, custo e concentração por setor.
+  O histórico compara consultas distintas (reabrir dados do mesmo cache não cria outra observação).
+  O calendário reúne o próximo pagamento publicado na última consulta de cada ativo acompanhado,
+  por unidade, sem presumir elegibilidade da posição atual na data-base.
+
+As consultas continuam usando as fontes existentes. Histórico e calendário só mudam quando
+os ativos são consultados; não existem notificações ou atualização em segundo plano.
 
 ### CLI
 

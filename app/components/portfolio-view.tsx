@@ -9,6 +9,7 @@ import { useScreenFeed } from './screen-feed';
 import { SCREENS, type ScreenKey, type ScreenSpec, type ScreenedItem } from './screen-spec';
 import { ScreenConsole } from './screen-view';
 import styles from './screen.module.css';
+import { SavedSimulations } from './saved-simulations';
 
 function Wallet<T extends ScreenedItem>({ spec, tickers }: { spec: ScreenSpec<T>; tickers: string[] }) {
   const state = useScreenFeed(spec);
@@ -31,7 +32,7 @@ function Wallet<T extends ScreenedItem>({ spec, tickers }: { spec: ScreenSpec<T>
   return (
     <div className={styles.view}>
       <header className={styles.head}>
-        <h1 className={styles.title}>Carteira</h1>
+        <h1 className={styles.title}>Simular investimento</h1>
         <p className={styles.lede}>
           Os {spec.words.items} que você marcou na <Link href={spec.path}>{spec.title}</Link>, divididos
           pelo valor que você tem: quantas {spec.words.shares} de cada, quanta renda por mês, e o que muda
@@ -67,13 +68,14 @@ function Empty() {
   return (
     <div className={styles.view}>
       <header className={styles.head}>
-        <h1 className={styles.title}>Carteira</h1>
+        <h1 className={styles.title}>Simular investimento</h1>
         <p className={styles.lede}>
           Marque os papéis numa das triagens e clique em <strong>montar carteira</strong>: aqui eles
           viram uma lista de compras, com quantas cotas de cada, a renda estimada por mês e a projeção
           de reinvestir.
         </p>
       </header>
+      <SavedSimulations />
       <p className={styles.empty}>
         nada selecionado ainda — comece pela <Link href="/fiis">triagem de FIIs</Link> ou pela{' '}
         <Link href="/acoes">triagem de ações</Link>

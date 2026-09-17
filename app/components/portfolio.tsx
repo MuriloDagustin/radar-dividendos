@@ -1,7 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useId, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { readLocalData, updateLocal } from './local-store';
+import { SavedSimulations } from './saved-simulations';
+import personal from './personal.module.css';
+import { useEffect, useId, useMemo, useState } from 'react';
 import {
   MAX_PER_FUND,
   MAX_PER_SEGMENT,
@@ -14,6 +18,7 @@ import {
   type Holding,
 } from '@/src/portfolio';
 import { formatValue } from '@/app/format';
+import { splitTickers } from '@/app/tickers';
 import { AllocationDonut, GrowthChart } from './charts';
 import { TickerLink } from './screen-view';
 import type { Words } from './screen-spec';
@@ -64,12 +69,29 @@ export function PortfolioBuilder({
   const [contributionText, setContributionText] = useState('');
   const [mode, setMode] = useState<AllocationMode>('equal');
   const [horizon, setHorizon] = useState(10);
+  const params = useSearchParams();
+  const scenarioId = params.get('cenario');
+  const [ready, setReady] = useState(false);
+  const [goal, setGoal] = useState('1000');
+  const [yieldFactor, setYieldFactor] = useState(1);
+  const [inflation, setInflation] = useState('4');
+  useEffect(() => {
+    const stored = readLocalData();
+    const scenario = stored?.simulations?.find(s => s.id === scenarioId) ?? stored?.draft;
+    if (scenario && ['equal', 'quality', 'yield'].includes(scenario.mode) && Number.isFinite(scenario.horizon)) {
+      setAmountText(scenario.amount); setContributionText(scenario.contribution); setMode(scenario.mode); setHorizon(scenario.horizon); setGoal(scenario.goal); setYieldFactor(scenario.yieldFactor); setInflation(scenario.inflation);
+    }
+    setReady(true);
+  }, [scenarioId]);
+  useEffect(() => {
+    if (ready) updateLocal(d => ({ ...d, draft: { amount: amountText, contribution: contributionText, mode, horizon, goal, yieldFactor, inflation } }));
+  }, [ready, amountText, contributionText, mode, horizon, goal, yieldFactor, inflation]);
   const amountId = useId();
   const contributionId = useId();
 
   const amount = parseAmount(amountText);
   const contribution = parseAmount(contributionText);
-  const portfolio = useMemo(() => buildPortfolio(holdings, amount, mode), [holdings, amount, mode]);
+  const portfolio = useMemo(() => buildPortfolio(holdings.map(h => ({ ...h, dividendYield12m: h.dividendYield12m === null ? null : h.dividendYield12m * yieldFactor })), amount, mode), [holdings, amount, mode, yieldFactor]);
   const segments = useMemo(() => segmentShares(portfolio.positions), [portfolio]);
   const growth = useMemo(
     () => projectGrowth(portfolio, horizon, contribution),
@@ -122,7 +144,7 @@ export function PortfolioBuilder({
           </dd>
         </div>
         <div className={styles.total}>
-          <dt className="tag">{bought ? 'DY da carteira' : 'DY previsto'}</dt>
+          <dt className="tag">{yieldFactor !== 1 ? 'DY do cenário' : bought ? 'DY da carteira' : 'DY previsto'}</dt>
           <dd className={`mono ${styles.totalValue}`}>
             {yieldShown === null ? '—' : percent(yieldShown)}
           </dd>
@@ -164,6 +186,12 @@ export function PortfolioBuilder({
         </span>
       </header>
 
+      <SavedSimulations restore={scenario => { setAmountText(scenario.amount); setContributionText(scenario.contribution); setMode(scenario.mode); setHorizon(scenario.horizon); setGoal(scenario.goal); setYieldFactor(scenario.yieldFactor); setInflation(scenario.inflation); }} current={{ href: `/carteira?papel=${backHref === '/acoes' ? 'acoes' : 'fiis'}&t=${splitTickers(params.get('t') ?? '').filter(t => /^[A-Z]{4}\d{1,2}$/.test(t)).join(',')}`, amount: amountText, contribution: contributionText, mode, horizon, goal, yieldFactor, inflation }} />
+      <div className={personal.panel}><h3>Explorar uma meta de renda</h3><div className={personal.toolbar}>
+        <label>Meta mensal (R$)<input inputMode="decimal" value={goal} onChange={e => setGoal(e.target.value)} /></label>
+        <label>Dividendos em relação aos atuais<select value={yieldFactor} onChange={e => setYieldFactor(Number(e.target.value))}><option value={0.75}>75% · redução</option><option value={1}>100% · manutenção</option><option value={1.25}>125% · aumento</option></select></label>
+        <label>Inflação anual hipotética (%)<input type="number" min="0" max="100" value={inflation} onChange={e => setInflation(e.target.value)} /></label>
+      </div><p>{(() => { const target = parseAmount(goal); const rate = Number(inflation) / 100; if (!Number.isFinite(rate) || rate < 0 || rate > 1 || target <= 0) return 'Informe uma meta e inflação válidas.'; const point = growth?.find(p => p.monthlyIncome / Math.pow(1 + rate, p.year) >= target); return point ? `Meta em poder de compra de hoje alcançada em ${point.year} ano(s), nas premissas deste cenário.` : 'Meta não alcançada no horizonte selecionado, nas premissas deste cenário.'; })()}</p><p>Os dividendos do cenário permanecem constantes. A inflação ajusta a meta; não representa uma previsão.</p></div>
       <div className={styles.controls}>
         <label className={styles.amount} htmlFor={amountId}>
           <span className="tag">valor a investir</span>
@@ -267,7 +295,7 @@ export function PortfolioBuilder({
                   <th className={screen.thNum}>cotação</th>
                   <th className={screen.thNum}>aplicado</th>
                   <th className={screen.thNum}>peso</th>
-                  <th className={screen.thNum}>DY 12m</th>
+                  <th className={screen.thNum}>{yieldFactor === 1 ? 'DY 12m' : 'DY do cenário'}</th>
                   <th className={screen.thNum}>renda/mês</th>
                 </tr>
               </thead>
@@ -326,10 +354,9 @@ export function PortfolioBuilder({
       ) : null}
 
       <p className={styles.caveat}>
-        A renda é o DY dos últimos 12 meses aplicado ao valor comprado, dividido por 12 — o que o{' '}
-        {words.item} pagou, não o que vai pagar. A projeção congela cotação e DY nos valores de hoje e
-        só mostra o efeito de reinvestir ou não, e do aporte mensal: não prevê preço, inflação nem
-        corte de rendimento. Passe o cursor pela curva — ou toque nela — para ler o patrimônio e a renda de cada ano.
+        A renda usa o DY dos últimos 12 meses, ajustado pelo cenário de dividendos escolhido,
+        aplicado ao valor comprado e dividido por 12. A projeção mantém cotação e DY do cenário constantes e
+        só mostra o efeito de reinvestir ou não, e do aporte mensal: não prevê preços nem pagamentos. A inflação ajusta apenas a meta de renda ao poder de compra de hoje. Passe o cursor pela curva — ou toque nela — para ler o patrimônio e a renda de cada ano.
         O aporte entra na projeção, não na lista de compras acima. A cotação é a da última leitura
         das fontes, e o preço de compra na bolsa será outro.
       </p>

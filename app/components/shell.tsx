@@ -10,7 +10,8 @@ const NAV = [
   { href: '/analise', label: 'Análise' },
   { href: '/fiis', label: 'FIIs' },
   { href: '/acoes', label: 'Ações' },
-  { href: '/carteira', label: 'Carteira' },
+  { href: '/carteira', label: 'Simulador' },
+  { href: '/meu-radar', label: 'Meu radar' },
 ];
 
 /** The frame every route shares: brand, the four destinations, the search, the disclaimer. */

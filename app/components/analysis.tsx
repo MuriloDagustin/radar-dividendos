@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { segmentOverlaps } from '@/src/fund-screen';
 import type { Analysis } from '@/src/types';
 import { STATIC_ONLY_SCREEN, STATIC_SITE, analysisUrl } from '@/app/mode';
@@ -10,6 +10,8 @@ import { analysisHref, splitTickers } from '@/app/tickers';
 import { Card } from './card';
 import { Compare } from './compare';
 import { Legend } from './legend';
+import { AnalysisTools } from './analysis-tools';
+import { observeAnalysis } from './local-store';
 import styles from './analysis.module.css';
 
 interface Failure {
@@ -56,12 +58,16 @@ export function AnalysisView({ aiAvailable }: { aiAvailable: boolean }) {
   const tickers = useMemo(() => splitTickers(query), [query]);
   const key = tickers.join(' ');
 
+  const generation = useRef(0);
+  const [retrying, setRetrying] = useState<string[]>([]);
   const [results, setResults] = useState<Result[]>([]);
   const [loading, setLoading] = useState(tickers.length > 0);
   /** Null until the reader chooses: more than one paper opens compared, one opens as a card. */
   const [chosenMode, setChosenMode] = useState<'compare' | 'cards' | null>(null);
 
   useEffect(() => {
+    generation.current += 1;
+    setRetrying([]);
     if (tickers.length === 0) {
       setResults([]);
       setLoading(false);
@@ -70,15 +76,21 @@ export function AnalysisView({ aiAvailable }: { aiAvailable: boolean }) {
 
     let current = true;
     setLoading(true);
-    // One request per ticker, in parallel: a slow source must not hold up other papers.
-    void Promise.all(tickers.map((t) => analyzeTicker(t, ai))).then((next) => {
-      if (!current) return;
-      setResults(next);
-      setLoading(false);
-    });
+    setResults([]);
+    let remaining = tickers.length;
+    for (const ticker of tickers) {
+      void analyzeTicker(ticker, ai).then(result => {
+        if (!current) return;
+        if (result.kind === 'analysis') observeAnalysis(result.analysis);
+        setResults(previous => [...previous, result].sort((a, b) => tickers.indexOf(a.kind === 'analysis' ? a.analysis.ticker : a.failure.ticker) - tickers.indexOf(b.kind === 'analysis' ? b.analysis.ticker : b.failure.ticker)));
+        remaining -= 1;
+        if (remaining === 0) setLoading(false);
+      });
+    }
 
     return () => {
       current = false;
+      generation.current += 1;
     };
     // `key` is the ticker list; `tickers` is a fresh array on every render.
   }, [key, ai]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -154,7 +166,7 @@ export function AnalysisView({ aiAvailable }: { aiAvailable: boolean }) {
                 onChange={(e) => router.replace(analysisHref(tickers, e.target.checked))}
               />
               <span>
-                {aiAvailable ? 'leitura por IA' : 'leitura por IA indisponível — defina ANTHROPIC_API_KEY'}
+                {aiAvailable ? 'leitura por IA' : 'leitura por IA indisponível no momento'}
               </span>
             </label>
           )}
@@ -166,7 +178,7 @@ export function AnalysisView({ aiAvailable }: { aiAvailable: boolean }) {
           <span className={styles.pulse} aria-hidden="true" />
           consultando as quatro fontes…
         </div>
-      ) : (
+      ) : null}
         <div className={styles.results}>
           {overlaps.map((overlap) => (
             <p key={overlap} className={styles.overlap} role="note">
@@ -177,21 +189,31 @@ export function AnalysisView({ aiAvailable }: { aiAvailable: boolean }) {
             <p key={failure.ticker} className={styles.error} role="alert">
               <span className={styles.errorTicker}>{failure.ticker}</span>
               {failure.message}
+              <button type="button" disabled={retrying.includes(failure.ticker)} onClick={async () => {
+                const version = generation.current;
+                setRetrying(previous => [...previous, failure.ticker]);
+                const result = await analyzeTicker(failure.ticker, ai);
+                if (generation.current !== version) return;
+                setRetrying(previous => previous.filter(t => t !== failure.ticker));
+                if (result.kind === 'analysis') observeAnalysis(result.analysis);
+                setResults(previous => [...previous.filter(r => r.kind !== 'failure' || r.failure.ticker !== failure.ticker), result]);
+              }}>{retrying.includes(failure.ticker) ? 'Consultando…' : 'Tentar novamente'}</button>
             </p>
           ))}
           {mode === 'compare' ? (
             <div className={styles.compare}>
               <Compare analyses={analyses} />
+              {analyses.map(analysis => <AnalysisTools key={analysis.ticker} analysis={analysis} />)}
             </div>
           ) : (
             analyses.map((analysis, i) => (
               <div key={analysis.ticker} style={{ '--card-order': i } as CSSProperties}>
+                <AnalysisTools analysis={analysis} />
                 <Card analysis={analysis} />
               </div>
             ))
           )}
         </div>
-      )}
     </section>
   );
 }

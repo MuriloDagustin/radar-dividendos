@@ -1,3 +1,8 @@
+'use client';
+import { useState } from 'react';
+import Link from 'next/link';
+import { analysisHref } from '@/app/tickers';
+import { provenanceLabel } from '@/src/provenance';
 import { bandFor } from '@/src/diagnosis';
 import { describeScreen } from '@/src/fund-screen';
 import type { Analysis, Indicator, Signal } from '@/src/types';
@@ -27,7 +32,7 @@ function rowKeys(analyses: Analysis[]): { key: string; label: string }[] {
   return rows;
 }
 
-function Cell({ indicator }: { indicator: Indicator | undefined }) {
+function Cell({ indicator, analysis }: { indicator: Indicator | undefined; analysis: Analysis }) {
   if (!indicator) return <td className={styles.cell}>—</td>;
 
   if (indicator.signal === 'na') {
@@ -47,6 +52,7 @@ function Cell({ indicator }: { indicator: Indicator | undefined }) {
         {formatValue(indicator.value, indicator.format)}
       </span>
       {band ? <span className={styles.band}>{band.label}</span> : null}
+      <span className={styles.band}>{provenanceLabel(analysis.provenance, indicator.key)}</span>
     </td>
   );
 }
@@ -57,12 +63,14 @@ function Cell({ indicator }: { indicator: Indicator | undefined }) {
  * The ruler stays on the card: here the band name is what compares.
  */
 export function Compare({ analyses }: { analyses: Analysis[] }) {
-  const rows = rowKeys(analyses);
+  const [onlyDifferences, setOnlyDifferences] = useState(false);
+  const rows = rowKeys(analyses).filter(row => !onlyDifferences || new Set(analyses.map(a => { const i = a.diagnosis.indicators.find(i => i.key === row.key); return JSON.stringify([i?.value, i?.signal]); })).size > 1);
   const screens = analyses.map((a) => a.fundScreen ?? a.stockScreen ?? null);
   const anyScreen = screens.some((s) => s !== null);
 
   return (
     <div className={styles.scroll}>
+      <label><input type="checkbox" checked={onlyDifferences} onChange={e => setOnlyDifferences(e.target.checked)} /> Mostrar apenas indicadores diferentes</label>
       <table className={styles.table}>
         <thead>
           <tr>
@@ -71,7 +79,7 @@ export function Compare({ analyses }: { analyses: Analysis[] }) {
               const price = analysis.diagnosis.indicators.find((i) => i.key === 'price');
               return (
                 <th key={analysis.ticker} className={styles.head} scope="col">
-                  <span className={styles.ticker}>{analysis.ticker}</span>
+                  <Link className={styles.ticker} href={analysisHref([analysis.ticker])}>{analysis.ticker}</Link>
                   {price?.value !== null && price !== undefined ? (
                     <span className={styles.price}>{formatValue(price.value, price.format)}</span>
                   ) : null}
@@ -125,6 +133,7 @@ export function Compare({ analyses }: { analyses: Analysis[] }) {
               {analyses.map((analysis) => (
                 <Cell
                   key={analysis.ticker}
+                  analysis={analysis}
                   indicator={analysis.diagnosis.indicators.find((i) => i.key === row.key)}
                 />
               ))}

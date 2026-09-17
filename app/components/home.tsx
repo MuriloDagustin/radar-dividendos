@@ -90,7 +90,7 @@ export function Home({ aiAvailable }: { aiAvailable: boolean }) {
                 <span>
                   {aiAvailable
                     ? 'acrescentar leitura por IA'
-                    : 'leitura por IA indisponível — defina ANTHROPIC_API_KEY'}
+                    : 'leitura por IA indisponível no momento'}
                 </span>
               </label>
             )}
