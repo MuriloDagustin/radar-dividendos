@@ -28,6 +28,9 @@ const mono = JetBrains_Mono({
 export const metadata: Metadata = {
   metadataBase: siteUrl(),
   applicationName: SITE_NAME,
+  verification: {
+    google: '8CFKIxRHqSS465rZ5TMlqy3T_uZBgCbJwZuu5IpqQs0',
+  },
   title: { default: SITE_NAME, template: `%s — ${SITE_NAME}` },
 };
 
