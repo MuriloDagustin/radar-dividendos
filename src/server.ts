@@ -1,3 +1,4 @@
+import { publicAnalysis, publicReport } from './public-data';
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { analyze } from './analysis';
@@ -29,12 +30,12 @@ export function createApp(options: Pick<ServerOptions, 'ai' | 'cache'>): Hono {
   // The interface is the Next app: a second one written by hand here only ever lagged behind it.
   app.get('/', (c) =>
     c.json({
-      nome: 'Radar de Dividendos',
+      nome: 'Caderno de Ativos',
       interface: 'npm run dev — o app Next.js serve a interface e estas mesmas rotas',
       rotas: {
-        'GET /api/analise/:ticker': 'Análise de um papel, em JSON',
-        'GET /api/fiis': 'Triagem de todos os FIIs acima de R$ 1 bi pelos 5 filtros',
-        'GET /api/acoes': 'Triagem de toda ação acima de R$ 5 mi por dia pelos 5 filtros',
+        'GET /api/analise/:ticker': 'Consulta dos indicadores publicados de um ativo, em JSON',
+        'GET /api/fiis': 'Cobertura de FIIs acima de R$ 1 bi com indicadores publicados',
+        'GET /api/acoes': 'Cobertura de ações acima de R$ 5 mi por dia com indicadores publicados',
       },
       aviso: DISCLAIMER,
     }),
@@ -44,11 +45,11 @@ export function createApp(options: Pick<ServerOptions, 'ai' | 'cache'>): Hono {
     const ticker = c.req.param('ticker');
     try {
       const analysis = await analyze(ticker, {
-        ai: options.ai,
+        ai: false,
         cache: options.cache,
         sharedCache: cache,
       });
-      return c.json(analysis);
+      return c.json(publicAnalysis(analysis));
     } catch (error) {
       const code = error instanceof RadarError ? error.code : 'ERRO_INTERNO';
       return c.json(
@@ -62,7 +63,7 @@ export function createApp(options: Pick<ServerOptions, 'ai' | 'cache'>): Hono {
   // client that cares about progress is the Next route; this one answers when it is done.
   app.get('/api/fiis', async (c) => {
     try {
-      return c.json(await screenMarket({ cache: options.cache, sharedCache: cache }));
+      return c.json(publicReport(await screenMarket({ cache: options.cache, sharedCache: cache })));
     } catch (error) {
       const code = error instanceof RadarError ? error.code : 'ERRO_INTERNO';
       return c.json(
@@ -74,7 +75,7 @@ export function createApp(options: Pick<ServerOptions, 'ai' | 'cache'>): Hono {
 
   app.get('/api/acoes', async (c) => {
     try {
-      return c.json(await screenStocks({ cache: options.cache, sharedCache: cache }));
+      return c.json(publicReport(await screenStocks({ cache: options.cache, sharedCache: cache })));
     } catch (error) {
       const code = error instanceof RadarError ? error.code : 'ERRO_INTERNO';
       return c.json(
@@ -92,13 +93,13 @@ export function createApp(options: Pick<ServerOptions, 'ai' | 'cache'>): Hono {
 export function startServer(options: ServerOptions): void {
   const app = createApp(options);
   serve({ fetch: app.fetch, port: options.port }, (info) => {
-    console.log(`Radar de Dividendos em http://localhost:${info.port}`);
+    console.log(`Caderno de Ativos em http://localhost:${info.port}`);
     console.log(`  GET /                     índice das rotas (JSON)`);
     console.log(`  GET /api/analise/:ticker  JSON`);
-    console.log(`  GET /api/fiis             triagem de FIIs pelos 5 filtros (JSON)`);
-    console.log(`  GET /api/acoes            triagem de ações pelos 5 filtros (JSON)`);
+    console.log(`  GET /api/fiis             cobertura de FIIs com indicadores publicados (JSON)`);
+    console.log(`  GET /api/acoes            cobertura de ações com indicadores publicados (JSON)`);
     console.log(
-      `  cache: ${options.cache ? 'ligado (TTL 12h)' : 'desligado'} · IA: ${options.ai ? 'ligada' : 'desligada'}`,
+      `  cache: ${options.cache ? 'ligado (TTL 12h)' : 'desligado'} · IA: desativada na API pública`,
     );
     console.log(DISCLAIMER);
   });

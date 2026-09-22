@@ -1,13 +1,12 @@
-# radar-dividendos
+# Caderno de Ativos
 
-Analisa fundamentos de **ações e FIIs** da B3 e emite um diagnóstico **determinístico** (sem
-IA) por indicador, com veredito geral. Quatro fontes gratuitas, procedência de cada número à
-mostra, e duas interfaces sobre o mesmo motor — app Next.js e CLI — mais uma API HTTP enxuta.
+Consulta de dados publicados de **ações e FIIs** da B3, com fontes identificadas,
+filtros numéricos definidos pelo usuário e simulações aritméticas.
 
-> O código (identificadores, comentários, nomes de arquivo) é em inglês; as strings de
-> interface ficam em pt-BR, que é o idioma do produto.
-
-> Ferramenta educacional — confira os dados na fonte. Não é recomendação de investimento.
+A interface pública não atribui notas aos ativos, não publica vereditos, não ordena por
+qualidade e não propõe carteiras otimizadas. O motor de regras legado permanece no CLI
+para uso local; suas conclusões são removidas das APIs HTTP e dos instantâneos publicados.
+Estas mudanças de produto não constituem uma avaliação jurídica nem certificam conformidade.
 
 ## Setup
 
@@ -27,49 +26,51 @@ npm run dev              # http://localhost:3000
 npm run build && npm start
 ```
 
-O app tem as seguintes telas, na barra do topo:
+O app oferece:
 
-| Rota | O que é |
+| Rota | Conteúdo |
 |---|---|
-| `/` | A tese, a busca e as duas triagens. |
-| `/analise?t=TAEE11+ITSA4` | Os cartões dos tickers pedidos. Some `&ia=1` para a leitura por IA. |
-| `/fiis` | **Todos os FIIs da B3 acima de R$ 1 bi** pelos cinco filtros, preenchida conforme o servidor termina cada fundo — veja [Triagem de mercado](#triagem-de-mercado-todos-os-fiis-pelos-5-filtros). |
-| `/acoes` | **Toda ação que negocia acima de R$ 5 mi por dia**, uma classe por empresa — veja [Ações: os 5 filtros](#ações-os-5-filtros-e-o-desempate). |
-| `/carteira?papel=fiis&t=HGLG11,BTLG11` | Simulador com cenários salvos e meta de renda. |
-| `/meu-radar` | Favoritos, mudanças, carteira pessoal, calendário e revisões locais. |
+| `/` | Apresentação e busca por ticker/nome. |
+| `/analise?t=TAEE11+ITSA4` | Dados e comparação numérica, com fontes e datas, sem nota do ativo. |
+| `/fiis` | Consulta de FIIs com limites de DY, P/VP, patrimônio e vacância escolhidos pelo usuário. |
+| `/acoes` | Consulta de ações com limites de ROE, dívida, margem, crescimento, DY e liquidez escolhidos pelo usuário. |
+| `/carteira?papel=fiis&t=HGLG11,BTLG11` | Simulação sobre ativos escolhidos explicitamente, mediante confirmação da divisão igual. |
+| `/meu-radar` | Favoritos, histórico numérico, posições, pagamentos publicados e anotações. |
 
-A busca fica no cabeçalho em todas as rotas: digite um ou mais tickers separados por espaço.
-Cada indicador vem com uma **régua de faixas**: as bandas da regra desenhadas, a banda em que
-o valor caiu acesa, e uma agulha na posição exata — dá para ver quanto falta até o próximo
-limite. Campo que nenhuma fonte publica aparece como régua tracejada e vazia, nunca estimado.
+Os limites começam vazios e a ordem inicial é alfabética. Um campo ausente não satisfaz um
+limite preenchido. Todos os ativos da cobertura podem ser selecionados, independentemente
+da classificação do motor legado. Filtros não alteram seleções feitas anteriormente.
 
-Toda tela é um link compartilhável, e o botão voltar funciona. Os endereços antigos
-(`/?t=…`, `/?fiis=1`, `/?acoes=1`) redirecionam para as rotas novas.
+A coleta mantém sua cobertura técnica: FIIs acima de R$ 1 bilhão de patrimônio e ações
+acima de R$ 5 milhões de liquidez diária, uma classe por empresa. A interface informa essas
+restrições; os filtros locais não ampliam esse universo.
 
-Nas duas triagens, a caixa de seleção de cada linha leva o papel para a carteira: a barra no
-rodapé mostra quantos estão marcados e abre `/carteira` com eles. A seleção é explícita, começa vazia e fica salva neste navegador. Clicar num ticker abre a análise completa.
+### Simulações e dados locais
 
+A divisão igual é uma hipótese escolhida pelo usuário. Os modos antigos por qualidade e
+maximização de renda não são executados na interface. Abrir um cenário salvo preserva ativos,
+valores, prazo e premissas, mas exige uma nova escolha explícita da divisão. Valores históricos
+ajustados no cenário são identificados como hipotéticos; preços e dados vêm da consulta atual.
 
-### Dados pessoais locais
+Favoritos, posições, anotações, até 20 observações por ticker e cenários usam `localStorage`
+(`radar-personal-v1`). As seleções usam `radar-selection-fiis` e `radar-selection-acoes`.
+Não há sincronização entre navegadores. Meu caderno exporta/importa JSON e preserva os registros
+existentes em caso de conflito. Histórico e calendário atualizam mediante consulta, sem alertas
+em segundo plano. O calendário informa pagamentos por unidade, sem presumir a elegibilidade
+da posição atual na data-base. Notas e sinais antigos presentes em cópias locais não são exibidos.
 
-Sem backend de contas: favoritos, posições, anotações, até 20 observações por ticker e
-cenários usam `localStorage` (`radar-personal-v1`), com validação de formato. As seleções
-usam chaves `radar-selection-fiis` e `radar-selection-acoes`. Não há sincronização entre
-navegadores. Meu radar permite exportar/importar JSON; a importação preserva registros
-locais quando as identidades coincidem.
+### Publicação de dados
 
-- **Busca:** sugestões iniciais por nome/ticker, ampliadas pelas ações carregadas nas triagens.
-- **Triagens:** filtros por ticker/nome, segmento, critérios atendidos e ordenação por DY/preço.
-- **Análise:** resultados progressivos, nova tentativa individual, resumo por regras, favoritos e notas.
-- **Simulador:** rascunho automático, cenários nomeados, meta de renda, multiplicador hipotético de
-  dividendos e inflação aplicada à meta. Os preços são os da consulta, não ficam congelados ao salvar.
-- **Meu radar:** carteira real independente da aprovação na triagem, custo e concentração por setor.
-  O histórico compara consultas distintas (reabrir dados do mesmo cache não cria outra observação).
-  O calendário reúne o próximo pagamento publicado na última consulta de cada ativo acompanhado,
-  por unidade, sem presumir elegibilidade da posição atual na data-base.
+`src/public-data.ts` remove conclusões editoriais das APIs Next/Hono e do snapshot. Por
+compatibilidade do transporte, alguns campos antigos permanecem com valores neutros: `approved`
+e `rejected` ficam vazios, `pending` contém todos os itens em ordem alfabética, `verdict` é
+`indeterminate`, e os critérios, faixas e desempates ficam vazios. Categorias editoriais internas
+são omitidas. Isso não é um diagnóstico de
+insuficiência de dados: são campos de compatibilidade. Valores, fontes e datas são preservados.
+`?ia=1` não ativa interpretação nas APIs públicas. Recrie o snapshot ao republicar.
 
-As consultas continuam usando as fontes existentes. Histórico e calendário só mudam quando
-os ativos são consultados; não existem notificações ou atualização em segundo plano.
+As permissões de coleta e redistribuição das fontes precisam de revisão própria. Identificar
+uma fonte não comprova licença de uso. Veja [a nota de escopo](docs/public-consultation.md).
 
 ### CLI
 
@@ -92,20 +93,7 @@ npx tsx src/cli.ts --help
 Atalhos equivalentes: `npm run radar -- TAEE11`, `npm run serve`, `npm test`,
 `npm run typecheck`.
 
-Exemplo de saída:
-
-```
-TAEE11  FRÁGIL
-  · Preço               R$ 37,17  Informativo — sem faixa de referência [Fundamentus]
-  ● Dividend Yield 12m      8,1%  Faixa boa [Fundamentus]
-  · Payout                     —  Sem dado na fonte
-  ✖ Dívida líq./EBITDA      4,13  Alavancagem alta [Fundamentus, calculado]
-  ● P/VP                    1,59  Faixa razoável [Fundamentus]
-  ● ROE                    20,1%  Rentabilidade forte [Fundamentus]
-  · P/L                     7,88  Informativo — sem faixa de referência [Fundamentus]
-```
-
-O rótulo entre colchetes é a procedência do número: qual fonte o entregou, e se ele foi
+Cada número sai com a procedência entre colchetes: qual fonte o entregou, e se ele foi
 `derivado` (álgebra sobre dois campos publicados) ou `calculado` (a razão dívida/EBITDA).
 
 ## Variáveis de ambiente
@@ -146,9 +134,9 @@ O Hono serve só a API — uma segunda interface escrita à mão aqui só ficava
 | Rota | Resposta |
 |---|---|
 | `GET /` | No Next.js, o app React (com as rotas `/analise`, `/fiis`, `/acoes` e `/carteira`); no Hono, o índice das rotas em JSON. |
-| `GET /api/analise/:ticker` | JSON da análise. `?ia=1` acrescenta a leitura por IA. |
-| `GET /api/fiis` | Triagem de todos os FIIs acima de R$ 1 bi pelos 5 filtros. No Next.js, **NDJSON em streaming** (um evento por linha: `universe`, `fund`/`failure` por fundo, `done` com o relatório); no Hono, o relatório JSON de uma vez, quando termina. |
-| `GET /api/acoes` | Triagem de toda ação acima de R$ 5 mi/dia pelos 5 filtros de ação. Mesmo desenho: NDJSON no Next.js (`universe`, `stock`/`failure`, `done`), JSON de uma vez no Hono. |
+| `GET /api/analise/:ticker` | Valores, fontes e datas de um ativo. O parâmetro legado `?ia=1` é ignorado. |
+| `GET /api/fiis` | Cobertura de FIIs acima de R$ 1 bi. No Next.js, **NDJSON em streaming** (`universe`, `fund`/`failure`, `done`); no Hono, JSON ao terminar. Campos editoriais antigos são neutralizados. |
+| `GET /api/acoes` | Cobertura de ações acima de R$ 5 mi/dia, uma classe por empresa. Usa o mesmo transporte e a mesma neutralização. |
 
 Status de erro: `400` ticker fora do padrão da B3, `404` ticker inexistente, `502` todas as
 fontes indisponíveis ou com formato inesperado.
@@ -227,7 +215,7 @@ veredito (atenção vs. alavancagem alta), então:
 
 Dividir a dívida de um lugar pelo EBITDA de outro inventaria um número que ninguém publicou.
 
-## Motor de diagnóstico
+## Motor de diagnóstico legado (CLI local)
 
 `src/diagnostico.ts` é puro e testável. Percentuais como fração (`0.085` = 8,5%).
 

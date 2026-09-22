@@ -16,18 +16,14 @@ const PLACEHOLDER = STATIC_SITE ? 'HGLG11 KNRI11 XPML11' : 'TAEE11 ITSA4 MXRF11'
  */
 export function TickerSearch({
   variant,
-  ai = false,
   initial = '',
 }: {
   variant: 'header' | 'hero';
-  /** Carried into the URL so the analysis page knows to ask for the AI reading. */
-  ai?: boolean;
   initial?: string;
 }) {
   const listId = useId();
   const { data } = useLocalData();
-  const catalog: [string, string][] = [['TAEE11', 'Taesa'], ['ITSA4', 'Itaúsa'], ['BBAS3', 'Banco do Brasil'], ['PETR4', 'Petrobras'], ['VALE3', 'Vale'], ['HGLG11', 'Logística'], ['MXRF11', 'Maxi Renda'], ['XPML11', 'XP Malls']];
-  const known = [...catalog, ...data.catalog.filter(item => !catalog.some(([ticker]) => ticker === item.ticker)).map(item => [item.ticker, item.name ?? item.ticker] as [string, string])];
+  const known = data.catalog.map(item => [item.ticker, item.name ?? item.ticker] as [string, string]);
   const [error, setError] = useState('');
   const [input, setInput] = useState(initial);
   const router = useRouter();
@@ -39,7 +35,7 @@ export function TickerSearch({
     if (tickers.length === 0) return;
     if (tickers.some(t => !/^[A-Z]{4}\d{1,2}$/.test(t))) { setError('Escolha uma sugestão ou informe tickers válidos, separados por espaço.'); return; }
     setError('');
-    router.push(analysisHref(tickers, ai));
+    router.push(analysisHref(tickers));
   }
 
   return (
@@ -63,7 +59,7 @@ export function TickerSearch({
       />
       <datalist id={listId}>{known.map(([ticker, name]) => <option key={ticker} value={ticker}>{name}</option>)}{[...new Set([...data.favorites, ...Object.keys(data.observations)])].filter(t => !known.some(([ticker]) => ticker === t)).map(t => <option key={t} value={t} />)}</datalist>
       <button className={styles.submit} type="submit">
-        Analisar
+        Consultar
       </button>
       {error ? <p id={`${listId}-error`} role="alert">{error}</p> : null}
     </form>

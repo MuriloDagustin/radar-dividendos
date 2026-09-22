@@ -5,7 +5,7 @@ import { z } from 'zod';
 import type { Analysis } from '@/src/types';
 
 const observation = z.object({ at: z.string(), verdict: z.enum(['solid', 'attention', 'fragile', 'indeterminate', 'inconclusive']), indicators: z.array(z.object({ key: z.string(), label: z.string(), value: z.number().nullable(), signal: z.enum(['ok', 'warn', 'bad', 'na', 'unrel']).nullable(), format: z.enum(['percent', 'currency', 'multiple', 'count']) })), payment: z.object({ date: z.string(), amount: z.number(), kind: z.string() }).nullable() });
-const simulation = z.object({ id: z.string(), name: z.string(), href: z.string().regex(/^\/carteira\?papel=(fiis|acoes)&t=[A-Z0-9,]+$/), amount: z.string(), contribution: z.string(), mode: z.enum(['equal', 'quality', 'yield']), horizon: z.number().int().min(1).max(100), goal: z.string().default('1000'), yieldFactor: z.number().min(0).max(10).default(1), inflation: z.string().default('4') });
+const simulation = z.object({ id: z.string(), name: z.string(), href: z.string().regex(/^\/carteira\?papel=(fiis|acoes)&t=[A-Z0-9,]+$/), amount: z.string(), contribution: z.string(), mode: z.enum(['equal', 'quality', 'yield']), horizon: z.number().int().min(1).max(100), yieldFactor: z.number().min(0).max(10).default(1) });
 const schema = z.object({
   catalog: z.array(z.object({ ticker: z.string(), name: z.string().nullable() })).default([]),
   favorites: z.array(z.string()).default([]),
@@ -56,8 +56,8 @@ export function observeAnalysis(analysis: Analysis) {
     const history = data.observations[analysis.ticker] ?? [];
     if (history.some(item => item.at === analysis.generatedAt)) return data;
     const payment = analysis.dividends?.nextPayment;
-    const next = { at: analysis.generatedAt, verdict: analysis.diagnosis.verdict,
-      indicators: analysis.diagnosis.indicators.filter(i => i.group === 'core').map(({ key, label, value, signal, format }) => ({ key, label, value, signal, format })),
+    const next: z.infer<typeof observation> = { at: analysis.generatedAt, verdict: 'indeterminate',
+      indicators: analysis.diagnosis.indicators.filter(i => i.group === 'core').map(({ key, label, value, signal, format }) => ({ key, label, value, signal: signal === 'na' || signal === 'unrel' ? signal : null, format })),
       payment: payment?.paymentDate ? { date: payment.paymentDate, amount: payment.amount, kind: payment.kind } : null };
     return { ...data, observations: { ...data.observations, [analysis.ticker]: [...history, next].sort((a,b) => a.at.localeCompare(b.at)).slice(-20) } };
   });

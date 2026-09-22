@@ -1,3 +1,4 @@
+import { publicEvent } from '@/src/public-data';
 import { openCache } from '@/src/cache';
 import { errorMessage } from '@/src/errors';
 import type { StockScreenEvent } from '@/src/stock-market';
@@ -20,7 +21,7 @@ export async function GET() {
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       const send = (event: StockScreenEvent | { type: 'error'; message: string }) => {
-        controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
+        controller.enqueue(encoder.encode(`${JSON.stringify(publicEvent(event))}\n`));
       };
       try {
         await screenStocks({ cache: true, sharedCache: cache, onEvent: send });

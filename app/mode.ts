@@ -23,4 +23,4 @@ export function stockScreenUrl(): string {
 }
 
 export const STATIC_ONLY_SCREEN =
-  'Na versão publicada só os papéis que passaram pelas triagens têm análise pronta. Para consultar qualquer ticker, rode o projeto localmente.';
+  'Na versão publicada só os ativos da cobertura disponível têm consulta pronta. Para consultar qualquer ticker, rode o projeto localmente.';

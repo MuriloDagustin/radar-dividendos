@@ -1,12 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { segmentOverlaps } from '@/src/fund-screen';
 import type { Analysis } from '@/src/types';
+import { publicAnalysis } from '@/src/public-data';
 import { STATIC_ONLY_SCREEN, STATIC_SITE, analysisUrl } from '@/app/mode';
-import { analysisHref, splitTickers } from '@/app/tickers';
+import { splitTickers } from '@/app/tickers';
 import { Card } from './card';
 import { Compare } from './compare';
 import { Legend } from './legend';
@@ -21,9 +21,9 @@ interface Failure {
 
 type Result = { kind: 'analysis'; analysis: Analysis } | { kind: 'failure'; failure: Failure };
 
-async function analyzeTicker(ticker: string, ai: boolean): Promise<Result> {
+async function analyzeTicker(ticker: string): Promise<Result> {
   try {
-    const response = await fetch(analysisUrl(ticker, ai));
+    const response = await fetch(analysisUrl(ticker, false));
 
     // A static host answers a missing paper with an HTML 404, not with our JSON error.
     if (STATIC_SITE && !response.ok) {
@@ -40,7 +40,7 @@ async function analyzeTicker(ticker: string, ai: boolean): Promise<Result> {
       return { kind: 'failure', failure: { ticker, message } };
     }
 
-    return { kind: 'analysis', analysis: body as Analysis };
+    return { kind: 'analysis', analysis: publicAnalysis(body as Analysis) };
   } catch {
     return {
       kind: 'failure',
@@ -50,11 +50,9 @@ async function analyzeTicker(ticker: string, ai: boolean): Promise<Result> {
 }
 
 /** The cards for the tickers in the URL — which is what makes an analysis shareable. */
-export function AnalysisView({ aiAvailable }: { aiAvailable: boolean }) {
+export function AnalysisView() {
   const params = useSearchParams();
-  const router = useRouter();
   const query = params.get('t') ?? '';
-  const ai = params.get('ia') === '1' && aiAvailable;
   const tickers = useMemo(() => splitTickers(query), [query]);
   const key = tickers.join(' ');
 
@@ -79,7 +77,7 @@ export function AnalysisView({ aiAvailable }: { aiAvailable: boolean }) {
     setResults([]);
     let remaining = tickers.length;
     for (const ticker of tickers) {
-      void analyzeTicker(ticker, ai).then(result => {
+      void analyzeTicker(ticker).then(result => {
         if (!current) return;
         if (result.kind === 'analysis') observeAnalysis(result.analysis);
         setResults(previous => [...previous, result].sort((a, b) => tickers.indexOf(a.kind === 'analysis' ? a.analysis.ticker : a.failure.ticker) - tickers.indexOf(b.kind === 'analysis' ? b.analysis.ticker : b.failure.ticker)));
@@ -93,36 +91,26 @@ export function AnalysisView({ aiAvailable }: { aiAvailable: boolean }) {
       generation.current += 1;
     };
     // `key` is the ticker list; `tickers` is a fresh array on every render.
-  }, [key, ai]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const analyses = results.flatMap((r) => (r.kind === 'analysis' ? [r.analysis] : []));
   const failures = results.flatMap((r) => (r.kind === 'failure' ? [r.failure] : []));
   const mode = chosenMode ?? (analyses.length > 1 ? 'compare' : 'cards');
 
-  // One fund per segment is the tiebreaker that only a set of funds can answer.
-  const overlaps = segmentOverlaps(
-    results.flatMap((r) =>
-      r.kind === 'analysis' && r.analysis.fund
-        ? [{ ticker: r.analysis.ticker, segment: r.analysis.fund.segment }]
-        : [],
-    ),
-  );
-
   if (tickers.length === 0) {
     return (
       <section className={`${styles.container} ${styles.band}`}>
         <header className={styles.head}>
-          <h1 className={styles.title}>Análise</h1>
+          <h1 className={styles.title}>Consultar indicadores</h1>
           <p className={styles.lede}>
-            Digite um ou mais tickers da B3 na busca acima. Cada indicador vem com a faixa da regra
-            desenhada, a banda em que o valor caiu acesa e a procedência do número ao lado.
+            Digite um ou mais tickers da B3 na busca acima. Veja os valores publicados e a procedência dos dados.
           </p>
         </header>
         <div className={styles.emptyGrid}>
           <Legend />
           <p className={styles.emptyNote}>
-            Sem um papel em mente? Comece pela <Link href="/fiis">triagem de FIIs</Link> ou pela{' '}
-            <Link href="/acoes">triagem de ações</Link> e clique num ticker aprovado.
+            Sem um papel em mente? Comece pela <Link href="/fiis">consulta de FIIs</Link> ou pela{' '}
+            <Link href="/acoes">consulta de ações</Link> e escolha um ticker.
           </p>
         </div>
       </section>
@@ -157,19 +145,7 @@ export function AnalysisView({ aiAvailable }: { aiAvailable: boolean }) {
               </button>
             </div>
           ) : null}
-          {STATIC_SITE ? null : (
-            <label className={aiAvailable ? styles.option : `${styles.option} ${styles.optionOff}`}>
-              <input
-                type="checkbox"
-                checked={ai}
-                disabled={!aiAvailable}
-                onChange={(e) => router.replace(analysisHref(tickers, e.target.checked))}
-              />
-              <span>
-                {aiAvailable ? 'leitura por IA' : 'leitura por IA indisponível no momento'}
-              </span>
-            </label>
-          )}
+
         </div>
       </header>
 
@@ -180,11 +156,6 @@ export function AnalysisView({ aiAvailable }: { aiAvailable: boolean }) {
         </div>
       ) : null}
         <div className={styles.results}>
-          {overlaps.map((overlap) => (
-            <p key={overlap} className={styles.overlap} role="note">
-              <span className="tag">desempate</span> {overlap}
-            </p>
-          ))}
           {failures.map((failure) => (
             <p key={failure.ticker} className={styles.error} role="alert">
               <span className={styles.errorTicker}>{failure.ticker}</span>
@@ -192,7 +163,7 @@ export function AnalysisView({ aiAvailable }: { aiAvailable: boolean }) {
               <button type="button" disabled={retrying.includes(failure.ticker)} onClick={async () => {
                 const version = generation.current;
                 setRetrying(previous => [...previous, failure.ticker]);
-                const result = await analyzeTicker(failure.ticker, ai);
+                const result = await analyzeTicker(failure.ticker);
                 if (generation.current !== version) return;
                 setRetrying(previous => previous.filter(t => t !== failure.ticker));
                 if (result.kind === 'analysis') observeAnalysis(result.analysis);

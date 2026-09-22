@@ -2,31 +2,25 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useId, useState } from 'react';
+import { Suspense, useEffect } from 'react';
 import { STATIC_SITE } from '@/app/mode';
 import { analysisHref, splitTickers } from '@/app/tickers';
 import { Legend } from './legend';
 import { TickerSearch } from './search';
 import styles from './home.module.css';
 
-const PRESETS: { label: string; tickers: string[] }[] = [
-  { label: 'transmissão', tickers: ['TAEE11', 'TRPL4'] },
-  { label: 'bancos', tickers: ['BBAS3', 'ITSA4'] },
-  { label: 'FIIs', tickers: ['MXRF11', 'HGLG11'] },
-];
-
 const ENTRIES = [
   {
     href: '/fiis',
-    title: 'Triagem de FIIs',
-    lede: 'Todos os fundos da B3 acima de R$ 1 bi de patrimônio pelos cinco filtros, do segmento resiliente ao custo total.',
-    action: 'ver os fundos aprovados',
+    title: 'Explorar FIIs',
+    lede: 'Consulte a cobertura de fundos com patrimônio acima de R$ 1 bilhão e defina seus limites numéricos.',
+    action: 'consultar fundos',
   },
   {
     href: '/acoes',
-    title: 'Triagem de ações',
-    lede: 'Toda empresa que negocia acima de R$ 5 mi por dia, uma classe por emissor, por ROE, dívida, margem, crescimento e liquidez.',
-    action: 'ver as ações aprovadas',
+    title: 'Explorar ações',
+    lede: 'Toda empresa que negocia acima de R$ 5 mi por dia, uma classe por emissor, com indicadores de ROE, dívida, margem, crescimento e liquidez.',
+    action: 'consultar ações',
   },
 ];
 
@@ -47,9 +41,7 @@ function LegacyRedirect() {
   return null;
 }
 
-export function Home({ aiAvailable }: { aiAvailable: boolean }) {
-  const [ai, setAi] = useState(false);
-  const aiId = useId();
+export function Home() {
 
   return (
     <>
@@ -61,52 +53,21 @@ export function Home({ aiAvailable }: { aiAvailable: boolean }) {
               Todo número aqui <em>diz de onde veio</em>.
             </h1>
             <p className={styles.sub}>
-              Ações e FIIs da B3 lidos de quatro fontes, com a faixa de cada indicador desenhada e a
+              Ações e FIIs da B3 lidos de quatro fontes, com valores publicados e a
               procedência de cada número à mostra.
             </p>
 
             <div className={styles.command}>
-              <TickerSearch variant="hero" ai={ai && aiAvailable} />
+              <TickerSearch variant="hero" />
             </div>
 
             {STATIC_SITE ? (
               <p className={styles.staticNote}>
                 <span className="tag">instantâneo</span> Versão publicada no GitHub Pages: os dados são
-                um retrato diário gerado por uma GitHub Action, e só os papéis das triagens têm análise
+                um retrato diário gerado por uma GitHub Action, e só os papéis da cobertura têm consulta
                 pronta. Para consultar qualquer ticker ao vivo, rode o projeto localmente.
               </p>
-            ) : (
-              <label
-                className={aiAvailable ? styles.option : `${styles.option} ${styles.optionOff}`}
-                htmlFor={aiId}
-              >
-                <input
-                  id={aiId}
-                  type="checkbox"
-                  checked={ai && aiAvailable}
-                  disabled={!aiAvailable}
-                  onChange={(e) => setAi(e.target.checked)}
-                />
-                <span>
-                  {aiAvailable
-                    ? 'acrescentar leitura por IA'
-                    : 'leitura por IA indisponível no momento'}
-                </span>
-              </label>
-            )}
-
-            <div className={styles.presets}>
-              <span className={`tag ${styles.hint}`}>experimente</span>
-              {PRESETS.map((preset) => (
-                <Link
-                  key={preset.label}
-                  className={styles.preset}
-                  href={analysisHref(preset.tickers, ai && aiAvailable)}
-                >
-                  {preset.label}
-                </Link>
-              ))}
-            </div>
+            ) : null}
           </div>
 
           <Legend />
@@ -116,15 +77,15 @@ export function Home({ aiAvailable }: { aiAvailable: boolean }) {
       <section className={`${styles.container} ${styles.entries}`} aria-label="Triagens de mercado">
         {ENTRIES.map((entry) => (
           <Link key={entry.href} className={styles.entry} href={entry.href}>
-            <span className="tag">5 filtros</span>
+            <span className="tag">filtros definidos por você</span>
             <h2 className={styles.entryTitle}>{entry.title}</h2>
             <p className={styles.entryLede}>{entry.lede}</p>
             <span className={styles.entryAction}>{entry.action} →</span>
           </Link>
         ))}
         <p className={styles.entryNote}>
-          Dos aprovados em qualquer das duas triagens sai a <Link href="/carteira">carteira</Link>:
-          quantas cotas de cada um, quanto de renda por mês, e o efeito de reinvestir.
+          Escolha os ativos que deseja consultar e explore uma <Link href="/carteira">simulação</Link>
+          com premissas definidas por você.
         </p>
       </section>
     </>

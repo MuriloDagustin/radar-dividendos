@@ -1,12 +1,11 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { type ScreenedFund, type Rankable, rank } from '@/src/fund-market';
-import { segmentOverlaps } from '@/src/fund-screen';
+import { type ScreenedFund, type Rankable } from '@/src/fund-market';
 import type { Holding } from '@/src/portfolio';
-import { rankStocks, type ScreenedStock } from '@/src/stock-market';
-import { CATEGORY_NAME, type Criterion, type ValueFormat } from '@/src/types';
-import { VERDICT_LABEL, formatValue } from '@/app/format';
+import { type ScreenedStock } from '@/src/stock-market';
+import { type Criterion, type ValueFormat } from '@/src/types';
+import { formatValue } from '@/app/format';
 import { screenUrl, stockScreenUrl } from '@/app/mode';
 import type { FeedEvent, Progress } from './screen-feed';
 import styles from './screen.module.css';
@@ -33,12 +32,6 @@ export interface Words {
   share: string;
   shares: string;
   group: string;
-  none: string;
-  noneApproved: string;
-  approvedNote: string;
-  pendingNote: string;
-  rejectedTitle: string;
-  rejectedShow: (count: number) => string;
   failedNote: string;
 }
 
@@ -52,10 +45,8 @@ export interface ScreenSpec<T extends ScreenedItem> {
   loadingList: string;
   universeLine: (progress: Progress) => ReactNode;
   normalize: (raw: unknown) => FeedEvent<T>;
-  rank: (items: T[]) => { approved: T[]; pending: T[]; rejected: T[] };
   columns: Column<T>[];
-  /** Remarks about the approved set as a whole, not about any one row. */
-  notes?: (approved: T[]) => string[];
+  metrics: { key: string; label: string; value: (item: T) => number | null }[];
   holding: (item: T) => Holding;
   words: Words;
 }
@@ -69,29 +60,16 @@ function numberColumn<T>(head: string, pick: (item: T) => number | null, format:
   };
 }
 
-function tiebreakColumn<T extends ScreenedItem>(): Column<T> {
-  return {
-    head: 'desempate',
-    numeric: true,
-    cellClass: () => styles.tiebreak,
-    cell: (item) => (
-      <span className={item.tiebreakersPassed === item.screen.tiebreakers.length ? styles.tiebreakFull : ''}>
-        {item.tiebreakersPassed}/{item.screen.tiebreakers.length}
-      </span>
-    ),
-  };
-}
-
 const FUNDS: ScreenSpec<ScreenedFund> = {
   key: 'fiis',
   path: '/fiis',
-  title: 'Triagem de FIIs',
-  lede: 'Todos os fundos da B3 com patrimônio acima de R$ 1 bi, passados pelos 5 filtros. O mesmo motor do cartão, fundo por fundo — clique num ticker para abrir a análise completa.',
+  title: 'Explorar FIIs',
+  lede: 'Cobertura disponível: fundos com patrimônio acima de R$ 1 bilhão. Escolha seus limites abaixo para consultar os dados. A inclusão nesta lista não representa uma avaliação de qualidade.',
   url: screenUrl,
   loadingList: 'lendo a lista de fundos no Fundamentus…',
   universeLine: (p) => (
     <>
-      {p.universe} fundos na lista · {p.skipped} abaixo de R$ 1 bi · {p.candidates} analisados
+      {p.universe} fundos na lista · {p.skipped} abaixo de R$ 1 bi · {p.candidates} consultados
     </>
   ),
   normalize: (raw) => {
@@ -100,7 +78,12 @@ const FUNDS: ScreenSpec<ScreenedFund> = {
       ? { type: 'item', done: event.done, item: event.fund as ScreenedFund }
       : (event as unknown as FeedEvent<ScreenedFund>);
   },
-  rank,
+  metrics: [
+    { key: 'dy', label: 'DY 12m (%)', value: f => f.dividendYield12m === null ? null : f.dividendYield12m * 100 },
+    { key: 'pvp', label: 'P/VP', value: f => f.priceToBook },
+    { key: 'size', label: 'Patrimônio (R$)', value: f => f.netWorth },
+    { key: 'vacancy', label: 'Vacância (%)', value: f => f.vacancy === null ? null : f.vacancy * 100 },
+  ],
   columns: [
     { head: 'segmento', cellClass: () => styles.segment, cell: (f) => f.segment ?? '—' },
     numberColumn('P/VP', (f) => f.priceToBook, 'multiple'),
@@ -108,9 +91,7 @@ const FUNDS: ScreenSpec<ScreenedFund> = {
     numberColumn('patrimônio', (f) => f.netWorth, 'currency'),
     numberColumn('vacância', (f) => f.vacancy, 'percent'),
     numberColumn('paga/FFO', (f) => f.payoutFfo, 'percent'),
-    tiebreakColumn(),
   ],
-  notes: (approved) => segmentOverlaps(approved.map((f) => ({ ticker: f.ticker, segment: f.segment }))),
   holding: (f) => f,
   words: {
     item: 'fundo',
@@ -118,13 +99,6 @@ const FUNDS: ScreenSpec<ScreenedFund> = {
     share: 'cota',
     shares: 'cotas',
     group: 'segmento',
-    none: 'nenhum',
-    noneApproved: 'nenhum fundo passou em todos os filtros hoje',
-    approvedNote: 'ordenados pelo desempate, depois pelo desconto',
-    pendingNote:
-      'nenhum filtro reprovou, mas faltou dado nas fontes — marque para levar à carteira por sua conta',
-    rejectedTitle: 'Reprovados',
-    rejectedShow: (count) => `mostrar os ${count} reprovados`,
     failedNote: 'as fontes não responderam para estes',
   },
 };
@@ -132,14 +106,14 @@ const FUNDS: ScreenSpec<ScreenedFund> = {
 const STOCKS: ScreenSpec<ScreenedStock> = {
   key: 'acoes',
   path: '/acoes',
-  title: 'Triagem de ações',
-  lede: 'Toda ação da B3 que negocia acima de R$ 5 mi por dia, uma classe por empresa, passada pelos 5 filtros: ROE, dívida, margem, crescimento e liquidez. Indicador é filtro, não decisão — o que sobra é onde começa a leitura do release. Clique num ticker para abrir a análise completa.',
+  title: 'Explorar ações',
+  lede: 'Cobertura disponível: ações com liquidez acima de R$ 5 milhões por dia, uma classe por empresa. Escolha seus filtros. A cobertura não representa uma seleção recomendada.',
   url: stockScreenUrl,
   loadingList: 'lendo a lista de ações no Fundamentus…',
   universeLine: (p) => (
     <>
       {p.universe} ações na lista · {p.skipped} fora por liquidez ou classe repetida · {p.candidates}{' '}
-      analisadas
+      consultadas
     </>
   ),
   normalize: (raw) => {
@@ -148,7 +122,14 @@ const STOCKS: ScreenSpec<ScreenedStock> = {
       ? { type: 'item', done: event.done, item: event.stock as ScreenedStock }
       : (event as unknown as FeedEvent<ScreenedStock>);
   },
-  rank: rankStocks,
+  metrics: [
+    { key: 'dy', label: 'DY 12m (%)', value: s => s.dividendYield12m === null ? null : s.dividendYield12m * 100 },
+    { key: 'roe', label: 'ROE (%)', value: s => s.roe === null ? null : s.roe * 100 },
+    { key: 'debt', label: 'Dívida líquida / EBITDA', value: s => s.netDebtToEbitda },
+    { key: 'margin', label: 'Margem líquida (%)', value: s => s.netMargin === null ? null : s.netMargin * 100 },
+    { key: 'growth', label: 'Receita 5a (%)', value: s => s.revenueCagr5y === null ? null : s.revenueCagr5y * 100 },
+    { key: 'liquidity', label: 'Liquidez diária (R$)', value: s => s.liquidity },
+  ],
   columns: [
     {
       head: 'setor',
@@ -156,7 +137,6 @@ const STOCKS: ScreenSpec<ScreenedStock> = {
       cell: (s) => (
         <>
           {s.sector ?? s.name ?? '—'}
-          <span className={styles.category}> · {CATEGORY_NAME[s.category]}</span>
         </>
       ),
     },
@@ -166,8 +146,6 @@ const STOCKS: ScreenSpec<ScreenedStock> = {
     numberColumn('receita 5a', (s) => s.revenueCagr5y, 'percent'),
     numberColumn('liquidez/dia', (s) => s.liquidity, 'currency'),
     numberColumn('DY 12m', (s) => s.dividendYield12m, 'percent'),
-    tiebreakColumn(),
-    { head: 'veredito', cellClass: () => styles.verdict, cell: (s) => VERDICT_LABEL[s.verdict] },
   ],
   holding: (s) => ({
     ticker: s.ticker,
@@ -182,13 +160,6 @@ const STOCKS: ScreenSpec<ScreenedStock> = {
     share: 'ação',
     shares: 'ações',
     group: 'setor',
-    none: 'nenhuma',
-    noneApproved: 'nenhuma ação passou em todos os filtros hoje',
-    approvedNote: 'ordenadas pelo desempate, depois pelo ROIC',
-    pendingNote:
-      'nenhum filtro reprovou, mas faltou dado ou o filtro não se aplica — bancos caem aqui pela dívida',
-    rejectedTitle: 'Reprovadas',
-    rejectedShow: (count) => `mostrar as ${count} reprovadas`,
     failedNote: 'as fontes não responderam para estas',
   },
 };

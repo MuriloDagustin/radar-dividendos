@@ -17,12 +17,8 @@ function Wallet<T extends ScreenedItem>({ spec, tickers }: { spec: ScreenSpec<T>
 
   const { chosen, pending } = useMemo(() => {
     const wanted = new Set(tickers);
-    const ranked = spec.rank(state.items);
-    // Ranking order, approved before pending — the same order the table showed.
-    const chosen = [...ranked.approved, ...ranked.pending].filter((item) => wanted.has(item.ticker));
-    const pending = new Set(
-      ranked.pending.filter((item) => wanted.has(item.ticker)).map((item) => item.ticker),
-    );
+    const chosen = state.items.filter(item => wanted.has(item.ticker)).sort((a, b) => a.ticker.localeCompare(b.ticker));
+    const pending = new Set<string>();
     return { chosen, pending };
     // `key` stands for the ticker list; `tickers` is a fresh array on every render.
   }, [spec, state.items, key]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -32,11 +28,11 @@ function Wallet<T extends ScreenedItem>({ spec, tickers }: { spec: ScreenSpec<T>
   return (
     <div className={styles.view}>
       <header className={styles.head}>
-        <h1 className={styles.title}>Simular investimento</h1>
+        <h1 className={styles.title}>Simulação aritmética</h1>
         <p className={styles.lede}>
-          Os {spec.words.items} que você marcou na <Link href={spec.path}>{spec.title}</Link>, divididos
-          pelo valor que você tem: quantas {spec.words.shares} de cada, quanta renda por mês, e o que muda
-          reinvestindo.
+          Os {spec.words.items} que você marcou na <Link href={spec.path}>{spec.title}</Link>, com o valor
+          e as premissas que você informar: quantas {spec.words.shares} de cada caberiam, o DY passado
+          aplicado a elas e o efeito de reinvestir.
         </p>
       </header>
 
@@ -49,8 +45,8 @@ function Wallet<T extends ScreenedItem>({ spec, tickers }: { spec: ScreenSpec<T>
       ) : chosen.length === 0 ? (
         <p className={styles.empty}>
           {state.running
-            ? `esperando a triagem carregar os ${spec.words.items} selecionados…`
-            : `nenhum dos ${spec.words.items} selecionados está nesta triagem`}
+            ? `esperando a consulta carregar os ${spec.words.items} selecionados…`
+            : `nenhum dos ${spec.words.items} selecionados está nesta consulta`}
         </p>
       ) : (
         <PortfolioBuilder
@@ -68,23 +64,23 @@ function Empty() {
   return (
     <div className={styles.view}>
       <header className={styles.head}>
-        <h1 className={styles.title}>Simular investimento</h1>
+        <h1 className={styles.title}>Simulação aritmética</h1>
         <p className={styles.lede}>
-          Marque os papéis numa das triagens e clique em <strong>montar carteira</strong>: aqui eles
-          viram uma lista de compras, com quantas cotas de cada, a renda estimada por mês e a projeção
-          de reinvestir.
+          Marque os papéis numa das consultas e clique em <strong>simular com a seleção</strong>: aqui eles
+          entram em um cálculo hipotético com premissas suas — quantas cotas caberiam, o DY passado
+          aplicado a elas e o efeito de reinvestir.
         </p>
       </header>
       <SavedSimulations />
       <p className={styles.empty}>
-        nada selecionado ainda — comece pela <Link href="/fiis">triagem de FIIs</Link> ou pela{' '}
-        <Link href="/acoes">triagem de ações</Link>
+        nada selecionado ainda — comece pela <Link href="/fiis">consulta de FIIs</Link> ou pela{' '}
+        <Link href="/acoes">consulta de ações</Link>
       </p>
     </div>
   );
 }
 
-/** The selection travels in the URL, so a carteira is as shareable as an analysis. */
+/** The selection travels in the URL, so a simulation is as shareable as an analysis. */
 export function PortfolioPage() {
   const params = useSearchParams();
   const kind: ScreenKey = params.get('papel') === 'acoes' ? 'acoes' : 'fiis';

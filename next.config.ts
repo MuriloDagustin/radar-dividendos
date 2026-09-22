@@ -9,6 +9,10 @@ const isStatic = process.env.RADAR_STATIC === '1';
 const basePath = process.env.RADAR_BASE_PATH ?? '';
 
 const config: NextConfig = {
+  // TypeScript 5 exposes the compiler API; this avoids the experimental CLI
+  // checker's empty captured output in non-interactive build environments.
+  experimental: { useTypeScriptCli: false },
+
   // better-sqlite3 é módulo nativo: precisa ficar fora do bundle do servidor.
   serverExternalPackages: ['better-sqlite3'],
 

@@ -1,3 +1,4 @@
+import { publicAnalysis, publicReport } from '../src/public-data';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadEnv } from '../src/env';
@@ -44,8 +45,8 @@ async function main(): Promise<void> {
 
     rmSync(OUT, { recursive: true, force: true });
     mkdirSync(join(OUT, 'analise'), { recursive: true });
-    writeFileSync(join(OUT, 'fiis.json'), JSON.stringify(report));
-    writeFileSync(join(OUT, 'acoes.json'), JSON.stringify(stocks));
+    writeFileSync(join(OUT, 'fiis.json'), JSON.stringify(publicReport(report)));
+    writeFileSync(join(OUT, 'acoes.json'), JSON.stringify(publicReport(stocks)));
 
     const tickers = [
       ...report.approved,
@@ -57,11 +58,11 @@ async function main(): Promise<void> {
     ].map((f) => f.ticker);
     for (const ticker of tickers) {
       const analysis = await analyze(ticker, { sharedCache: cache });
-      writeFileSync(join(OUT, 'analise', `${ticker}.json`), JSON.stringify(analysis));
+      writeFileSync(join(OUT, 'analise', `${ticker}.json`), JSON.stringify(publicAnalysis(analysis)));
     }
 
     const summary = (r: { approved: unknown[]; pending: unknown[]; rejected: unknown[]; failed: unknown[] }) =>
-      `${r.approved.length} aprovados, ${r.pending.length} a conferir, ${r.rejected.length} reprovados, ${r.failed.length} sem análise`;
+      `${r.approved.length + r.pending.length + r.rejected.length} ativos consultados, ${r.failed.length} sem dados`;
     console.log(
       `instantâneo em ${OUT}: FIIs ${summary(report)} · ações ${summary(stocks)} · ${tickers.length} análises gravadas`,
     );

@@ -1,32 +1,37 @@
 import type { Metadata } from 'next';
 
-export const SITE_NAME = 'Radar de Dividendos';
+export const SITE_NAME = 'Caderno de Ativos';
 
 export const PAGES = {
   '/': {
     title: 'Dividendos, ações e FIIs da B3',
-    description: 'Analise ações e FIIs da B3 com dividend yield, indicadores fundamentalistas e filtros de qualidade. Compare os dados e confira a fonte de cada número.',
+    description: 'Consulte ações e FIIs da B3 com dividend yield, indicadores fundamentalistas e filtros configuráveis. Compare os dados e confira a fonte de cada número.',
     index: true,
   },
   '/acoes': {
-    title: 'Triagem de ações da B3',
-    description: 'Compare ações da B3 pelos filtros de ROE, dívida, margem, crescimento e liquidez. Confira dividend yield, indicadores e a procedência dos dados.',
+    title: 'Consulta de ações da B3',
+    description: 'Consulte ações da B3 com filtros numéricos definidos por você. Confira dividend yield, indicadores e a procedência dos dados.',
     index: true,
   },
   '/fiis': {
-    title: 'Triagem de fundos imobiliários (FIIs)',
-    description: 'Explore FIIs da B3 acima de R$ 1 bilhão de patrimônio. Confira cinco filtros de qualidade, dividend yield e P/VP, com a fonte de cada indicador.',
+    title: 'Consulta de fundos imobiliários (FIIs)',
+    description: 'Explore FIIs da B3 acima de R$ 1 bilhão de patrimônio. Defina seus filtros de dividend yield e P/VP, com a fonte de cada indicador.',
     index: true,
   },
   '/analise': {
-    title: 'Análise de ações e FIIs',
-    description: 'Consulte tickers da B3 e compare fundamentos, histórico de proventos e diagnóstico por indicador, com dados de quatro fontes.',
+    title: 'Consulta de ações e FIIs',
+    description: 'Consulte tickers da B3 e compare fundamentos, histórico de proventos e valores por indicador, com dados de quatro fontes.',
     index: false,
   },
   '/carteira': {
-    title: 'Simulador de carteira de dividendos',
-    description: 'Simule uma carteira de ações ou FIIs: quantidade de cotas, renda mensal estimada e efeito do reinvestimento dos dividendos.',
+    title: 'Simulação aritmética com ativos escolhidos',
+    description: 'Calcule quantas cotas caberiam num valor informado por você, aplicando o dividend yield passado e premissas próprias. Não é previsão nem recomendação.',
     index: false,
+  },
+  '/termos': {
+    title: 'Escopo e termos de uso',
+    description: 'O que o Caderno de Ativos faz e não faz: consulta de dados publicados, sem recomendação, análise ou avaliação de adequação.',
+    index: true,
   },
 } as const;
 

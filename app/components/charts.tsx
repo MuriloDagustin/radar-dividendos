@@ -113,7 +113,7 @@ export function AllocationDonut({
 
       <div className={styles.donutRow}>
         <div className={styles.donutWrap}>
-          <svg viewBox={`0 0 ${size} ${size}`} className={styles.donut} role="img" aria-label={`Distribuição da carteira por ${words.item}`}>
+          <svg viewBox={`0 0 ${size} ${size}`} className={styles.donut} role="img" aria-label={`Distribuição da simulação por ${words.item}`}>
             {slices.map((s) => {
               const mid = (s.start + s.end) / 2;
               const wide = s.end - s.start > 0.25;

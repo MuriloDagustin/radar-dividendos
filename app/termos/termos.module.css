@@ -1,0 +1,27 @@
+.prose {
+  display: grid;
+  gap: var(--space-xl);
+  max-width: 68ch;
+  color: var(--body);
+}
+
+.prose section {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.prose h2 {
+  font-size: 22px;
+  line-height: 1.25;
+  color: var(--ink);
+}
+
+.prose ul {
+  display: grid;
+  gap: var(--space-xs);
+  padding-left: 1.2em;
+}
+
+.back {
+  font-size: 14px;
+}

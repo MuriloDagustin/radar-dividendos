@@ -1,10 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import personal from './personal.module.css';
 import { updateLocal } from './local-store';
-import type { Criterion } from '@/src/types';
+import { matchesRange, validRange, type NumericRange } from '@/src/query-filters';
 import { formatTimestamp } from '@/app/format';
 import { STATIC_SITE } from '@/app/mode';
 import { analysisHref } from '@/app/tickers';
@@ -12,10 +12,6 @@ import { refreshFeed, useScreenFeed, type FeedFailure, type FeedState } from './
 import { SCREENS, type ScreenKey, type ScreenSpec, type ScreenedItem } from './screen-spec';
 import { selectedFrom, useSelection } from './selection';
 import styles from './screen.module.css';
-
-export function shortCriterion(criterion: Criterion): string {
-  return criterion.value ? `${criterion.label} (${criterion.value})` : criterion.label;
-}
 
 /** The run's status line and progress bar, in the terminal-like console both screens share. */
 export function Console({
@@ -81,52 +77,6 @@ export function ScreenConsole<T extends ScreenedItem>({
   );
 }
 
-export function Group({
-  title,
-  tone,
-  count,
-  note,
-  selection,
-  children,
-}: {
-  title: string;
-  tone: 'ok' | 'warn' | 'bad' | 'unrel';
-  count: number;
-  note: string;
-  /** Mark or unmark the whole group for the portfolio. */
-  selection?: { selectAll: () => void; clearAll: () => void };
-  children: React.ReactNode;
-}) {
-  const toneClass = {
-    ok: styles.toneOk,
-    warn: styles.toneWarn,
-    bad: styles.toneBad,
-    unrel: styles.toneUnrel,
-  }[tone];
-  return (
-    <section className={styles.group}>
-      <header className={styles.groupHead}>
-        <span className={`${styles.dot} ${toneClass}`} aria-hidden="true" />
-        <span className={styles.groupTitle}>{title}</span>
-        <span className={`mono ${styles.groupCount}`}>{count}</span>
-        <span className={styles.groupNote}>{note}</span>
-        {selection && count > 0 ? (
-          <span className={styles.groupActions}>
-            <span className="tag">carteira</span>
-            <button type="button" className={styles.groupAction} onClick={selection.selectAll}>
-              marcar todos
-            </button>
-            <button type="button" className={styles.groupAction} onClick={selection.clearAll}>
-              desmarcar todos
-            </button>
-          </span>
-        ) : null}
-      </header>
-      {children}
-    </section>
-  );
-}
-
 export function TickerLink({ ticker, title }: { ticker: string; title?: string }) {
   return (
     <Link className={styles.ticker} href={analysisHref([ticker])} title={title}>
@@ -154,8 +104,6 @@ function Rows<T extends ScreenedItem>({
   return (
     <>
       {items.map((item, i) => {
-        const missing = item.screen.filters.filter((c) => c.status === 'unknown');
-        const tiebreakFails = item.screen.tiebreakers.filter((c) => c.status === 'fail');
         return (
           <tr key={item.ticker} className={styles.row}>
             {picker ? (
@@ -165,7 +113,7 @@ function Rows<T extends ScreenedItem>({
                   className={styles.checkbox}
                   checked={picker.isSelected(item.ticker)}
                   onChange={() => picker.toggle(item.ticker)}
-                  aria-label={`Incluir ${item.ticker} na carteira`}
+                  aria-label={`Selecionar ${item.ticker} para simulação`}
                 />
               </td>
             ) : null}
@@ -178,17 +126,7 @@ function Rows<T extends ScreenedItem>({
                 {column.cell(item)}
               </td>
             ))}
-            <td className={styles.remark}>
-              {item.outcome === 'rejected' && item.failedOn ? (
-                <span className={styles.remarkBad}>{shortCriterion(item.failedOn)}</span>
-              ) : null}
-              {missing.length > 0 ? (
-                <span className={styles.remarkWarn}>sem dado: {missing.map(shortCriterion).join('; ')}</span>
-              ) : null}
-              {item.outcome === 'approved' && tiebreakFails.length > 0 ? (
-                <span className={styles.remarkDim}>não passa: {tiebreakFails.map(shortCriterion).join('; ')}</span>
-              ) : null}
-            </td>
+
           </tr>
         );
       })}
@@ -210,7 +148,7 @@ function Table<T extends ScreenedItem>({
       <table className={styles.table}>
         <thead>
           <tr>
-            {selectable ? <th aria-label="Incluir na carteira" /> : null}
+            {selectable ? <th aria-label="Selecionar para simulação" /> : null}
             <th />
             <th>{spec.words.item}</th>
             {spec.columns.map((column) => (
@@ -233,7 +171,7 @@ export function Failures({ failed, note }: { failed: FeedFailure[]; note: string
     <section className={styles.group}>
       <header className={styles.groupHead}>
         <span className={`${styles.dot} ${styles.toneUnrel}`} aria-hidden="true" />
-        <span className={styles.groupTitle}>Sem análise</span>
+        <span className={styles.groupTitle}>Dados indisponíveis</span>
         <span className={`mono ${styles.groupCount}`}>{failed.length}</span>
         <span className={styles.groupNote}>{note}</span>
       </header>
@@ -249,11 +187,7 @@ export function Failures({ failed, note }: { failed: FeedFailure[]; note: string
   );
 }
 
-/**
- * Every paper the screen covers, filled in as the server streams it. Ranking happens here
- * with the same function the CLI uses, so the order is stable while rows are still arriving
- * and identical once they are all in.
- */
+/** Filter the full available coverage using only the numeric bounds chosen by the user. */
 function Screen<T extends ScreenedItem>({ spec }: { spec: ScreenSpec<T> }) {
   const state = useScreenFeed(spec);
   useEffect(() => {
@@ -263,20 +197,21 @@ function Screen<T extends ScreenedItem>({ spec }: { spec: ScreenSpec<T> }) {
   }, [state.report, state.running, state.items]);
   const [query, setQuery] = useState('');
   const [segment, setSegment] = useState('');
-  const [sort, setSort] = useState('rank');
-  const [minimum, setMinimum] = useState(0);
-  const all = useMemo(() => spec.rank(state.items), [spec, state.items]);
+  const [sort, setSort] = useState('ticker');
+  const [ranges, setRanges] = useState<Record<string, NumericRange>>({});
   const segments = [...new Set(state.items.map(item => spec.holding(item).segment).filter((s): s is string => !!s))].sort();
-  const filter = (items: T[]) => items.filter(item => `${item.ticker} ${'name' in item ? item.name : ''}`.toUpperCase().includes(query.toUpperCase().trim()) && (!segment || spec.holding(item).segment === segment) && item.screen.passed >= minimum).sort((a, b) => {
-    if (sort === 'ticker') return a.ticker.localeCompare(b.ticker);
-    if (sort === 'yield') return (spec.holding(b).dividendYield12m ?? -Infinity) - (spec.holding(a).dividendYield12m ?? -Infinity);
-    if (sort === 'price') return (spec.holding(a).price ?? Infinity) - (spec.holding(b).price ?? Infinity);
-    return 0;
+  const invalid = Object.values(ranges).some(range => !validRange(range));
+  const items = state.items.filter(item =>
+    `${item.ticker} ${'name' in item ? item.name : ''}`.toUpperCase().includes(query.toUpperCase().trim()) &&
+    (!segment || spec.holding(item).segment === segment) &&
+    spec.metrics.every(metric => matchesRange(metric.value(item), ranges[metric.key] ?? { min: '', max: '' }))
+  ).sort((a, b) => {
+    if (sort === 'yield') return (spec.holding(b).dividendYield12m ?? -Infinity) - (spec.holding(a).dividendYield12m ?? -Infinity) || a.ticker.localeCompare(b.ticker);
+    if (sort === 'price') return (spec.holding(a).price ?? Infinity) - (spec.holding(b).price ?? Infinity) || a.ticker.localeCompare(b.ticker);
+    return a.ticker.localeCompare(b.ticker);
   });
-  const approved = filter(all.approved), pending = filter(all.pending), rejected = filter(all.rejected);
   const { selection, ...picks } = useSelection(spec.key);
-  const selected = selectedFrom(selection, all.approved, all.pending);
-  const notes = useMemo(() => spec.notes?.(approved) ?? [], [spec, approved]);
+  const selected = selectedFrom(selection, state.items, []);
   const { words } = spec;
 
   return (
@@ -304,76 +239,30 @@ function Screen<T extends ScreenedItem>({ spec }: { spec: ScreenSpec<T> }) {
       <div className={personal.toolbar}>
         <label>Buscar ticker ou nome<input value={query} onChange={e => setQuery(e.target.value)} placeholder="Ex.: HGLG11" /></label>
         <label>Setor / segmento<select value={segment} onChange={e => setSegment(e.target.value)}><option value="">Todos</option>{segments.map(s => <option key={s}>{s}</option>)}</select></label>
-        <label>Critérios atendidos<select value={minimum} onChange={e => setMinimum(Number(e.target.value))}>{[0, 1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n === 0 ? 'Todos' : `Pelo menos ${n}`}</option>)}</select></label>
-        <label>Ordenar por<select value={sort} onChange={e => setSort(e.target.value)}><option value="rank">Classificação original</option><option value="ticker">Ticker</option><option value="yield">Maior DY</option><option value="price">Menor preço</option></select></label>
-        <button onClick={() => { setQuery(''); setSegment(''); setMinimum(0); setSort('rank'); }}>Limpar filtros</button>
+        <label>Ordenar por<select value={sort} onChange={e => setSort(e.target.value)}><option value="ticker">Ticker (A–Z)</option><option value="yield">DY (decrescente)</option><option value="price">Preço (crescente)</option></select></label>
+        <button onClick={() => { setQuery(''); setSegment(''); setRanges({}); setSort('ticker'); }}>Limpar filtros</button>
       </div>
-      <p className={personal.muted}>{approved.length + pending.length + rejected.length} de {state.items.length} ativos exibidos. A seleção permanece ao filtrar.</p>
-      <Group
-        title="Passaram nos 5 filtros"
-        tone="ok"
-        count={approved.length}
-        note={words.approvedNote}
-        selection={{
-          selectAll: () => picks.allApproved(approved.map(item => item.ticker)),
-          clearAll: () => picks.noApproved(approved.map((item) => item.ticker)),
-        }}
-      >
-        {approved.length > 0 ? (
-          <Table spec={spec} selectable>
-            <Rows
-              items={approved}
-              spec={spec}
-              numbered
-              picker={{ isSelected: picks.isApprovedIn, toggle: picks.toggleApproved }}
-            />
-          </Table>
-        ) : (
-          <p className={styles.empty}>{state.running ? 'aguardando…' : words.noneApproved}</p>
-        )}
-        {notes.map((note) => (
-          <p key={note} className={styles.overlap} role="note">
-            <span className="tag">desempate</span> {note}
-          </p>
-        ))}
-      </Group>
-
-      <Group
-        title="Falta conferir à mão"
-        tone="warn"
-        count={pending.length}
-        note={words.pendingNote}
-        selection={{
-          selectAll: () => picks.allPending(pending.map((item) => item.ticker)),
-          clearAll: () => picks.noPending(pending.map(item => item.ticker)),
-        }}
-      >
-        {pending.length > 0 ? (
-          <Table spec={spec} selectable>
-            <Rows
-              items={pending}
-              spec={spec}
-              numbered
-              picker={{ isSelected: picks.isPendingIn, toggle: picks.togglePending }}
-            />
-          </Table>
-        ) : (
-          <p className={styles.empty}>{state.running ? 'aguardando…' : words.none}</p>
-        )}
-      </Group>
-
-      <Group title={words.rejectedTitle} tone="bad" count={rejected.length} note="o primeiro filtro que reprovou, à direita">
-        {rejected.length > 0 ? (
-          <details className={styles.details}>
-            <summary className={styles.summary}>{words.rejectedShow(rejected.length)}</summary>
-            <Table spec={spec}>
-              <Rows items={rejected} spec={spec} numbered={false} />
-            </Table>
-          </details>
-        ) : (
-          <p className={styles.empty}>{state.running ? 'aguardando…' : words.none}</p>
-        )}
-      </Group>
+      <section className={personal.panel} aria-label="Seus filtros numéricos">
+        <h2>Seus filtros</h2>
+        <p>Todos os limites começam vazios. Preencha apenas os critérios que deseja consultar; percentuais são informados em pontos percentuais (ex.: 8 para 8%).</p>
+        <div className={personal.grid}>{spec.metrics.map(metric => {
+          const range = ranges[metric.key] ?? { min: '', max: '' };
+          return <fieldset key={metric.key}><legend>{metric.label}</legend><div className={personal.toolbar}>
+            {(['min', 'max'] as const).map(bound => <label key={bound}>{bound === 'min' ? 'Mínimo' : 'Máximo'}<input inputMode="decimal" aria-label={`${metric.label}: ${bound === 'min' ? 'mínimo' : 'máximo'}`} value={range[bound]} aria-invalid={!validRange(range)} placeholder="Sem limite" onChange={e => setRanges(previous => ({ ...previous, [metric.key]: { ...range, [bound]: e.target.value } }))} /></label>)}
+          </div></fieldset>;
+        })}</div>
+        <p>Quando um limite está preenchido, ativos sem esse dado não aparecem no resultado. A ordem é apenas a ordenação escolhida, sem classificação de qualidade.</p>
+        {invalid ? <p role="alert">Use números válidos e um mínimo menor ou igual ao máximo.</p> : null}
+      </section>
+      <p className={personal.muted}>{items.length} de {state.items.length} ativos correspondem aos filtros preenchidos. A seleção permanece ao filtrar.</p>
+      <section className={styles.group}>
+        <h2>Resultados da consulta</h2>
+        <div className={personal.toolbar}>
+          <button onClick={() => picks.allApproved(items.map(item => item.ticker))}>Selecionar os resultados visíveis</button>
+          <button onClick={() => picks.noApproved(items.map(item => item.ticker))}>Desmarcar os resultados visíveis</button>
+        </div>
+        {items.length ? <Table spec={spec} selectable><Rows items={items} spec={spec} numbered={false} picker={{ isSelected: picks.isApprovedIn, toggle: picks.toggleApproved }} /></Table> : <p className={styles.empty}>{state.running ? 'Carregando dados…' : 'Nenhum resultado. Ajuste ou limpe os filtros.'}</p>}
+      </section>
 
       <Failures failed={state.failed} note={words.failedNote} />
 
@@ -388,7 +277,7 @@ function Screen<T extends ScreenedItem>({ spec }: { spec: ScreenSpec<T> }) {
             className={styles.pickAction}
             href={`/carteira?papel=${spec.key}&t=${selected.map((item) => item.ticker).join(',')}`}
           >
-            montar carteira →
+            simular com a seleção →
           </Link>
         </div>
       ) : null}

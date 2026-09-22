@@ -3,8 +3,7 @@ import Link from 'next/link';
 import { useState, type FormEvent } from 'react';
 import { useLocalData, updateLocal, importLocalBackup, type LocalData } from './local-store';
 import { analysisHref } from '@/app/tickers';
-import { formatValue, formatTimestamp, VERDICT_LABEL } from '@/app/format';
-import type { Verdict } from '@/src/types';
+import { formatValue, formatTimestamp } from '@/app/format';
 import styles from './personal.module.css';
 
 export function Personal() {
@@ -39,15 +38,15 @@ export function Personal() {
     const link = document.createElement('a'); link.href = url; link.download = 'meu-radar.json'; link.click(); URL.revokeObjectURL(url);
   }
   return <div className={styles.page}>
-    <h1>Meu radar</h1><p>Favoritos, posições e revisões salvos neste navegador.</p>
-    <div className={styles.toolbar}>{tickers.length ? <Link className={styles.button} href={analysisHref(tickers)}>Consultar meus ativos</Link> : null}<Link href="/carteira">Simular investimento</Link><button disabled={!!error} onClick={backup}>Exportar cópia local</button><label>Importar cópia<input type="file" accept="application/json,.json" onChange={async e => { const file = e.target.files?.[0]; if (!file) return; try { if (file.size > 5_000_000) throw new Error('large'); const ok = importLocalBackup(await file.text()); setMessage(ok ? 'Cópia importada. Registros existentes foram preservados.' : 'Não foi possível salvar a cópia.'); } catch { setMessage('Arquivo inválido ou maior que 5 MB. Escolha uma cópia exportada pelo Radar.'); } }} /></label></div>
+    <h1>Meu caderno</h1><p>Favoritos, posições e revisões salvos neste navegador.</p>
+    <div className={styles.toolbar}>{tickers.length ? <Link className={styles.button} href={analysisHref(tickers)}>Consultar meus ativos</Link> : null}<Link href="/carteira">Simular investimento</Link><button disabled={!!error} onClick={backup}>Exportar cópia local</button><label>Importar cópia<input type="file" accept="application/json,.json" onChange={async e => { const file = e.target.files?.[0]; if (!file) return; try { if (file.size > 5_000_000) throw new Error('large'); const ok = importLocalBackup(await file.text()); setMessage(ok ? 'Cópia importada. Registros existentes foram preservados.' : 'Não foi possível salvar a cópia.'); } catch { setMessage('Arquivo inválido ou maior que 5 MB. Escolha uma cópia exportada pelo Caderno de Ativos.'); } }} /></label></div>
     <p className={styles.muted}>Os dados pessoais não são sincronizados entre dispositivos. Limpar o armazenamento do navegador remove essas informações.</p>
     {error ? <p role="alert">{error}</p> : null}
     <section className={styles.panel}><h2>Favoritos e mudanças</h2><form className={styles.toolbar} onSubmit={e => { e.preventDefault(); const form = e.currentTarget; const t = String(new FormData(form).get('favorite')).trim().toUpperCase(); if (/^[A-Z]{4}\d{1,2}$/.test(t)) { updateLocal(d => ({ ...d, favorites: [...new Set([...d.favorites, t])] })); form.reset(); } }}><label>Ticker<input name="favorite" required pattern="[A-Za-z]{4}[0-9]{1,2}" placeholder="HGLG11" /></label><button>Adicionar favorito</button></form>
       {!data.favorites.length ? <p>Adicione um ticker ou marque a estrela na análise.</p> : <div className={styles.grid}>{data.favorites.map(t => {
         const history = data.observations[t] ?? []; const latest = history.at(-1); const previous = history.at(-2);
-        const changes = latest && previous ? latest.indicators.filter(i => { const before = previous.indicators.find(p => p.key === i.key); return before && (before.value !== i.value || before.signal !== i.signal); }) : [];
-        return <article key={t} className={styles.panel}><h3><Link href={analysisHref([t])}>{t}</Link></h3><p>{latest ? VERDICT_LABEL[latest.verdict as Verdict] : 'Aguardando primeira consulta'}</p>{latest ? <p className={styles.muted}>Consulta de {formatTimestamp(latest.at)}</p> : null}{previous ? <><p>Desde {formatTimestamp(previous.at)}:</p>{previous.verdict !== latest?.verdict ? <p>Diagnóstico: {VERDICT_LABEL[previous.verdict as Verdict]} → {VERDICT_LABEL[latest!.verdict as Verdict]}</p> : null}{changes.length ? <ul>{changes.map(i => <li key={i.key}>{i.label}: {formatValue(previous.indicators.find(p => p.key === i.key)!.value, i.format)} → {formatValue(i.value, i.format)}{previous.indicators.find(p => p.key === i.key)?.signal !== i.signal ? ' · faixa alterada' : ''}</li>)}</ul> : <p>Indicadores sem mudanças na última consulta.</p>}</> : <p>Consulte novamente após a atualização dos dados para acompanhar mudanças.</p>}<button className={styles.button} onClick={() => updateLocal(d => ({ ...d, favorites: d.favorites.filter(f => f !== t) }))}>Remover favorito</button></article>;
+        const changes = latest && previous ? latest.indicators.filter(i => { const before = previous.indicators.find(p => p.key === i.key); return before && (before.value !== i.value); }) : [];
+        return <article key={t} className={styles.panel}><h3><Link href={analysisHref([t])}>{t}</Link></h3><p>{latest ? 'Dados disponíveis' : 'Aguardando primeira consulta'}</p>{latest ? <p className={styles.muted}>Consulta de {formatTimestamp(latest.at)}</p> : null}{previous ? <><p>Desde {formatTimestamp(previous.at)}:</p>{changes.length ? <ul>{changes.map(i => <li key={i.key}>{i.label}: {formatValue(previous.indicators.find(p => p.key === i.key)!.value, i.format)} → {formatValue(i.value, i.format)}</li>)}</ul> : <p>Indicadores sem mudanças na última consulta.</p>}</> : <p>Consulte novamente após a atualização dos dados para acompanhar mudanças.</p>}<button className={styles.button} onClick={() => updateLocal(d => ({ ...d, favorites: d.favorites.filter(f => f !== t) }))}>Remover favorito</button></article>;
       })}</div>}
     </section>
     <section className={styles.panel}><h2>Minha carteira</h2><p>Cadastre a posição total de cada ativo. Salvar um ticker existente substitui sua quantidade e preço médio.</p>

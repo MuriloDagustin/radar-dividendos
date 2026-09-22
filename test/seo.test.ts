@@ -14,6 +14,7 @@ describe('public SEO URLs', () => {
       'https://example.github.io/radar-dividendos/',
       'https://example.github.io/radar-dividendos/acoes',
       'https://example.github.io/radar-dividendos/fiis',
+      'https://example.github.io/radar-dividendos/termos',
     ]);
     expect(robots().sitemap).toBe('https://example.github.io/radar-dividendos/sitemap.xml');
     expect(robots().rules).toMatchObject({ disallow: ['/radar-dividendos/api/', '/radar-dividendos/data/'] });

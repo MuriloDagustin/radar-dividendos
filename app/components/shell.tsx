@@ -7,11 +7,11 @@ import { TickerSearch } from './search';
 import styles from './shell.module.css';
 
 const NAV = [
-  { href: '/analise', label: 'Análise' },
+  { href: '/analise', label: 'Consultar' },
   { href: '/fiis', label: 'FIIs' },
   { href: '/acoes', label: 'Ações' },
   { href: '/carteira', label: 'Simulador' },
-  { href: '/meu-radar', label: 'Meu radar' },
+  { href: '/meu-radar', label: 'Meu caderno' },
 ];
 
 /** The frame every route shares: brand, the four destinations, the search, the disclaimer. */
@@ -25,7 +25,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         <div className={`${styles.container} ${styles.headerInner}`}>
           <Link className={styles.brand} href="/">
             <Mark className={styles.mark} />
-            Radar de Dividendos
+            Caderno de Ativos
           </Link>
 
           <nav className={styles.nav} aria-label="Seções">
@@ -59,7 +59,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         <div className={`${styles.container} ${styles.footerInner}`}>
           <span className={styles.footerBrand}>
             <Mark className={styles.mark} />
-            Radar de Dividendos
+            Caderno de Ativos
           </span>
           <p className={styles.footerText}>
             Fontes: <a href="https://brapi.dev">brapi.dev</a>,{' '}
@@ -68,7 +68,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <a href="https://www.fundamentus.com.br">Fundamentus</a> · cache local de 12h
           </p>
           <p className={styles.footerText}>
-            Ferramenta educacional — confira os dados na fonte. Não é recomendação de investimento.
+            Consulta de dados publicados — não é recomendação, análise ou consultoria de investimento. <Link href="/termos">Escopo e termos</Link>
           </p>
         </div>
       </footer>

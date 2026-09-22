@@ -1,3 +1,4 @@
+import { publicAnalysis } from '@/src/public-data';
 import { analyze } from '@/src/analysis';
 import { openCache } from '@/src/cache';
 import { RadarError, errorMessage } from '@/src/errors';
@@ -17,13 +18,13 @@ const STATUS_BY_CODE: Record<string, number> = {
 // better-sqlite3 is synchronous: one connection per process, not one per request.
 const cache = openCache({ enabled: true });
 
-export async function GET(request: Request, context: { params: Promise<{ ticker: string }> }) {
+export async function GET(_request: Request, context: { params: Promise<{ ticker: string }> }) {
   const { ticker } = await context.params;
-  const ai = new URL(request.url).searchParams.get('ia') === '1';
+  const ai = false;
 
   try {
     const analysis = await analyze(ticker, { ai, cache: true, sharedCache: cache });
-    return Response.json(analysis);
+    return Response.json(publicAnalysis(analysis));
   } catch (error) {
     const code = error instanceof RadarError ? error.code : 'ERRO_INTERNO';
     return Response.json(

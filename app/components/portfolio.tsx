@@ -7,9 +7,6 @@ import { SavedSimulations } from './saved-simulations';
 import personal from './personal.module.css';
 import { useEffect, useId, useMemo, useState } from 'react';
 import {
-  MAX_PER_FUND,
-  MAX_PER_SEGMENT,
-  MODE_NAME,
   buildPortfolio,
   projectGrowth,
   segmentShares,
@@ -25,7 +22,6 @@ import type { Words } from './screen-spec';
 import screen from './screen.module.css';
 import styles from './portfolio.module.css';
 
-const MODES: AllocationMode[] = ['equal', 'quality', 'yield'];
 const HORIZONS = [5, 10, 20, 30];
 const DEFAULT_AMOUNT = '10000';
 
@@ -67,31 +63,30 @@ export function PortfolioBuilder({
 }) {
   const [amountText, setAmountText] = useState(DEFAULT_AMOUNT);
   const [contributionText, setContributionText] = useState('');
-  const [mode, setMode] = useState<AllocationMode>('equal');
+  const mode: AllocationMode = 'equal';
+  const [allocationConfirmed, setAllocationConfirmed] = useState(false);
   const [horizon, setHorizon] = useState(10);
   const params = useSearchParams();
   const scenarioId = params.get('cenario');
   const [ready, setReady] = useState(false);
-  const [goal, setGoal] = useState('1000');
   const [yieldFactor, setYieldFactor] = useState(1);
-  const [inflation, setInflation] = useState('4');
   useEffect(() => {
     const stored = readLocalData();
     const scenario = stored?.simulations?.find(s => s.id === scenarioId) ?? stored?.draft;
     if (scenario && ['equal', 'quality', 'yield'].includes(scenario.mode) && Number.isFinite(scenario.horizon)) {
-      setAmountText(scenario.amount); setContributionText(scenario.contribution); setMode(scenario.mode); setHorizon(scenario.horizon); setGoal(scenario.goal); setYieldFactor(scenario.yieldFactor); setInflation(scenario.inflation);
+      setAmountText(scenario.amount); setContributionText(scenario.contribution); setAllocationConfirmed(false); setHorizon(scenario.horizon); setYieldFactor(scenario.yieldFactor);
     }
     setReady(true);
   }, [scenarioId]);
   useEffect(() => {
-    if (ready) updateLocal(d => ({ ...d, draft: { amount: amountText, contribution: contributionText, mode, horizon, goal, yieldFactor, inflation } }));
-  }, [ready, amountText, contributionText, mode, horizon, goal, yieldFactor, inflation]);
+    if (ready) updateLocal(d => ({ ...d, draft: { amount: amountText, contribution: contributionText, mode, horizon, yieldFactor } }));
+  }, [ready, amountText, contributionText, mode, horizon, yieldFactor]);
   const amountId = useId();
   const contributionId = useId();
 
   const amount = parseAmount(amountText);
   const contribution = parseAmount(contributionText);
-  const portfolio = useMemo(() => buildPortfolio(holdings.map(h => ({ ...h, dividendYield12m: h.dividendYield12m === null ? null : h.dividendYield12m * yieldFactor })), amount, mode), [holdings, amount, mode, yieldFactor]);
+  const portfolio = useMemo(() => buildPortfolio((allocationConfirmed ? holdings : []).map(h => ({ ...h, dividendYield12m: h.dividendYield12m === null ? null : h.dividendYield12m * yieldFactor })), amount, mode), [holdings, amount, mode, yieldFactor, allocationConfirmed]);
   const segments = useMemo(() => segmentShares(portfolio.positions), [portfolio]);
   const growth = useMemo(
     () => projectGrowth(portfolio, horizon, contribution),
@@ -127,7 +122,7 @@ export function PortfolioBuilder({
           </div>
         ) : null}
         <div className={styles.total}>
-          <dt className="tag">{timeline ? `renda/mês ${horizonLabel}` : 'renda estimada/mês'}</dt>
+          <dt className="tag">{timeline ? `renda/mês ${horizonLabel}` : 'renda/mês no cálculo'}</dt>
           <dd className={`mono ${styles.totalValue} ${styles.totalIncome}`}>
             {timeline
               ? money(timeline.monthlyIncome)
@@ -144,7 +139,7 @@ export function PortfolioBuilder({
           </dd>
         </div>
         <div className={styles.total}>
-          <dt className="tag">{yieldFactor !== 1 ? 'DY do cenário' : bought ? 'DY da carteira' : 'DY previsto'}</dt>
+          <dt className="tag">{yieldFactor !== 1 ? 'DY do cenário' : bought ? 'DY da simulação' : 'DY da divisão'}</dt>
           <dd className={`mono ${styles.totalValue}`}>
             {yieldShown === null ? '—' : percent(yieldShown)}
           </dd>
@@ -167,13 +162,13 @@ export function PortfolioBuilder({
             onHover={setHovered}
           />
         ) : (
-          <p className={screen.empty}>sem DY na carteira, não há o que projetar</p>
+          <p className={screen.empty}>sem DY nos ativos simulados, não há o que projetar</p>
         )}
       </div>
     ) : null;
 
   return (
-    <section className={screen.group} aria-label="Montar carteira com os papéis selecionados">
+    <section className={screen.group} aria-label="Simular quantidades dos ativos escolhidos">
       <header className={screen.groupHead}>
         <span className={`${screen.dot} ${styles.dot}`} aria-hidden="true" />
         <span className={screen.groupTitle}>Seleção</span>
@@ -181,20 +176,18 @@ export function PortfolioBuilder({
         <span className={screen.groupNote}>
           {words.share} inteira, sem fração ·{' '}
           <Link className={styles.textButton} href={backHref}>
-            mudar a seleção na triagem
+            mudar a seleção na consulta
           </Link>
         </span>
       </header>
 
-      <SavedSimulations restore={scenario => { setAmountText(scenario.amount); setContributionText(scenario.contribution); setMode(scenario.mode); setHorizon(scenario.horizon); setGoal(scenario.goal); setYieldFactor(scenario.yieldFactor); setInflation(scenario.inflation); }} current={{ href: `/carteira?papel=${backHref === '/acoes' ? 'acoes' : 'fiis'}&t=${splitTickers(params.get('t') ?? '').filter(t => /^[A-Z]{4}\d{1,2}$/.test(t)).join(',')}`, amount: amountText, contribution: contributionText, mode, horizon, goal, yieldFactor, inflation }} />
-      <div className={personal.panel}><h3>Explorar uma meta de renda</h3><div className={personal.toolbar}>
-        <label>Meta mensal (R$)<input inputMode="decimal" value={goal} onChange={e => setGoal(e.target.value)} /></label>
-        <label>Dividendos em relação aos atuais<select value={yieldFactor} onChange={e => setYieldFactor(Number(e.target.value))}><option value={0.75}>75% · redução</option><option value={1}>100% · manutenção</option><option value={1.25}>125% · aumento</option></select></label>
-        <label>Inflação anual hipotética (%)<input type="number" min="0" max="100" value={inflation} onChange={e => setInflation(e.target.value)} /></label>
-      </div><p>{(() => { const target = parseAmount(goal); const rate = Number(inflation) / 100; if (!Number.isFinite(rate) || rate < 0 || rate > 1 || target <= 0) return 'Informe uma meta e inflação válidas.'; const point = growth?.find(p => p.monthlyIncome / Math.pow(1 + rate, p.year) >= target); return point ? `Meta em poder de compra de hoje alcançada em ${point.year} ano(s), nas premissas deste cenário.` : 'Meta não alcançada no horizonte selecionado, nas premissas deste cenário.'; })()}</p><p>Os dividendos do cenário permanecem constantes. A inflação ajusta a meta; não representa uma previsão.</p></div>
+      <SavedSimulations restore={scenario => { setAmountText(scenario.amount); setContributionText(scenario.contribution); setAllocationConfirmed(false); setHorizon(scenario.horizon); setYieldFactor(scenario.yieldFactor); }} current={{ href: `/carteira?papel=${backHref === '/acoes' ? 'acoes' : 'fiis'}&t=${splitTickers(params.get('t') ?? '').filter(t => /^[A-Z]{4}\d{1,2}$/.test(t)).join(',')}`, amount: amountText, contribution: contributionText, mode, horizon, yieldFactor }} />
+      <div className={personal.panel}><h3>Premissa de dividendos</h3><div className={personal.toolbar}>
+        <label>Dividendos em relação aos últimos 12 meses<select value={yieldFactor} onChange={e => setYieldFactor(Number(e.target.value))}><option value={0.75}>75%</option><option value={1}>100%</option><option value={1.25}>125%</option></select></label>
+      </div><p>Hipótese aritmética escolhida por você, mantida constante em todo o horizonte. Não é uma estimativa de pagamentos futuros.</p></div>
       <div className={styles.controls}>
         <label className={styles.amount} htmlFor={amountId}>
-          <span className="tag">valor a investir</span>
+          <span className="tag">valor da simulação</span>
           <span className={styles.amountField}>
             <span className={styles.currency}>R$</span>
             <input
@@ -224,28 +217,9 @@ export function PortfolioBuilder({
           </span>
         </label>
 
-        <div className={styles.modes} role="radiogroup" aria-label="Como dividir">
-          <span className="tag">como dividir</span>
-          <div className={styles.modeRow}>
-            {MODES.map((m) => (
-              <button
-                key={m}
-                type="button"
-                role="radio"
-                aria-checked={mode === m}
-                className={mode === m ? `${styles.mode} ${styles.modeActive}` : styles.mode}
-                onClick={() => setMode(m)}
-              >
-                {MODE_NAME[m].label}
-              </button>
-            ))}
-          </div>
-          <p className={styles.modeDetail}>
-            {MODE_NAME[mode].detail}
-            {mode === 'yield'
-              ? ` Tetos: ${percent(MAX_PER_FUND)} por ${words.item}, ${percent(MAX_PER_SEGMENT)} por ${words.group}.`
-              : ''}
-          </p>
+        <div className={styles.modes}>
+          <label><input type="checkbox" checked={allocationConfirmed} onChange={e => setAllocationConfirmed(e.target.checked)} /> Aplicar divisão igual entre os ativos que selecionei</label>
+          <p className={styles.modeDetail}>Esta é uma hipótese aritmética escolhida por você. Não há pesos por qualidade, classificação de ativos ou otimização de renda. Confirme novamente ao abrir um cenário salvo.</p>
         </div>
 
         <div className={styles.modes} role="radiogroup" aria-label="Horizonte da projeção">
@@ -267,14 +241,14 @@ export function PortfolioBuilder({
         </div>
       </div>
 
-      {bought ? null : amount > 0 ? (
+      {!allocationConfirmed ? <p className={screen.empty}>Escolha a hipótese de divisão acima para calcular a simulação.</p> : bought ? null : amount > 0 ? (
         <p className={screen.empty}>
           {money(amount)} não compra uma {words.share} de nenhum {words.item} selecionado com essa
           divisão
         </p>
       ) : contribution > 0 ? (
         <p className={screen.empty}>
-          sem valor inicial: a carteira começa vazia e cresce só com o aporte, seguindo a divisão
+          sem valor inicial: a simulação começa vazia e cresce só com o aporte, seguindo a divisão
           escolhida acima
         </p>
       ) : (
@@ -305,7 +279,7 @@ export function PortfolioBuilder({
                     <td className={styles.fundCell}>
                       <TickerLink ticker={p.ticker} />
                       {pending.has(p.ticker) ? (
-                        <span className={styles.pendingTag} title="Nenhum filtro reprovou, mas faltou dado nas fontes">
+                        <span className={styles.pendingTag} title="Dado indisponível">
                           conferir
                         </span>
                       ) : null}
@@ -356,9 +330,9 @@ export function PortfolioBuilder({
       <p className={styles.caveat}>
         A renda usa o DY dos últimos 12 meses, ajustado pelo cenário de dividendos escolhido,
         aplicado ao valor comprado e dividido por 12. A projeção mantém cotação e DY do cenário constantes e
-        só mostra o efeito de reinvestir ou não, e do aporte mensal: não prevê preços nem pagamentos. A inflação ajusta apenas a meta de renda ao poder de compra de hoje. Passe o cursor pela curva — ou toque nela — para ler o patrimônio e a renda de cada ano.
-        O aporte entra na projeção, não na lista de compras acima. A cotação é a da última leitura
-        das fontes, e o preço de compra na bolsa será outro.
+        só mostra o efeito de reinvestir ou não, e do aporte mensal: não prevê preços nem pagamentos. Passe o cursor pela curva — ou toque nela — para ler o patrimônio e a renda de cada ano.
+        O aporte entra na projeção, não na simulação de quantidades acima. A cotação é a da última leitura
+        das fontes, e o preço de compra na bolsa será outro. O resultado é aritmética sobre dados passados e premissas suas; não indica que algum ativo ou divisão seja adequado.
       </p>
     </section>
   );

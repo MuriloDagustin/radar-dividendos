@@ -13,3 +13,7 @@
 .scroll { overflow-x: auto; }
 .muted { color: var(--muted); font-size: 14px; }
 .panel textarea { width: 100%; min-height: 80px; }
+
+.grid fieldset { min-width: 0; border: 1px solid var(--hairline); border-radius: var(--radius-md); padding: 12px; }
+.grid fieldset input { width: 100%; min-width: 0; }
+.grid fieldset label { min-width: 0; flex: 1 1 100px; }
